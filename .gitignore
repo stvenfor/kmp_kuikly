@@ -1,0 +1,72 @@
+*.iml
+.gradle
+/local.properties
+.idea
+.DS_Store
+/build
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.so
+*.js
+!demo/webpack.config.d/*.js
+!h5App/webpack.config.d/*.js
+node_modules
+**/oh_modules/
+Pods
+Pods/*
+Kotlin-js-store
+gen
+Podfile.lock
+
+## Various settings
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+**/xcuserdata/**
+**/*.xcuserdatad/**
+**/xcshareddata/
+**/IDEWorkspaceChecks.plist
+
+## Other
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.xcbkptlist
+*.pyc
+
+proto/**/*.kt
+/iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme
+
+.hvigor/
+.kotlin/
+
+/compose/compose.podspec
+/core/core.podspec
+/core-ksp/bin/
+.build
+
+## Profiler / tool logs
+/logs/
+/iosApp/logs/
+/.claude-internal
+/.cursor/
+.mcp.json
+# local build logs
+build_2.0.log
+ohos_build.log
+
+## HarmonyOS dependency lock files (auto-generated, do not commit)
+**/oh-package-lock.json5
+
+# local
+buildSrc/.gradle/
+.scratch/
+!.scratch/**/*.md

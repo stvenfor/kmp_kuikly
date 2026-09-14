@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests (core-data + app-shared)
+        run: ./gradlew :core-data:testDebugUnitTest :app-shared:testDebugUnitTest --no-daemon
+      - name: Assemble Android debug
+        run: ./gradlew :androidApp:assembleDebug --no-daemon

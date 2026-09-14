@@ -1,0 +1,58 @@
+=== hdc list targets ===
+127.0.0.1:5557		TCP	Connected	localhost
+63Q0225C04009544		USB	Connected	localhost
+=== signingConfigs in build-profile ===
+{
+  "app": {
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+=== look for material/signing ===
+/Users/mac/Library/Application Support/Huawei/DevEcoStudio6.1/options/data2/material
+/Users/mac/Library/Application Support/Huawei/DevEcoStudio6.1/codegenie/material
+/Users/mac/Library/Application Support/Huawei/DevEcoStudio6.1/emulator/data2/material
+/Users/mac/Library/Application Support/Huawei/DevEcoStudio6.1/material
+/Users/mac/Library/Application Support/Google/Chrome/Default/Extensions/hehggadaopoacecdllhhajmbjkdcmajg/1.26.901.11451_0/codex-sidepanel/assets/material-theme-darker-k-s5Bc6K.js
+/Users/mac/Library/Application Support/Google/Chrome/Default/Extensions/hehggadaopoacecdllhhajmbjkdcmajg/1.26.901.11451_0/codex-sidepanel/assets/material-theme-ocean-B3mraInd.js
+/Users/mac/Library/Application Support/Google/Chrome/Default/Extensions/hehggadaopoacecdllhhajmbjkdcmajg/1.26.901.11451_0/codex-sidepanel/assets/material-theme-lighter-uhdI0v04.js
+/Users/mac/Library/Application Support/Google/Chrome/Default/Extensions/hehggadaopoacecdllhhajmbjkdcmajg/1.26.901.11451_0/codex-sidepanel/assets/material-theme-ocean-CHQ94UKr.js
+/Users/mac/Library/Application Support/Google/Chrome/Default/Extensions/hehggadaopoacecdllhhajmbjkdcmajg/1.26.901.11451_0/codex-sidepanel/assets/material-theme-CAtLaHa3.js
+/Users/mac/Library/Application Support/Google/Chrome/Default/Extensions/hehggadaopoacecdllhhajmbjkdcmajg/1.26.901.11451_0/codex-sidepanel/assets/material-theme-palenight-DEhAARHw.js
+NO libs dir
+=== gradle linkDebugSharedOhos ===

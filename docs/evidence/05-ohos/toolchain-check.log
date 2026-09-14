@@ -1,0 +1,39 @@
+=== DevEco ===
+total 0
+drwx------@  3 mac   admin    96 May 23 02:20 .
+drwxrwxr-x  55 root  admin  1760 Sep 14 09:04 ..
+=== hdc ===
+127.0.0.1:5557
+=== ohpm ===
+6.1.2.268
+=== hvigor ===
+/Applications/DevEco-Studio.app/Contents/tools/hvigor
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/res/hvigor-config-schema_zh.json
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/res/hvigor-config-schema.json
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/bin/hvigor.d.ts
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/bin/hvigor.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/bin/hvigor-simple.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/bin/hvigor-simple.d.ts
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/res/error/hvigor.json
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/res/error/hvigor-ohos-plugin.json
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/res/error/hvigor-compiler.json
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-console-logger.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-error-common-adapter.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-error-common-adapter.d.ts
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-logger-for-file.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-file-logger.d.ts
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-logger.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-log-info.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor/node_modules/@ohos/hvigor-logger/src/logger/hvigor-error-info.js
+=== hdc target detail ===
+127.0.0.1:5557		TCP	Connected	localhost
+63Q0225C04009544		USB	Connected	localhost
+=== hdc shell uname ===
+Linux localhost 5.10.210 #1 SMP Mon May 18 09:32:07 CST 2026 aarch64 Toybox
+=== look for hvigorw ===
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw.js
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw.bat
+(eval):9: no matches found: /Users/mac/Desktop/github/kmp_kuikly/ohosApp/hvigorw*

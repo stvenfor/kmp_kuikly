@@ -1,0 +1,213 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors
+> Task :buildSrc:pluginDescriptors
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:compileKotlin
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+
+> Task :buildSrc:jar
+:jar: No valid plugin descriptors were found in META-INF/gradle-plugins
+
+> Configure project :app-shared
+[KuiklyGradle][KuiklyPlugin] apply
+[KuiklyGradle][KuiklyPlugin] Using KSP dependency: com.tencent.kuikly-open:core-ksp:2.16.0-2.1.21
+The 'ksp' configuration is deprecated in Kotlin Multiplatform projects. Please use target-specific configurations like 'kspJvm' instead.
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsLocalAssetsDebug with assetsPath: null
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsSplitAssetsDebug with assetsPath: null
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsLocalAssetsRelease with assetsPath: null
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsSplitAssetsRelease with assetsPath: null
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+Configuration 'jsTestNpmAggregated' was resolved during configuration time.
+This is a build performance and scalability issue.
+See https://github.com/gradle/gradle/issues/2298
+Run with --info for a stacktrace.
+
+> Task :app-shared:cleanIosSimulatorArm64Test UP-TO-DATE
+> Task :app-shared:cleanIosX64Test UP-TO-DATE
+> Task :app-shared:cleanJsBrowserTest UP-TO-DATE
+> Task :app-shared:cleanAllTests UP-TO-DATE
+> Task :app-shared:clean
+> Task :kotlinNodeJsSetup
+> Task :kotlinNpmCachesSetup
+> Task :kotlinRestoreYarnLock
+> Task :kotlinYarnSetup
+> Task :core-data:jsPackageJson
+> Task :core-navigation:jsPackageJson
+> Task :feature-auth:jsPackageJson
+> Task :feature-feed:jsPackageJson
+> Task :platform-permission:jsPackageJson
+> Task :platform-share:jsPackageJson
+> Task :app-shared:jsPackageJson
+> Task :app-shared:jsTestPackageJson
+> Task :core-data:jsTestPackageJson
+> Task :core-navigation:jsTestPackageJson
+> Task :feature-auth:jsTestPackageJson
+> Task :feature-feed:jsTestPackageJson
+> Task :h5App:jsPackageJson
+> Task :h5App:jsTestPackageJson
+> Task :platform-permission:jsTestPackageJson
+> Task :platform-share:jsTestPackageJson
+> Task :app-shared:jsPublicPackageJson
+> Task :app-shared:jsTestPublicPackageJson
+> Task :core-data:jsPublicPackageJson
+> Task :core-data:jsTestPublicPackageJson
+> Task :core-navigation:jsPublicPackageJson
+> Task :core-navigation:jsTestPublicPackageJson
+> Task :feature-auth:jsPublicPackageJson
+> Task :feature-auth:jsTestPublicPackageJson
+> Task :feature-feed:jsPublicPackageJson
+> Task :feature-feed:jsTestPublicPackageJson
+> Task :h5App:jsPublicPackageJson
+> Task :h5App:jsTestPublicPackageJson
+> Task :platform-permission:jsPublicPackageJson
+> Task :platform-permission:jsTestPublicPackageJson
+> Task :platform-share:jsPublicPackageJson
+> Task :platform-share:jsTestPublicPackageJson
+> Task :packageJsonUmbrella
+> Task :rootPackageJson
+> Task :kotlinNpmInstall
+> Task :kotlinStoreYarnLock
+> Task :app-shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app-shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :app-shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :app-shared:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :app-shared:generateResourceAccessorsForCommonMain SKIPPED
+> Task :app-shared:convertXmlValueResourcesForJsMain NO-SOURCE
+> Task :app-shared:copyNonXmlValueResourcesForJsMain NO-SOURCE
+> Task :app-shared:prepareComposeResourcesTaskForJsMain NO-SOURCE
+> Task :app-shared:generateResourceAccessorsForJsMain SKIPPED
+> Task :app-shared:generateActualResourceCollectorsForJsMain SKIPPED
+> Task :app-shared:generateComposeResClass SKIPPED
+> Task :app-shared:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :core-data:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core-navigation:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature-auth:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature-feed:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :platform-permission:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :platform-share:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core-navigation:compileKotlinJs
+
+> Task :platform-permission:compileKotlinJs
+w: file:///Users/mac/Desktop/github/kmp_kuikly/platform-permission/src/commonMain/kotlin/com/example/kuikly/platform/permission/PermissionApi.kt:3:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. Consider using the '-Xexpect-actual-classes' flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///Users/mac/Desktop/github/kmp_kuikly/platform-permission/src/jsMain/kotlin/com/example/kuikly/platform/permission/PermissionApi.js.kt:3:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. Consider using the '-Xexpect-actual-classes' flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+
+> Task :platform-share:compileKotlinJs
+w: file:///Users/mac/Desktop/github/kmp_kuikly/platform-share/src/commonMain/kotlin/com/examp> Task :app-shared:jsDevelopmentExecutableCompileSync
+
+> Task :app-shared:jsBrowserDevelopmentWebpack
+asset nativevue2.js 10.2 MiB [emitted] (name: main) 1 related asset
+runtime modules 221 bytes 1 module
+modules with warnings 10.2 MiB [warnings]
+  ./kotlin/kmp_kuikly-app-shared.js 143 KiB [built] [code generated] [16 warnings]
+  ./kotlin/KuiklyCore-core.js 1.08 MiB [built] [code generated] [134 warnings]
+  ./kotlin/kotlin-kotlin-stdlib.js 982 KiB [built] [code generated] [190 warnings]
+  ./kotlin/workspace-compose.js 4.37 MiB [built] [code generated] [497 warnings]
+  ./kotlin/compose-multiplatform-core-compose-runtime-runtime.js 1.59 MiB [built] [code generated] [143 warnings]
+  ./kotlin/kmp_kuikly-core-data.js 13.8 KiB [built] [code generated] [3 warnings]
+  ./kotlin/kotlinx-coroutines-core.js 663 KiB [built] [code generated] [104 warnings]
+  ./kotlin/kotlinx-atomicfu.js 14.9 KiB [built] [code generated] [7 warnings]
+  ./kotlin/compose-multiplatform-core-collection-collection.js 1.38 MiB [built] [code generated] [47 warnings]
+  ./kotlin/compose-multiplatform-core-compose-runtime-runtime-saveable.js 5.79 KiB [built] [code generated] [6
+> Task :app-shared:compileKotlinJs
+w: file:///Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/kotlin/com/example/kuikly/base/IPagerIdKtx.kt:3:8 'interface IPagerId : PagerScope' is deprecated. Use PagerScope instead.
+w: file:///Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/kotlin/com/example/kuikly/base/IPagerIdKtx.kt:6:14 'interface IPagerId : PagerScope' is deprecated. Use PagerScope instead.
+w: file:///Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/kotlin/com/example/kuikly/base/IPagerIdKtx.kt:6:53 'fun <reified T> pagerId(noinline initializer: (String) -> T): ReadOnlyProperty<PagerScope, T>' is deprecated. Use PagerScope instead.
+w: file:///Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/kotlin/com/example/kuikly/base/IPagerIdKtx.kt:10:14 'interface IPagerId : PagerScope' is deprecated. Use PagerScope instead.
+w: file:///Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/kotlin/com/example/kuikly/base/Utils.kt:18:52 'var currentPageId: String' is deprecated. 使用Pager上下文的pagerId代替.
+w: file:///Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/kotlin/com/example/kuikly/base/Utils.kt:24:36 'var currentPageId: String' is deprecated. 使用Pager上下文的pagerId代替.
+
+> Task :app-shared:jsMainClasses
+> Task :app-shared:compileDevelopmentExecutableKotlinJs
+> Task :app-shared:jsDevelopmentExecutableCompileSync
+
+> Task :app-shared:jsBrowserDevelopmentWebpack
+asset nativevue2.js 10.2 MiB [emitted] [compared for emit] (name: main) 1 related asset
+runtime modules 221 bytes 1 module
+modules with warnings 10.2 MiB [warnings]
+  ./kotlin/kmp_kuikly-app-shared.js 143 KiB [built] [code generated] [15 warnings]
+  ./kotlin/KuiklyCore-core.js 1.08 MiB [built] [code generated] [134 warnings]
+  ./kotlin/kotlin-kotlin-stdlib.js 982 KiB [built] [code generated] [190 warnings]
+  ./kotlin/workspace-compose.js 4.37 MiB [built] [code generated] [497 warnings]
+  ./kotlin/compose-multiplatform-core-compose-runtime-runtime.js 1.59 MiB [built] [code generated] [143 warnings]
+  ./kotlin/kmp_kuikly-core-data.js 13.8 KiB [built] [code generated] [3 warnings]
+  ./kotlin/kotlinx-coroutines-core.js 663 KiB [built] [code generated] [104 warnings]
+  ./kotlin/kotlinx-atomicfu.js 14.9 KiB [built] [code generated] [7 warnings]
+  ./kotlin/compose-multiplatform-core-collection-collection.js 1.38 MiB [built] [code generated] [47 warnings]
+  ./kotlin/compose-multiplatform-core-compose-runtime-runtime-saveable.js 5.79 KiB [built] [code generated] [6 warnings]
+./kotlin/kmp_kuikly-platform-permission.js 1.49 KiB [built] [code generated]
+./kotlin/kmp_kuikly-platform-share.js 1.42 KiB [built] [code generated]
+webpack 5.94.0 compiled successfully in 2082 ms
+
+> Task :app-shared:jsBrowserDevelopmentExecutableDistribution
+
+> Task :app-shared:packJsLocalAssetsDebug
+[KuiklyGradle][PackResourceTask] PackResourceTask resource dir: /Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/assets
+[KuiklyGradle][PackResourceTask] /Users/mac/Desktop/github/kmp_kuikly/app-shared/src/commonMain/assets is not exist!
+
+> Task :app-shared:packLocalJSBundleDebug
+[KuiklyGradle][packLocalJSBundleDebug] 
+
+打包完成！产物路径：/Users/mac/Desktop/github/kmp_kuikly/app-shared/build/outputs/kuikly/js/debug/local/nativevue2.zip
+
+
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.5/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 4s
+66 actionable tasks: 63 executed, 3 up-to-date

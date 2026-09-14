@@ -1,0 +1,14 @@
+=== ohpm install ===
+ohpm INFO: MetaDataFetcher fetching meta info of package '@kuikly-open/render' from https://ohpm.openharmony.cn/ohpm/
+ohpm INFO: MetaDataFetcher fetching meta info of package '@ohos/hypium' from https://ohpm.openharmony.cn/ohpm/
+ohpm INFO: MetaDataFetcher fetching meta info of package '@ohos/hamock' from https://ohpm.openharmony.cn/ohpm/
+ohpm INFO: fetch meta info of package '@ohos/hamock' success https://ohpm.openharmony.cn/ohpm/@ohos/hamock
+ohpm INFO: fetch meta info of package '@ohos/hypium' success https://ohpm.openharmony.cn/ohpm/@ohos/hypium
+ohpm INFO: fetch meta info of package '@kuikly-open/render' success https://ohpm.openharmony.cn/ohpm/@kuikly-open/render
+ohpm INFO: fetch package done 1 @kuikly-open/render from https://ohpm.openharmony.cn/ohpm/@kuikly-open/render/-/render-2.16.0.har
+ohpm INFO: fetch package done 2 @ohos/hypium from https://ohpm.openharmony.cn/ohpm/@ohos/hypium/-/hypium-1.0.16.har
+[32minstall completed in 1s 524ms[39m
+OHPM_EXIT:0
+=== entry ohpm ===
+[32minstall completed in 0s 66ms[39m
+ENTRY_OHPM_EXIT:0

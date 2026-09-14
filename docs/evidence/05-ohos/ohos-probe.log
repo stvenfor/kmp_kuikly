@@ -1,0 +1,116 @@
+=== ohosApp full listing ===
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/hvigor/hvigor-config.json5
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/hvigorfile.ts
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/oh-package.json5
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/build-profile.json5
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/hvigorfile.ts
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/oh-package.json5
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/AppScope/app.json5
+/Users/mac/Desktop/github/kmp_kuikly/ohosApp/build-profile.json5
+=== local.properties ===
+NO local.properties
+=== build-profile ===
+{
+  "app": {
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
+=== entry build-profile ===
+{
+  "apiType": "stageMode",
+  "buildOption": {
+    "externalNativeOptions": {
+      "path": "./src/main/cpp/CMakeLists.txt",
+      "arguments": "",
+      "cppFlags": ""
+    }
+  },
+  "buildOptionSet": [
+    {
+      "name": "release",
+      "arkOptions": {
+        "obfuscation": {
+          "ruleOptions": {
+            "enable": true,
+            "files": [
+              "./obfuscation-rules.txt"
+            ]
+          }
+        }
+      },
+      "nativeLib": {
+        "debugSymbol": {
+          "strip": true
+        }
+      }
+    },
+    {
+      "name": "debug",
+      "arkOptions": {
+        "obfuscation": {
+          "ruleOptions": {
+            "enable": false,
+            "files": []
+          }
+        }
+      },
+      "nativeLib": {
+        "debugSymbol": {
+          "strip": false
+        }
+      }
+    }
+  ],
+  "targets": [
+    {
+      "name": "default"
+    }
+  ]
+}
+=== hvigor version try ===
+6.24.2
+=== try assemble in ohosApp ===
+total 24
+drwxr-xr-x@  8 mac  staff  256 Sep 14 00:35 .
+drwxr-xr-x@ 31 mac  staff  992 Sep 14 10:12 ..
+drwxr-xr-x@  4 mac  staff  128 Sep 14 00:35 AppScope
+-rw-r--r--@  1 mac  staff  676 Sep 14 00:35 build-profile.json5
+drwxr-xr-x@  7 mac  staff  224 Sep 14 00:35 entry
+drwxr-xr-x@  3 mac  staff   96 Sep 14 00:35 hvigor
+-rw-r--r--@  1 mac  staff  110 Sep 14 00:35 hvigorfile.ts
+-rw-r--r--@  1 mac  staff  188 Sep 14 00:35 oh-package.json5

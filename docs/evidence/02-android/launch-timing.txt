@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.example.kuikly/.KuiklyRenderActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.example.kuikly/.KuiklyRenderActivity
+TotalTime: 559
+WaitTime: 566
+Complete

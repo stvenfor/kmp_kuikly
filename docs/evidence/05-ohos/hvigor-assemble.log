@@ -1,0 +1,29 @@
+Created local.properties
+=== hvigor assembleHap ===
+> hvigor [32mFinished :entry:clean... after 1 ms [39m
+> hvigor [33mWARN: The project has not explicitly set the 'targetSdkVersion' version at build-profile.json5. It is recommended to configure it. Reference: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ide-hvigor-build-profile-app#section45865492619[39m
+> hvigor [32mFinished :entry:default@PreBuild... after 71 ms [39m
+> hvigor [32mFinished :entry:default@CreateModuleInfo... after 1 ms [39m
+> hvigor [32mFinished :entry:default@GenerateMetadata... after 2 ms [39m
+> hvigor [32mFinished :entry:default@ConfigureCmake... after 14 ms [39m
+> hvigor [32mFinished :entry:default@MergeProfile... after 4 ms [39m
+> hvigor [32mFinished :entry:default@CreateBuildProfile... after 1 ms [39m
+> hvigor [32mFinished :entry:default@PreCheckSyscap... after 1 ms [39m
+> hvigor [32mFinished :entry:default@GeneratePkgSdkInfo... after 2 ms [39m
+> hvigor [32mFinished :entry:default@ProcessIntegratedHsp... after 1 ms [39m
+> hvigor [32mFinished :entry:default@MakePackInfo... after 4 ms [39m
+> hvigor [32mFinished :entry:default@SyscapTransform... after 1 ms [39m
+> hvigor [32mFinished :entry:default@BuildNativeWithCmake... after 2 s 622 ms [39m
+> hvigor [33mWARN: ninja: error: '/Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/libs/arm64-v8a/libshared.so', needed by '/Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/build/default/intermediates/cmake/default/obj/arm64-v8a/libkuikly_entry.so', missing and no known rule to make it
+[39m
+
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+Error: Exceptions happened while executing /Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/native/build-tools/cmake/bin/ninja -C /Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/.cxx/default/default/debug/arm64-v8a.
+[32mninja: Entering directory `/Users/mac/Desktop/github/kmp_kuikly/ohosApp/entry/.cxx/default/default/debug/arm64-v8a'[32m[39m
+undefined
+    at ChildProcess.<anonymous> (/Applications/DevEco-Studio.app/Contents/tools/hvigor/hvigor-ohos-plugin/src/tasks/abstract-build-native.js:1:2767)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Node.js v22.23.1

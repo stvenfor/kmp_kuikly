@@ -1,0 +1,13 @@
+Analyzing dependencies
+Pre-downloading: `OpenKuiklyIOSRender` from `https://github.com/Tencent-TDS/KuiklyUI.git`, tag `2.16.0`
+
+[!] Error installing OpenKuiklyIOSRender
+[!] Failed to download 'OpenKuiklyIOSRender': [!] /usr/bin/git clone https://github.com/Tencent-TDS/KuiklyUI.git /var/folders/y7/0xc5xhh1475c0cvcfyjmkch00000gn/T/d20260914-8992-ikym59 --template= --single-branch --depth 1 --branch 2.16.0
+
+Cloning into '/var/folders/y7/0xc5xhh1475c0cvcfyjmkch00000gn/T/d20260914-8992-ikym59'...
+error: RPC failed; curl 56 Recv failure: Connection reset by peer
+error: 933 bytes of body are still expected
+fetch-pack: unexpected disconnect while reading sideband packet
+fatal: early EOF
+fatal: fetch-pack: invalid index-pack output
+put

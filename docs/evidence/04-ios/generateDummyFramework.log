@@ -1,0 +1,28 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :app-shared
+[KuiklyGradle][KuiklyPlugin] apply
+[KuiklyGradle][KuiklyPlugin] Using KSP dependency: com.tencent.kuikly-open:core-ksp:2.16.0-2.1.21
+The 'ksp' configuration is deprecated in Kotlin Multiplatform projects. Please use target-specific configurations like 'kspJvm' instead.
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsLocalAssetsDebug with assetsPath: null
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsSplitAssetsDebug with assetsPath: null
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsLocalAssetsRelease with assetsPath: null
+[KuiklyGradle][JSProcessor] > createPackAssetsTask packJsSplitAssetsRelease with assetsPath: null
+
+> Task :app-shared:generateDummyFramework UP-TO-DATE
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.5/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 5s
+5 actionable tasks: 1 executed, 4 up-to-date

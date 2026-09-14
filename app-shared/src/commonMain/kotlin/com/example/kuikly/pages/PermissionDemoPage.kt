@@ -1,0 +1,42 @@
+package com.example.kuikly.pages
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.kuikly.base.BaseComposePager
+import com.example.kuikly.platform.permission.PermissionApi
+import com.tencent.kuikly.compose.foundation.clickable
+import com.tencent.kuikly.compose.foundation.layout.Column
+import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
+import com.tencent.kuikly.compose.foundation.layout.height
+import com.tencent.kuikly.compose.foundation.layout.padding
+import com.tencent.kuikly.compose.material3.Text
+import com.tencent.kuikly.compose.setContent
+import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.unit.dp
+import com.tencent.kuikly.compose.ui.unit.sp
+import com.tencent.kuikly.core.annotations.Page
+
+@Page("PermissionDemo")
+internal class PermissionDemoPage : BaseComposePager() {
+    override fun willInit() {
+        super.willInit()
+        setContent {
+            var result by remember { mutableStateOf("(tap check)") }
+            Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+                Text("Permission Demo", fontSize = 22.sp)
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Check camera (mock)",
+                    color = Color(0xFF1565C0),
+                    modifier = Modifier.clickable { result = PermissionApi.checkCamera() },
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(result, fontSize = 16.sp, color = Color.Gray)
+            }
+        }
+    }
+}
