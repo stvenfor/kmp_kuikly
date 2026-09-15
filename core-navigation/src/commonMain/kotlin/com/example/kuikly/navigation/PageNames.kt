@@ -9,6 +9,9 @@ object PageNames {
     const val DslLab = "DslLab"
     const val PerfLab = "PerfLab"
     const val Gallery = "Gallery"
+    const val ComposeAnim = "ComposeAnim"
+    const val ComposeList = "ComposeList"
+    const val ComposePager = "ComposePager"
     const val PermissionDemo = "PermissionDemo"
     const val ShareDemo = "ShareDemo"
 }

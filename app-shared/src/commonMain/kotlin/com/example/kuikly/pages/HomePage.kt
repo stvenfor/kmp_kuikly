@@ -28,6 +28,9 @@ internal class HomePage : BaseComposePager() {
             "Legacy DSL Lab" to PageNames.DslLab,
             "Perf Lab" to PageNames.PerfLab,
             "Gallery" to PageNames.Gallery,
+            "Compose Anim" to PageNames.ComposeAnim,
+            "Compose List" to PageNames.ComposeList,
+            "Compose Pager" to PageNames.ComposePager,
             "Permission Demo" to PageNames.PermissionDemo,
             "Share Demo" to PageNames.ShareDemo,
         )
