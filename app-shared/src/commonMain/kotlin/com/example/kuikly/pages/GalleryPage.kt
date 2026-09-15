@@ -28,8 +28,14 @@ internal class GalleryPage : BaseComposePager() {
             Color(0xFFFFB74D), Color(0xFFBA68C8), Color(0xFF4DB6AC),
             Color(0xFFFF8A65), Color(0xFFA1887F), Color(0xFF90A4AE),
         )
+        val top = statusBarInset()
         setContent {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = (top + 16f).dp),
+            ) {
                 Text("Gallery", fontSize = 20.sp, color = Color.Black)
                 Spacer(Modifier.height(12.dp))
                 colors.chunked(3).forEach { row ->

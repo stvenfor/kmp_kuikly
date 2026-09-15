@@ -10,6 +10,7 @@ import com.example.kuikly.data.auth.AuthSession
 import com.example.kuikly.data.feed.FeedItem
 import com.example.kuikly.data.feed.FeedStore
 import com.example.kuikly.data.mock.MockBackend
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
@@ -30,6 +31,8 @@ import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 internal class FeedListPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         setContent {
             var scenario by remember { mutableStateOf(MockBackend.scenario) }
             var items by remember { mutableStateOf<List<FeedItem>>(emptyList()) }
@@ -61,7 +64,17 @@ internal class FeedListPage : BaseComposePager() {
                 }
             }
 
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = (top + 16f).dp,
+                        bottom = (bottom + 16f).dp,
+                    ),
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

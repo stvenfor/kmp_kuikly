@@ -8,6 +8,7 @@ import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.auth.AuthSession
 import com.example.kuikly.navigation.PageNames
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
@@ -31,7 +32,10 @@ internal class LoginPage : BaseComposePager() {
         setContent {
             var message by remember { mutableStateOf("") }
             Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

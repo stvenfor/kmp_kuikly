@@ -3,6 +3,7 @@ package com.example.kuikly.feature.feed.pages
 import androidx.compose.runtime.remember
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.data.feed.FeedStore
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
@@ -21,9 +22,21 @@ internal class FeedDetailPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
         val id = pageData.params.optString("id")
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         setContent {
             val result = remember(id) { FeedStore.repo.detail(id) }
-            Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = (top + 24f).dp,
+                        bottom = (bottom + 24f).dp,
+                    ),
+            ) {
                 result.onSuccess { item ->
                     Text(item.title, fontSize = 22.sp, color = Color.Black)
                     Spacer(Modifier.height(12.dp))

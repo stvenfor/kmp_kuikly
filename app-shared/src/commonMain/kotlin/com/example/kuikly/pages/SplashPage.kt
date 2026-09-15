@@ -5,6 +5,7 @@ import com.example.kuikly.base.Utils
 import com.example.kuikly.base.setTimeout
 import com.example.kuikly.data.auth.AuthSession
 import com.example.kuikly.navigation.PageNames
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
@@ -24,8 +25,12 @@ internal class SplashPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
         setContent {
+            // 全屏铺底盖住状态栏；居中文案不需顶 inset
             Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

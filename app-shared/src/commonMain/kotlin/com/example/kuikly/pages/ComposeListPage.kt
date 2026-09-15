@@ -40,13 +40,19 @@ internal class ComposeListPage : BaseComposePager() {
                 tint = palette[index % palette.size],
             )
         }
+        val top = statusBarInset()
         setContent {
             Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5))) {
                 Text(
                     text = "Compose List Lab",
                     fontSize = 22.sp,
                     color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = (top + 16f).dp,
+                        bottom = 16.dp,
+                    ),
                 )
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

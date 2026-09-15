@@ -37,10 +37,20 @@ internal class ComposePagerPage : BaseComposePager() {
             Color(0xFFEF6C00) to "橙 · Banner 4",
             Color(0xFFC62828) to "红 · Banner 5",
         )
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         setContent {
             val pagerState = rememberPagerState(pageCount = { pages.size })
             Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = (top + 16f).dp,
+                        bottom = (bottom + 16f).dp,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("Compose Pager Lab", fontSize = 22.sp, color = Color.Black)

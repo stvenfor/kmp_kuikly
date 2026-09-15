@@ -38,6 +38,8 @@ import com.tencent.kuikly.core.annotations.Page
 internal class ComposeAnimPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         setContent {
             var visible by remember { mutableStateOf(true) }
             var expanded by remember { mutableStateOf(false) }
@@ -51,7 +53,15 @@ internal class ComposeAnimPage : BaseComposePager() {
             )
 
             Column(
-                modifier = Modifier.fillMaxSize().padding(20.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = (top + 20f).dp,
+                        bottom = (bottom + 20f).dp,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
