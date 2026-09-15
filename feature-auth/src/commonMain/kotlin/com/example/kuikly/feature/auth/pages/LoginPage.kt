@@ -7,13 +7,14 @@ import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.auth.AuthSession
-import com.tencent.kuikly.compose.foundation.clickable
+import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.height
 import com.tencent.kuikly.compose.foundation.layout.padding
+import com.tencent.kuikly.compose.material3.Button
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
@@ -36,19 +37,18 @@ internal class LoginPage : BaseComposePager() {
             ) {
                 Text("Login (Mock)", fontSize = 22.sp, color = Color.Black)
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    text = "Tap to sign in as demo",
-                    fontSize = 16.sp,
-                    color = Color(0xFF1565C0),
-                    modifier = Modifier.clickable {
+                Button(
+                    onClick = {
                         AuthSession.repo.login("demo", "demo")
                             .onSuccess {
                                 message = ""
-                                Utils.currentBridgeModule().openPage("FeedList", closeCurPage = true)
+                                Utils.currentBridgeModule().openPage(PageNames.Main, closeCurPage = true)
                             }
                             .onFailure { message = it.message ?: "fail" }
                     },
-                )
+                ) {
+                    Text("登录并进入主页")
+                }
                 if (message.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     Text(message, color = Color.Red, fontSize = 14.sp)

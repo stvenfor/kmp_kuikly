@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "kmp_kuikly Demo Skeleton 架构",
+    "quality_profile": "showcase",
+    "viewBox": [1360, 760],
+    "repository": {
+      "url": "https://github.com/stvenfor/kmp_kuikly",
+      "revision": "4465ba9c2daed8c144e2b0de845f7cb546f229b8"
+    },
+    "views": [
+      {
+        "id": "embed-path",
+        "label": "可嵌入主路径",
+        "focus": ["shells", "app-shared", "feature-auth", "feature-feed", "core-data"],
+        "note": "Shell 挂载 app-shared，业务在 Feature，数据走 Mock。"
+      },
+      {
+        "id": "platform-ext",
+        "label": "平台扩展",
+        "focus": ["app-shared", "platform-permission", "platform-share"],
+        "note": "权限与分享走 Platform Extension，expect/actual 按端实现。"
+      },
+      {
+        "id": "core-layer",
+        "label": "核心层",
+        "focus": ["core-pager", "core-navigation", "core-data", "kuikly"],
+        "note": "页面基类、路由名、Mock 仓库，以及 Kuikly Compose/Core。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "shells",
+      "type": "frontend",
+      "label": "Shell Apps",
+      "sublabel": "android / ios / ohos / h5",
+      "tag": "可替换宿主",
+      "pos": [48, 300],
+      "size": [160, 64],
+      "sources": [{ "path": "settings.gradle.kts", "label": "include" }]
+    },
+    {
+      "id": "kuikly",
+      "type": "external",
+      "label": "KuiklyUI",
+      "sublabel": "Compose · Core · Render",
+      "pos": [300, 96],
+      "size": [168, 56],
+      "sources": [{ "path": "app-shared/build.gradle.kts", "line": 67, "label": "maven" }]
+    },
+    {
+      "id": "app-shared",
+      "type": "frontend",
+      "label": "app-shared",
+      "sublabel": "薄组装 · Home Demo Map",
+      "tag": "Embeddable",
+      "pos": [300, 300],
+      "size": [168, 64],
+      "sources": [
+        { "path": "app-shared/build.gradle.kts", "line": 59, "label": "deps" },
+        { "path": "app-shared/src/commonMain/kotlin/com/example/kuikly/pages/HomePage.kt", "label": "Home" }
+      ]
+    },
+    {
+      "id": "feature-auth",
+      "type": "frontend",
+      "label": "feature-auth",
+      "sublabel": "Login · moduleId",
+      "pos": [600, 180],
+      "size": [152, 56],
+      "sources": [{ "path": "feature-auth/src/commonMain/kotlin/com/example/kuikly/feature/auth/pages/LoginPage.kt", "label": "Login" }]
+    },
+    {
+      "id": "feature-feed",
+      "type": "frontend",
+      "label": "feature-feed",
+      "sublabel": "FeedList / Detail",
+      "pos": [600, 300],
+      "size": [152, 56],
+      "sources": [{ "path": "feature-feed/src/commonMain/kotlin/com/example/kuikly/feature/feed/pages/FeedListPage.kt", "label": "Feed" }]
+    },
+    {
+      "id": "platform-permission",
+      "type": "security",
+      "label": "platform-permission",
+      "sublabel": "权限 API",
+      "pos": [600, 420],
+      "size": [160, 56]
+    },
+    {
+      "id": "platform-share",
+      "type": "external",
+      "label": "platform-share",
+      "sublabel": "系统分享",
+      "pos": [600, 530],
+      "size": [152, 56]
+    },
+    {
+      "id": "core-pager",
+      "type": "backend",
+      "label": "core-pager",
+      "sublabel": "BaseComposePager",
+      "pos": [900, 180],
+      "size": [160, 56],
+      "sources": [{ "path": "core-pager/src/commonMain/kotlin/com/example/kuikly/base/BaseComposePager.kt", "label": "base" }]
+    },
+    {
+      "id": "core-navigation",
+      "type": "backend",
+      "label": "core-navigation",
+      "sublabel": "PageNames",
+      "pos": [900, 300],
+      "size": [160, 56],
+      "sources": [{ "path": "core-navigation/src/commonMain/kotlin/com/example/kuikly/navigation/PageNames.kt", "label": "routes" }]
+    },
+    {
+      "id": "core-data",
+      "type": "database",
+      "label": "core-data",
+      "sublabel": "Mock Backend",
+      "tag": "全 Mock",
+      "pos": [900, 420],
+      "size": [160, 56],
+      "sources": [{ "path": "core-data/src/commonMain/kotlin/com/example/kuikly/data/mock/MockBackend.kt", "label": "Mock" }]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Shell（可替换）",
+      "wraps": ["shells"]
+    },
+    {
+      "kind": "region",
+      "label": "Embeddable Shared（KMP）",
+      "wraps": ["app-shared", "feature-auth", "feature-feed", "platform-permission", "platform-share", "core-pager", "core-navigation", "core-data"]
+    },
+    {
+      "kind": "region",
+      "label": "Feature Modules",
+      "wraps": ["feature-auth", "feature-feed"]
+    },
+    {
+      "kind": "region",
+      "label": "Platform Extensions",
+      "wraps": ["platform-permission", "platform-share"]
+    },
+    {
+      "kind": "region",
+      "label": "core-*",
+      "wraps": ["core-pager", "core-navigation", "core-data"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "shell-to-shared",
+      "from": "shells",
+      "to": "app-shared",
+      "label": "挂载入口",
+      "variant": "emphasis",
+      "labelDy": -32
+    },
+    {
+      "id": "kuikly-to-shared",
+      "from": "kuikly",
+      "to": "app-shared",
+      "label": "Compose / Core",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "shared-to-auth",
+      "from": "app-shared",
+      "to": "feature-auth",
+      "label": "组装",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -32
+    },
+    {
+      "id": "shared-to-feed",
+      "from": "app-shared",
+      "to": "feature-feed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "shared-to-perm",
+      "from": "app-shared",
+      "to": "platform-permission",
+      "label": "权限扩展",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [500, 390]
+    },
+    {
+      "id": "shared-to-share",
+      "from": "app-shared",
+      "to": "platform-share",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "auth-to-pager",
+      "from": "feature-auth",
+      "to": "core-pager",
+      "label": "页面基类"
+    },
+    {
+      "id": "feed-to-nav",
+      "from": "feature-feed",
+      "to": "core-navigation",
+      "label": "路由名"
+    },
+    {
+      "id": "feed-to-data",
+      "from": "feature-feed",
+      "to": "core-data",
+      "label": "Mock 仓库",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "labelDy": 28
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "分层",
+      "items": ["Shell 可替换；app-shared 是 Page 总出口（含 Home Demo Map）"]
+    },
+    {
+      "dot": "emerald",
+      "title": "业务与能力",
+      "items": ["feature-* 多模块 Compose；platform-* 权限/分享扩展"]
+    },
+    {
+      "dot": "violet",
+      "title": "数据与框架",
+      "items": ["core-data 全 Mock；KuiklyUI 提供 Compose / Core / Render"]
+    }
+  ]
+}

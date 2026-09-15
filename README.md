@@ -62,6 +62,7 @@ Platform details: `docs/runbooks/`.
 
 ## Project docs
 
+- **现状分析（对照 KuiklyUI）**: [`docs/architecture/PROJECT-ANALYSIS.md`](docs/architecture/PROJECT-ANALYSIS.md) · [架构图](docs/architecture/kmp-kuikly-architecture.html)
 - Glossary: [`CONTEXT.md`](CONTEXT.md)
 - Plan: [`docs/SCHEME.md`](docs/SCHEME.md)
 - Demo map: [`docs/demo-map.md`](docs/demo-map.md)

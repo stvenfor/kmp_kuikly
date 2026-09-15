@@ -29,6 +29,7 @@ kotlin {
                 api(project(":core-navigation"))
                 api(project(":feature-auth"))
                 api(project(":feature-feed"))
+                api(project(":feature-home"))
                 api(project(":platform-permission"))
                 api(project(":platform-share"))
                 implementation("com.tencent.kuikly-open:core:2.16.0-2.0.21-ohos")
@@ -48,7 +49,7 @@ ksp {
     arg(KEY_PAGE_NAME, (project.properties[KEY_PAGE_NAME] as? String) ?: "")
     arg("moduleId", "app-shared")
     arg("isMainModule", "true")
-    arg("subModules", "feature_auth&feature_feed")
+    arg("subModules", "feature_auth&feature_feed&feature_home")
     arg("enableMultiModule", "true")
 }
 

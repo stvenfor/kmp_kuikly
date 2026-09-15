@@ -9,7 +9,7 @@ log()  { printf '==> %s\n' "$*"; }
 warn() { printf '!!  %s\n' "$*" >&2; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 
-PAGE_DEFAULT="${PAGE:-Home}"
+PAGE_DEFAULT="${PAGE:-Splash}"
 
 parse_page_args() {
   while [[ $# -gt 0 ]]; do

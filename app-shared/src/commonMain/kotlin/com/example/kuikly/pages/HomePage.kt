@@ -23,6 +23,8 @@ internal class HomePage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
         val entries = listOf(
+            "Main (四 Tab)" to PageNames.Main,
+            "Splash" to PageNames.Splash,
             "Auth + Feed" to PageNames.Login,
             "HelloWorld" to PageNames.HelloWorld,
             "Legacy DSL Lab" to PageNames.DslLab,

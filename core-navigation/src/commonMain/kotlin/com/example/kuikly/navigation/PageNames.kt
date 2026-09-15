@@ -2,6 +2,8 @@ package com.example.kuikly.navigation
 
 object PageNames {
     const val HelloWorld = "HelloWorld"
+    const val Splash = "Splash"
+    const val Main = "Main"
     const val Home = "Home"
     const val Login = "Login"
     const val FeedList = "FeedList"
