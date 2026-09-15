@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Git commit-msg hook: Chinese required; strip/forbid Cursor co-author.
+# Installed path: .githooks/commit-msg (copy or hooksPath)
+set -euo pipefail
+
+MSG_FILE="${1:-}"
+[[ -n "$MSG_FILE" && -f "$MSG_FILE" ]] || exit 0
+
+python3 - "$MSG_FILE" <<'PY'
+import re, sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+# Remove Cursor co-author trailers (any similar form)
+cleaned_lines = []
+banned = re.compile(
+    r"(?i)^\s*co-authored-by:\s*cursor\b.*$|^\s*co-authored-by:.*cursoragent@cursor\.com.*$"
+)
+removed = False
+for line in text.splitlines():
+    if banned.match(line):
+        removed = True
+        continue
+    cleaned_lines.append(line)
+
+cleaned = "\n".join(cleaned_lines).rstrip() + "\n"
+if cleaned != text:
+    path.write_text(cleaned, encoding="utf-8")
+    text = cleaned
+
+# Ignore comment lines for Chinese check
+body = "\n".join(
+    ln for ln in text.splitlines()
+    if not ln.startswith("#")
+).strip()
+
+if not re.search(r"[\u4e00-\u9fff]", body):
+    sys.stderr.write(
+        "commit-msg: 提交说明必须使用中文（至少包含一个汉字）。\n"
+        "commit-msg: Commit message must be Chinese (include Han characters).\n"
+    )
+    sys.exit(1)
+
+if removed:
+    sys.stderr.write(
+        "commit-msg: 已移除 Co-authored-by: Cursor 行。\n"
+    )
+
+sys.exit(0)
+PY
