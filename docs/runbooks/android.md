@@ -1,17 +1,17 @@
 # Android smoke
 
-## Build
+## One-shot (recommended)
+
+```bash
+./scripts/run.sh android --page Home
+# ./scripts/run.sh android --page Login --avd Pixel_7_Pro
+```
+
+## Manual
 
 ```bash
 ./gradlew :androidApp:assembleDebug
-```
-
-## Run (emulator or device)
-
-```bash
 adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
-adb shell am start -n com.example.kuikly/.KuiklyRenderActivity
-# or explicit page:
 adb shell am start -n com.example.kuikly/.KuiklyRenderActivity --es pageName HelloWorld
 adb shell am start -n com.example.kuikly/.KuiklyRenderActivity --es pageName Login
 ```

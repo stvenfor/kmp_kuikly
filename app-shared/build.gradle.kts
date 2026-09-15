@@ -56,10 +56,8 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            // Feature pages live under feature-*/src/pages so KSP in this entry module still sees @Page.
-            kotlin.srcDir(project(":feature-auth").file("src/pages/kotlin"))
-            kotlin.srcDir(project(":feature-feed").file("src/pages/kotlin"))
             dependencies {
+                api(project(":core-pager"))
                 api(project(":core-data"))
                 api(project(":core-navigation"))
                 api(project(":feature-auth"))
@@ -121,6 +119,10 @@ publishing {
 
 ksp {
     arg(KEY_PAGE_NAME, getPageName())
+    arg("moduleId", "app-shared")
+    arg("isMainModule", "true")
+    arg("subModules", "feature_auth&feature_feed")
+    arg("enableMultiModule", "true")
 }
 
 dependencies {

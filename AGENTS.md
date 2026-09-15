@@ -49,6 +49,18 @@ Intensity (Claude Code / Codex plugins): `lite` | `full` (default) | `ultra` | `
 3. `docs/adr/*`
 4. Tickets under `.scratch/demo-skeleton/issues/` (when published)
 
+## KuiklyUI-AI skills
+
+Installed from [Tencent-TDS/KuiklyUI-AI](https://github.com/Tencent-TDS/KuiklyUI-AI) into `.agents/skills/` (lockfile: `skills-lock.json`).
+
+```bash
+# reinstall / update (prefer SSH if HTTPS clone hangs)
+git clone --depth 1 git@github.com:Tencent-TDS/KuiklyUI-AI.git /tmp/KuiklyUI-AI
+npx skills add /tmp/KuiklyUI-AI/skills -a cursor -s '*' -y --copy
+```
+
+Useful for this repo: `kuikly-compose-ui-framework`, `kuikly-multi-module-config`, `kuikly-expand-api`, `kuikly-expand-view`.
+
 ## Reinstall / update
 
 From project root:

@@ -70,3 +70,8 @@ ohos_build.log
 buildSrc/.gradle/
 .scratch/
 !.scratch/**/*.md
+
+# Agent skills (canonical: .agents/skills — commit those)
+.aider-desk/
+.claude/skills/
+.windsurf/

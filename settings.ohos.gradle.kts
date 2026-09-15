@@ -26,9 +26,13 @@ rootProject.name = "kmp_kuikly"
 
 include(":core-navigation")
 include(":core-data")
+include(":core-pager")
 include(":platform-permission")
 include(":platform-share")
 include(":feature-auth")
 include(":feature-feed")
 include(":app-shared")
 project(":app-shared").buildFileName = ohosBuildfFileName
+project(":core-pager").buildFileName = ohosBuildfFileName
+project(":feature-auth").buildFileName = ohosBuildfFileName
+project(":feature-feed").buildFileName = ohosBuildfFileName

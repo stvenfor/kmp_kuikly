@@ -35,14 +35,30 @@ Follow official [环境搭建](https://kuikly.tds.qq.com/QuickStart/env-setup.ht
 ## Quick commands
 
 ```bash
-# List projects
-./gradlew projects
+# Doctor: tools + simulators / devices
+./scripts/run.sh list
 
-# Unit tests + Android debug APK
+# Android emulator (auto-boot Pixel_7_Pro if needed)
+./scripts/run.sh android --page Home
+
+# iOS Simulator
+./scripts/run.sh ios --page Home --sim "iPhone 16"
+
+# HarmonyOS (hdc + hvigor; falls back to DevEco if link fails)
+./scripts/run.sh ohos --open-deveco
+
+# H5 webpack-dev-server
+./scripts/run.sh h5 --page Home
+```
+
+Low-level Gradle still works:
+
+```bash
+./gradlew projects
 ./gradlew :core-data:testDebugUnitTest :androidApp:assembleDebug
 ```
 
-More platform steps: [KMP 跨端工程接入](https://kuikly.tds.qq.com/QuickStart/common.html).
+Platform details: `docs/runbooks/`.
 
 ## Project docs
 

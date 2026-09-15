@@ -5,6 +5,8 @@ plugins {
     kotlin("plugin.compose")
 }
 
+val KEY_PAGE_NAME = "pageName"
+
 kotlin {
     ohosArm64 {
         binaries.sharedLib("shared") {
@@ -22,6 +24,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(project(":core-pager"))
+                api(project(":core-data"))
+                api(project(":core-navigation"))
+                api(project(":feature-auth"))
+                api(project(":feature-feed"))
+                api(project(":platform-permission"))
+                api(project(":platform-share"))
                 implementation("com.tencent.kuikly-open:core:2.16.0-2.0.21-ohos")
                 implementation("com.tencent.kuikly-open:core-annotations:2.16.0-2.0.21-ohos")
                 implementation("com.tencent.kuikly-open:compose:2.16.0-2.0.21-ohos")
@@ -33,6 +42,14 @@ kotlin {
             }
         }
     }
+}
+
+ksp {
+    arg(KEY_PAGE_NAME, (project.properties[KEY_PAGE_NAME] as? String) ?: "")
+    arg("moduleId", "app-shared")
+    arg("isMainModule", "true")
+    arg("subModules", "feature_auth&feature_feed")
+    arg("enableMultiModule", "true")
 }
 
 dependencies {

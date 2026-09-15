@@ -32,6 +32,7 @@ include(":h5App")
 
 include(":core-navigation")
 include(":core-data")
+include(":core-pager")
 include(":platform-permission")
 include(":platform-share")
 include(":feature-auth")
