@@ -78,3 +78,6 @@ buildSrc/.gradle/
 .aider-desk/
 .claude/skills/
 .windsurf/
+# skill 运行时 git clone 的 KuiklyUI 参考库（约数百 MB，含嵌套 .git，勿入库）
+.agents/skills/**/references/KuiklyUI/
+.agents/skills/**/scripts/.last-update
