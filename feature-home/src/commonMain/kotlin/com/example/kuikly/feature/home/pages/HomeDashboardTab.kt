@@ -52,7 +52,8 @@ import com.tencent.kuikly.compose.ui.unit.sp
  * - 静态文案镜像 `home/repository/home_repository.dart`（Mock seed 的 store/features/…）。
  * - Mock 无图片加载器：所有 `CacheImageUtils` 位统一渲染为 **Flutter golden 里的未加载占位**
  *   （灰底圆角块 + 蓝色圆环），因此与 Flutter 参考图（图片未落地）一致。
- * - Banner 位用 `#007AFF → 灰` 水平渐变近似 Flutter 的「网络图 + 蓝色蒙层」（无图片层）。
+ * - P2-S2f：Banner 与两处格栅改为「按 Flutter-ref 实测均值合成的色阶/色块」，
+ *   不再走「surface + accent 蒙层」的亮蓝近似（详见 Executor Report 的无图天花板说明）。
  */
 
 /** `HomeDashboardTheme` 令牌镜像。 */
@@ -70,6 +71,50 @@ private object HomePalette {
     val radiusMdDesign = 12
     val radiusLgDesign = 14
 }
+
+/**
+ * Banner 无位图近似色阶（P2-S2f）。
+ *
+ * Flutter `HomeBannerSection` = `picsum.photos/seed/banner` 风景图 + 黑 0.25 darken
+ * + accent 0.55→透明 左蒙层；Kuikly Mock 无图片加载器，故按 02b Flutter-ref
+ * 实测均值合成「左缘钢蓝 → 右侧暖灰暗部」的横向风景渐变（等距 8 色）。
+ */
+private val HOME_BANNER_SCENE = listOf(
+    Color(0xFF356FB1),
+    Color(0xFF5479A6),
+    Color(0xFF6E83A0),
+    Color(0xFF6D7788),
+    Color(0xFF6B6B78),
+    Color(0xFF6A6267),
+    Color(0xFF545353),
+    Color(0xFF474445),
+)
+
+/** 竖向暗带：近似风景图下半部的下沉地平线（上半透明 → 3/4 处压暗 → 底部微抬）。 */
+private val HOME_BANNER_DEPTH = listOf(
+    Color.Transparent,
+    Color.Transparent,
+    Color(0x0D000000),
+    Color(0x4D000000),
+    Color(0x24000000),
+)
+
+/**
+ * 格栅无图占位色：02b Flutter-ref 功能格栅 10 格实测均值（无位图，仅色块）。
+ * 服务推荐格栅在 02b 视口之外，沿用同组色阶循环。
+ */
+private val HOME_TILE_TONES = listOf(
+    Color(0xFF86BDDE), // 销售顾问
+    Color(0xFF616F73), // 生活服务
+    Color(0xFF45362A), // 二手车
+    Color(0xFFC6C445), // 新车关注
+    Color(0xFF878081), // 客户管理
+    Color(0xFF523E2A), // 订单中心
+    Color(0xFFFAE4C1), // 数据分析
+    Color(0xFFAEB3B7), // 直播带货
+    Color(0xFFDDDEDD), // 营销活动
+    Color(0xFF4F5D65), // 更多
+)
 
 private data class HomeQuickAction(val title: String, val subtitle: String, val actionLabel: String)
 private data class HomeMetric(val value: String, val label: String)
@@ -219,16 +264,23 @@ private fun openUsedCar() {
     }
 }
 
-/** 未加载图片占位：灰底圆角块 + 蓝色圆环（对齐 Flutter golden 的 loading 态）。 */
+/**
+ * 未加载图片占位：灰底圆角块 + 蓝色圆环（对齐 Flutter golden 的 loading 态）。
+ *
+ * `tone` 非空时渲染为「已加载色块」（Flutter `CacheImageUtils.network` 成功态），
+ * 不再叠 loading 圆环 —— 用于功能格栅 / 服务推荐格栅的按 index 色调近似。
+ */
 @Composable
-private fun ImagePlaceholder(size: Dp, corner: Dp, ring: Dp) {
+private fun ImagePlaceholder(size: Dp, corner: Dp, ring: Dp, tone: Color? = null) {
     Box(
         modifier = Modifier
             .size(size)
-            .background(HomePalette.fillSecondary, RoundedCornerShape(corner)),
+            .background(tone ?: HomePalette.fillSecondary, RoundedCornerShape(corner)),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(ring).border(2.su, HomePalette.accent, CircleShape))
+        if (tone == null) {
+            Box(Modifier.size(ring).border(2.su, HomePalette.accent, CircleShape))
+        }
     }
 }
 
@@ -419,7 +471,7 @@ private fun HomeDashboardSections() {
     }
 }
 
-/** Flutter `HomeBannerSection`：surface 底 + accent 0.55→透明 渐变蒙层 + 16/4 阴影。 */
+/** Flutter `HomeBannerSection`：暗色风景近似底 + 竖向下沉暗带 + 16/4 阴影。 */
 @Composable
 private fun HomeBanner() {
     val bannerShape = RoundedCornerShape(HomePalette.radiusMdDesign.su)
@@ -430,18 +482,13 @@ private fun HomeBanner() {
             .padding(start = 16.su, end = 16.su, top = 16.su)
             .height(132.su)
             .shadow(8.dp, bannerShape, ambientColor = shadowColor, spotColor = shadowColor)
-            .background(HomePalette.surface, bannerShape)
+            .background(Brush.horizontalGradient(HOME_BANNER_SCENE), bannerShape)
             .clickable { toast("「朋友圈营销」即将接入") },
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(HomePalette.accent.copy(alpha = 0.55f), Color.Transparent),
-                    ),
-                    bannerShape,
-                ),
+                .background(Brush.verticalGradient(HOME_BANNER_DEPTH), bannerShape),
         )
         Column(modifier = Modifier.padding(start = 20.su, top = 24.su)) {
             Text(

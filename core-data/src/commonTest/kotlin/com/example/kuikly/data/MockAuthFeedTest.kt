@@ -57,7 +57,8 @@ class MockAuthFeedTest {
     @Test
     fun otp_login_success() {
         val user = auth.loginWithOtp(FakeAuthRepository.MOCK_PHONE, FakeAuthRepository.MOCK_OTP).getOrThrow()
-        assertEquals(FakeAuthRepository.MOCK_PHONE, user.name)
+        assertEquals(FakeAuthRepository.DISPLAY_ID_PREFIX + FakeAuthRepository.MOCK_PHONE, user.name)
+        assertEquals("u_otp", user.id)
         assertTrue(auth.isLoggedIn())
     }
 

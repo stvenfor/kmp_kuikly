@@ -20,6 +20,7 @@ HOST="${FLUTTER_LINK_HOST:-xiaomaomain.com}"
 SCHEME="${FLUTTER_LINK_SCHEME:-xiaomao}"
 CAPTURE_SET="${CAPTURE_SET:-all}"
 UPDATE=0
+CHAT_DETAIL_OK=1
 # Test OTP account (USAGE_GUIDE): works with Mock or Go dev bypass.
 FLUTTER_TEST_PHONE="${FLUTTER_TEST_PHONE:-13400000000}"
 FLUTTER_TEST_OTP="${FLUTTER_TEST_OTP:-123456}"
@@ -47,6 +48,14 @@ shot() {
   local name="$1"
   adb -s "$SERIAL" exec-out screencap -p > "$OUT/${name}.png"
   log "wrote $OUT/${name}.png"
+}
+
+# Screencap → OUT/<name>.png, echo the PNG byte size (used to gate flaky captures).
+# Must stay log-free: callers capture stdout.
+shot_size() {
+  local name="$1"
+  adb -s "$SERIAL" exec-out screencap -p > "$OUT/${name}.png"
+  wc -c < "$OUT/${name}.png" | tr -d " "
 }
 
 # Cold start / settle then screencap.
@@ -87,6 +96,71 @@ ensure_main_then_deeplink() {
   adb -s "$SERIAL" shell am start -n "$BUNDLE/$ACTIVITY" >/dev/null
   sleep 5
   deeplink_and_shot "$name" "$url" "$settle"
+}
+
+# Harden 12-flutter-chat-detail: cold-start to Main, open the Chat tab, tap the
+# first conversation row. The custom-scheme deeplink was flaky (R1c captured the
+# used-car page / a splash instead of a chat).
+# Returns 0 only when the shot is both plausibly settled (size gate) AND shows a
+# bottom input bar; otherwise the caller falls back to the deeplink.
+chat_detail_via_tap() {
+  local name="$1"
+  local settle="${2:-6}"
+  # 120000 rejected a valid chat UI at 119629; 100000 still above splash/usedcar blanks (~60KB).
+  local min_bytes="${CHAT_DETAIL_MIN_BYTES:-100000}"
+  local i sz w h
+  adb -s "$SERIAL" shell am force-stop "$BUNDLE" >/dev/null 2>&1 || true
+  sleep 0.4
+  adb -s "$SERIAL" shell am start -n "$BUNDLE/$ACTIVITY" >/dev/null
+  # poll past splash (~60KB) before touching the tab bar
+  for i in $(seq 1 12); do
+    sleep 2
+    sz=$(shot_size "_probe-main")
+    [[ "$sz" -gt 120000 ]] && break
+  done
+  read -r w h < <(wm_size)
+  # Chat tab (order: Home, Chat, Community, Mine) — same math as 11-flutter-main-chat.
+  adb -s "$SERIAL" shell input tap $(( w * 3 / 8 )) $(( h - 120 ))
+  sleep 3
+  # A cold start can drop the session, and the Chat tab is auth-gated: log in
+  # again if the login screen is what came up, then re-open the Chat tab.
+  if ui_center "短信登录" >/dev/null 2>&1; then
+    log "12-chat-detail: chat tab hit the auth gate — logging in"
+    flutter_sms_login
+    sleep 2
+    adb -s "$SERIAL" shell input tap $(( w * 3 / 8 )) $(( h - 120 ))
+    sleep 3
+  fi
+  # A VIP-purchase interstitial (确认开通 / 立即开通 / SVIP) hijacked a prior
+  # logged-in run and got four tab stems locked to the same wrong page; dismiss
+  # it if it is on top, then re-open Chat tab to recover (harden intact).
+  if dismiss_paywall_if_present; then
+    log "12-chat-detail: paywall dismissed — re-open Chat tab"
+    adb -s "$SERIAL" shell input tap $(( w * 3 / 8 )) $(( h - 120 ))
+    sleep 3
+  fi
+  # First conversation row: full-bleed list with 16dp side padding; the row band
+  # sits ~14% down (status bar 144px + header 168px + list top 21px + half of the
+  # 199px row ≈ 433px on 1440x3120), so center-x / 14% H lands inside row 1.
+  log "12-chat-detail: tap first conversation row @ $(( w / 2 )),$(( h * 14 / 100 ))"
+  adb -s "$SERIAL" shell input tap $(( w / 2 )) $(( h * 14 / 100 ))
+  sleep "$settle"
+  sz=$(shot_size "$name")
+  if [[ "$sz" -le "$min_bytes" ]]; then
+    sleep 4
+    sz=$(shot_size "$name")
+  fi
+  log "12-chat-detail: shot size=$sz (gate $min_bytes)"
+  if [[ "$sz" -le "$min_bytes" ]]; then
+    log "12-chat-detail: size gate FAILED"
+    return 1
+  fi
+  if has_bottom_text_field "$h"; then
+    log "12-chat-detail: input bar present"
+    return 0
+  fi
+  log "12-chat-detail: no bottom input bar — likely wrong page"
+  return 1
 }
 
 want() {
@@ -156,6 +230,29 @@ tap_text() {
   adb -s "$SERIAL" shell input tap $xy
 }
 
+# True if the UI dump has an EditText in the bottom third of the screen — i.e. the
+# chat-detail input bar. The chat list has no TextField at all, so this tells the
+# two screens apart and stops a wrongly-captured list page from passing the gate.
+has_bottom_text_field() {
+  local height="$1"
+  local dump="/tmp/flutter-chat-detail.xml"
+  adb -s "$SERIAL" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
+  adb -s "$SERIAL" pull /sdcard/ui.xml "$dump" >/dev/null 2>&1 || return 1
+  python3 - "$dump" "$height" <<'PY'
+import re, sys
+xml = open(sys.argv[1], encoding="utf-8", errors="ignore").read()
+limit = int(sys.argv[2]) * 2 // 3
+for node in re.finditer(r"<node\b[^>]*>", xml):
+    s = node.group(0)
+    if "EditText" not in s:
+        continue
+    b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', s)
+    if b and int(b.group(2)) > limit:
+        sys.exit(0)
+sys.exit(1)
+PY
+}
+
 # Type digits via keyevents — `adb input text` drops a leading '1' on this emulator/IME.
 type_digits() {
   local s="$1" i c
@@ -215,6 +312,44 @@ PY
   sleep 0.5
   tap_text "登录" || true
   sleep 5
+}
+
+# Dismiss VIP / paywall interstitial that surfaces after SMS auth (S1a2 + S2c).
+# Detection needles are evidenced in Flutter source:
+#   - "立即开通" : features/home/lib/home/view/home_learning_report_page.dart
+#   - "SVIP"     : features/pay/lib/membership/widgets/membership_tier_tabs.dart
+#                  + features/classroom/lib/data/classroom_mock_data.dart
+#   - "确认开通" : prior capture (line 136 of this script before S2c refactor)
+# Dismiss preference: in-page close / cancel / skip tap → BACK keyevent.
+# Never purchase. Logs which action won.
+# Returns 0 when paywall was detected and acted on; 1 when not present.
+dismiss_paywall_if_present() {
+  local needles=("确认开通" "立即开通" "SVIP")
+  local close_words=("关闭" "取消" "跳过" "稍后" "再想想")
+  local matched="" word dismiss_action="none" n
+  for n in "${needles[@]}"; do
+    if ui_center "$n" >/dev/null 2>&1; then
+      matched="$n"
+      break
+    fi
+  done
+  if [[ -z "$matched" ]]; then
+    log "paywall: not detected"
+    return 1
+  fi
+  log "paywall: detected ($matched) — dismissing"
+  for word in "${close_words[@]}"; do
+    if tap_text "$word" >/dev/null 2>&1; then
+      dismiss_action="tap:$word"
+      break
+    fi
+  done
+  if [[ "$dismiss_action" == "none" ]]; then
+    adb -s "$SERIAL" shell input keyevent 4 >/dev/null
+    dismiss_action="keyevent:BACK"
+  fi
+  log "paywall: dismissed via $dismiss_action"
+  return 0
 }
 
 if want wave1; then
@@ -287,6 +422,9 @@ if want loggedin; then
   sleep 3
   shot "07-flutter-login"
   flutter_sms_login
+  # SVIP / 确认开通 / 立即开通 often hijacks the post-login landing; dismiss before
+  # tab stems lock to the wrong page (S2c).
+  dismiss_paywall_if_present || true
   # After login, Chat tab content should be visible.
   sleep 2
   shot "11-flutter-main-chat"
@@ -308,12 +446,42 @@ if want loggedin; then
   # UsedCar after session (success/list more likely)
   ensure_main_then_deeplink "04-flutter-usedcar-list" "home/used_car" 8
   ensure_main_then_deeplink "10-flutter-search" "home/search" 5
-  # Chat detail deep-link (session required)
-  ensure_main_then_deeplink "12-flutter-chat-detail" "chat/detail?peerName=MockUser" 5
+  # Chat detail: UI-tap path first; the custom-scheme deeplink is fallback only.
+  # Never lock an unreliable 12-flutter-chat-detail into baseline (Soft Gate).
+  CHAT_DETAIL_OK=0
+  if chat_detail_via_tap "12-flutter-chat-detail" 8; then
+    log "12-chat-detail: WON via UI tap"
+    CHAT_DETAIL_OK=1
+  else
+    log "12-chat-detail: UI tap unusable → deeplink fallback"
+    ensure_main_then_deeplink "12-flutter-chat-detail" "chat/detail?peerName=MockUser" 6
+    read -r _w fh < <(wm_size)
+    dsz=$(wc -c < "$OUT/12-flutter-chat-detail.png" | tr -d ' ')
+    log "12-chat-detail: deeplink shot size=$dsz"
+    if [[ "$dsz" -gt "${CHAT_DETAIL_MIN_BYTES:-100000}" ]] && has_bottom_text_field "$fh"; then
+      log "12-chat-detail: deeplink input bar present"
+      CHAT_DETAIL_OK=1
+    else
+      log "12-chat-detail: deeplink UNRELIABLE — skip baseline lock for this stem"
+      rm -f "$OUT/12-flutter-chat-detail.png"
+    fi
+  fi
 fi
 
 if [[ "$UPDATE" -eq 1 ]]; then
-  cp -f "$OUT"/*.png "$BASE/"
+  # Copy actual→baseline, but do not clobber a prior good 12 with a missing/unreliable shot.
+  shopt -s nullglob
+  for f in "$OUT"/*.png; do
+    bn=$(basename "$f")
+    if [[ "$bn" == "12-flutter-chat-detail.png" && ! -f "$f" ]]; then
+      continue
+    fi
+    if [[ "$bn" == "12-flutter-chat-detail.png" && "${CHAT_DETAIL_OK:-0}" -ne 1 ]]; then
+      log "skip locking unreliable $bn (keep prior baseline if any)"
+      continue
+    fi
+    cp -f "$f" "$BASE/$bn"
+  done
   log "baselines locked under goldens/flutter-ref/baseline/"
 fi
 log "actuals in $OUT (CAPTURE_SET=$CAPTURE_SET)"

@@ -42,17 +42,19 @@ class MineRepositoryTest {
             phone = FakeAuthRepository.MOCK_PHONE,
             code = FakeAuthRepository.MOCK_OTP,
         ).getOrThrow()
-        assertEquals(FakeAuthRepository.MOCK_PHONE, user.name)
+        assertEquals(FakeAuthRepository.DISPLAY_ID_PREFIX + FakeAuthRepository.MOCK_PHONE, user.name)
 
         val profile = mine.profile().getOrThrow()
 
         assertFalse(profile.isGuest)
-        assertEquals(FakeAuthRepository.MOCK_PHONE, profile.displayName)
+        assertEquals(FakeAuthRepository.DISPLAY_ID_PREFIX + FakeAuthRepository.MOCK_PHONE, profile.displayName)
         assertEquals(FakeMineRepository.ROLE_BADGE, profile.roleBadge)
         assertEquals(FakeMineRepository.STORE_LINE, profile.storeLine)
         assertNotNull(profile.maskedPhone)
-        assertTrue(profile.maskedPhone!!.contains("****"))
+        // maskedPhone must still strip the `dev-` prefix and mask the digits only.
+        assertEquals("134****0000", profile.maskedPhone)
         assertFalse(profile.maskedPhone!!.contains(FakeAuthRepository.MOCK_PHONE))
+        assertFalse(profile.maskedPhone!!.contains(FakeAuthRepository.DISPLAY_ID_PREFIX))
         assertEquals(FakeMineRepository.LOGGED_IN_CUSTOMER_COUNT, profile.stats.customerCount)
         assertEquals(FakeMineRepository.LOGGED_IN_ORDER_COUNT, profile.stats.orderCount)
         assertEquals(FakeMineRepository.LOGGED_IN_FOLLOW_UP_COUNT, profile.stats.followUpCount)

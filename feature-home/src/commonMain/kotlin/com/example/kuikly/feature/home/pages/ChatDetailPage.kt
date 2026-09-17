@@ -60,6 +60,14 @@ private object ChatDetailTokens {
 
     /** `ChatTheme.body` / `selfBubbleText` / `peerBubbleText` 的 `height: 1.35` × 17 = 22.95 ≈ 23。 */
     const val BUBBLE_LINE_HEIGHT = 23f
+
+    /** Flutter `MessageBubble` 在气泡与 caption 之间的 `SizedBox(height: 4)`。 */
+    const val READ_STATUS_GAP = 4f
+
+    /** Flutter `ChatTheme.caption.copyWith(fontSize: 11)`（`height: 1.3` × 11 = 14.3 ≈ 14）。 */
+    const val READ_STATUS_FONT = 11f
+
+    const val READ_STATUS_LINE_HEIGHT = 14f
 }
 
 /**
@@ -198,9 +206,14 @@ private fun ChatDetailHeader(conversation: Conversation?, topInset: Float) {
 
 /**
  * Flutter `MessageBubble`（text 分支）：h12 v4 外边距 + 32 头像 + 8 间隙 +
- * 气泡（self `#007AFF` / peer `#E9E9EB`，r18 + 尾角 4）+ 17sp 正文。
+ * 气泡（self `#007AFF` / peer `#E9E9EB`，r18 + 尾角 4）+ 17sp 正文 + 4 间隙 + 11sp 已读态。
  *
- * 宽度：Flutter 用 `Flexible` 兜底（内容撑到屏宽 − 64），[maxWidth] 由调用方按页面宽度算好传入。
+ * 宽度：Flutter 用 `Flexible` 兜底（内容撑到屏宽 − 64），[maxWidth] 由调用方按页面宽度算好传入；
+ * 该约束套在 `Column`（气泡 + caption）上，与 Flutter `Flexible(child: Column(...))` 同构。
+ *
+ * caption 文案取 `ChatMessage.readStatus`（Flutter `controller.readStatusLabel(current)`）；
+ * 着色固定 `labelSecondary`——Flutter 仅 `sendStatus == failed` 时改 `unreadBadge`，
+ * 而 mock 无发送态，故不引入该分支。
  */
 @Composable
 private fun MessageBubble(message: ChatMessage, maxWidth: Float) {
@@ -215,27 +228,41 @@ private fun MessageBubble(message: ChatMessage, maxWidth: Float) {
             BubbleAvatar(initial = "友", self = false)
             Spacer(Modifier.width(8.dp))
         }
-        Text(
-            message.content,
-            fontSize = 17.sp,
-            // Flutter `ChatTheme.body/selfBubbleText/peerBubbleText` 显式 `height: 1.35`。
-            lineHeight = ChatDetailTokens.BUBBLE_LINE_HEIGHT.sp,
-            color = if (message.isSelf) Color.White else ChatPalette.labelPrimary,
+        Column(
             modifier = Modifier
                 // Flutter `Flexible` 上限 = 屏宽 −（h12×2 + 头像 32 + 间隙 8）。
-                .widthIn(max = maxWidth.dp)
-                .background(
-                    if (message.isSelf) ChatPalette.accent else ChatPalette.fillSecondary,
-                    // Flutter `ChatTheme.bubbleRadiusFor`：顶角 18，尾角（对侧）4。
-                    RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (message.isSelf) 18.dp else 4.dp,
-                        bottomEnd = if (message.isSelf) 4.dp else 18.dp,
-                    ),
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-        )
+                .widthIn(max = maxWidth.dp),
+            // Flutter `Column(crossAxisAlignment: isSelf ? end : start)`：caption 贴气泡同侧。
+            horizontalAlignment = if (message.isSelf) Alignment.End else Alignment.Start,
+        ) {
+            Text(
+                message.content,
+                fontSize = 17.sp,
+                // Flutter `ChatTheme.body/selfBubbleText/peerBubbleText` 显式 `height: 1.35`。
+                lineHeight = ChatDetailTokens.BUBBLE_LINE_HEIGHT.sp,
+                color = if (message.isSelf) Color.White else ChatPalette.labelPrimary,
+                modifier = Modifier
+                    .background(
+                        if (message.isSelf) ChatPalette.accent else ChatPalette.fillSecondary,
+                        // Flutter `ChatTheme.bubbleRadiusFor`：顶角 18，尾角（对侧）4。
+                        RoundedCornerShape(
+                            topStart = 18.dp,
+                            topEnd = 18.dp,
+                            bottomStart = if (message.isSelf) 18.dp else 4.dp,
+                            bottomEnd = if (message.isSelf) 4.dp else 18.dp,
+                        ),
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            )
+            Spacer(Modifier.height(ChatDetailTokens.READ_STATUS_GAP.dp))
+            // Flutter `ChatTheme.caption.copyWith(fontSize: 11, color: labelSecondary)`。
+            Text(
+                message.readStatus,
+                fontSize = ChatDetailTokens.READ_STATUS_FONT.sp,
+                lineHeight = ChatDetailTokens.READ_STATUS_LINE_HEIGHT.sp,
+                color = ChatPalette.labelSecondary,
+            )
+        }
         if (message.isSelf) {
             Spacer(Modifier.width(8.dp))
             BubbleAvatar(initial = "我", self = true)

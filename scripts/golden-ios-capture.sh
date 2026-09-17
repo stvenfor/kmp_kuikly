@@ -65,11 +65,13 @@ capture_page() {
 }
 
 # App must already be installed (./scripts/run-ios.sh once).
+# Settle defaults raised for Phase-2 Cross-Source parity with
+# golden-android-capture.sh (3s reads were under-settled → blank frames).
 capture_page "Splash" "01-splash" 3
-capture_page "Main" "02-main-home" 3
-capture_page "Login" "03-login" 3
-capture_page "UsedCarList" "04-usedcar-list" 3
-capture_page "UsedCarDetail" "05-usedcar-detail" 3
+capture_page "Main" "02-main-home" 4
+capture_page "Login" "03-login" 4
+capture_page "UsedCarList" "04-usedcar-list" 4
+capture_page "UsedCarDetail" "05-usedcar-detail" 4 '{"id":"1"}'
 # Me tab + Settings (Slice-02). Guest vs logged-in primed via pageData
 # (MainPage reads tab=Me / mockLogin=1); each capture terminates first,
 # so 06 is always guest (fresh process) and 07 always logged-in.
@@ -80,14 +82,15 @@ capture_page "Settings" "08-settings" 3
 capture_page "Login" "09-login-password" 3 '{"mode":"password"}'
 # SearchPage (Slice-04). Deep-linked by pageName; reads no pageData.
 # 02-main-home now includes the search chrome (Home SearchBar) — re-lock on device gates.
-capture_page "Search" "10-search" 3
+capture_page "Search" "10-search" 4
 
 
-# Slice-05/06 Chat + Community
-capture_page "Main" "11-main-chat" 3 '{"tab":"Chat"}'
-capture_page "ChatDetail" "12-chat-detail" 3 '{"id":"1"}'
-capture_page "Main" "13-main-community" 3 '{"tab":"Community"}'
-capture_page "PostDetail" "14-post-detail" 3 '{"id":"1"}'
+# Slice-05/06 Chat + Community. mockLogin=1 to match golden-android-capture.sh —
+# without it the logged-out Chat/Community state self-locks as a wrong baseline.
+capture_page "Main" "11-main-chat" 4 '{"tab":"Chat","mockLogin":"1"}'
+capture_page "ChatDetail" "12-chat-detail" 4 '{"id":"1"}'
+capture_page "Main" "13-main-community" 4 '{"tab":"Community","mockLogin":"1"}'
+capture_page "PostDetail" "14-post-detail" 4 '{"id":"1"}'
 
 # Slice-07 Music + Slice-08 Video
 capture_page "MusicList" "15-music-list" 3

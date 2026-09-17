@@ -19,6 +19,12 @@ data class ChatMessage(
     val conversationId: String,
     val content: String,
     val isSelf: Boolean,
+    /**
+     * Mirrors Flutter `MessageReadStatus` (read/unread) as its rendered caption.
+     * Flutter seeds both conversation-1 messages as `read`, which the detail
+     * page renders as 「已读」 under the self bubble.
+     */
+    val readStatus: String = "已读",
 )
 
 interface ChatRepository {
@@ -39,9 +45,10 @@ class FakeChatRepository : ChatRepository {
 
     private val messagesByConversation = mapOf(
         "1" to listOf(
-            ChatMessage("m_1_1", "1", "你好，在吗？", isSelf = false),
-            ChatMessage("m_1_2", "1", "在的，有什么事？", isSelf = true),
-            ChatMessage("m_1_3", "1", "晚上一起吃饭吗？", isSelf = false),
+            // Flutter seed (mock_im_chat_store `_ensureSeed`, i == 0): exactly two
+            // messages, peer → self, both read.
+            ChatMessage("m_1_1", "1", "你好，在吗？", isSelf = false, readStatus = "已读"),
+            ChatMessage("m_1_2", "1", "在的，有什么事？", isSelf = true, readStatus = "已读"),
         ),
         "2" to listOf(
             ChatMessage("m_2_1", "2", "你好", isSelf = false),

@@ -107,7 +107,12 @@ internal class MainPage : BaseComposePager() {
         }
         refreshMusicPlayback()
         // ponytail: golden priming — homeTopTab / homeGreeting 复现 Flutter 参考图里
-        // 视频 / Club tab 与问候语状态（Flutter 问候语按小时算，默认取参考图锁定的「早上好」）。
+        // 视频 / Club tab 与问候语状态。Logged-in 名字取 MineStore.displayName
+        // （FakeAuthRepository.loginWithOtp 在 mock OTP 登录后写入 `dev-{phone}`，
+        // 与 Flutter `backendUser.username ?? email.split('@').first` 风格一致）；
+        // guest 不变，沿用 `访客`。TOD 默认取 02b 捕获的「早上好」；
+        // 捕获脚本可传 homeGreetingHour=14 锁「下午好」，对齐 Flutter
+        // `hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'`。
         val homeTopTab = params.optString("homeTopTab").toIntOrNull() ?: 0
         val greeting = params.optString("homeGreeting").ifEmpty {
             val name = if (AuthSession.repo.isLoggedIn()) {
@@ -115,7 +120,14 @@ internal class MainPage : BaseComposePager() {
             } else {
                 "访客"
             }
-            "早上好，$name"
+            val period = params.optString("homeGreetingHour").toIntOrNull()?.let { hour ->
+                when {
+                    hour < 12 -> "早上好"
+                    hour < 18 -> "下午好"
+                    else -> "晚上好"
+                }
+            } ?: "早上好"
+            "$period，$name"
         }
         val statusBarHeight = statusBarInset()
         val bottomInset = bottomSafeInset()

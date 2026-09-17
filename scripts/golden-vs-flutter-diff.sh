@@ -29,8 +29,11 @@ MAP=(
   "04-usedcar-list=04-flutter-usedcar-list"
   "11-main-chat=11-flutter-main-chat"
   "13-main-community=13-flutter-main-community"
+  "12-chat-detail=12-flutter-chat-detail"
 )
-# Chat detail deferred until Flutter-ref settles (deeplink/UI tap flaky on session).
+# 02b home logged-in deferred: Flutter-ref is photo-dense (~973KB) vs Kuikly glyph/solid
+# placeholders (~208KB) → RMSE≈0.25 under no-image-SDK ceiling. Re-add when assets land.
+# Soft Gate S1: chat-detail Flutter-ref via UI-tap harden (P2-S1a).
 
 
 MAGICK_BIN=""

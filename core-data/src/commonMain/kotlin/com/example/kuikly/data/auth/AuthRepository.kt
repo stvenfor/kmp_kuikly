@@ -41,7 +41,9 @@ class FakeAuthRepository : AuthRepository {
         if (code.trim() != MOCK_OTP) {
             return Result.failure(IllegalArgumentException("验证码错误"))
         }
-        val user = User(id = "u_otp", name = digits)
+        // Flutter mock uses `dev-` + test phone as logged-in display id; UI now
+        // binds MineProfile.displayName from this name verbatim.
+        val user = User(id = "u_otp", name = DISPLAY_ID_PREFIX + digits)
         session = user
         return Result.success(user)
     }
@@ -53,6 +55,8 @@ class FakeAuthRepository : AuthRepository {
     companion object {
         const val MOCK_PHONE = "13400000000"
         const val MOCK_OTP = "123456"
+        /** Prefix for the mock logged-in display id (e.g. `dev-13400000000`). */
+        const val DISPLAY_ID_PREFIX = "dev-"
     }
 }
 

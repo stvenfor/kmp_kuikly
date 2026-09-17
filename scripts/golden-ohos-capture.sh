@@ -71,11 +71,13 @@ capture_page() {
   fi
 }
 
+# Settle waits aligned with golden-android-capture.sh Phase-2 (under-settled ≈85KB blanks
+# were captured as launcher/splash frames). Never lower these below the Android values.
 capture_page "Splash" "01-splash" 4
 capture_page "Main" "02-main-home" 4
 capture_page "Login" "03-login" 3
-capture_page "UsedCarList" "04-usedcar-list" 3
-capture_page "UsedCarDetail" "05-usedcar-detail" 3
+capture_page "UsedCarList" "04-usedcar-list" 4
+capture_page "UsedCarDetail" "05-usedcar-detail" 3 '{"id":"1"}'
 # Me tab + Settings (Slice-02). Guest vs logged-in primed via pageData
 # (MainPage reads tab=Me / mockLogin=1); each capture force-stops first,
 # so 06 is always guest (fresh process) and 07 always logged-in.
@@ -90,10 +92,11 @@ capture_page "Login" "09-login-password" 3 '{"mode":"password"}'
 capture_page "Search" "10-search" 3
 
 
-# Slice-05/06 Chat + Community
-capture_page "Main" "11-main-chat" 3 '{"tab":"Chat"}'
+# Slice-05/06 Chat + Community (settle raised to Android Phase-2; mockLogin=1 priming
+# matches golden-android-capture.sh — guest state would self-lock the wrong baseline)
+capture_page "Main" "11-main-chat" 4 '{"tab":"Chat","mockLogin":"1"}'
 capture_page "ChatDetail" "12-chat-detail" 3 '{"id":"1"}'
-capture_page "Main" "13-main-community" 3 '{"tab":"Community"}'
+capture_page "Main" "13-main-community" 4 '{"tab":"Community","mockLogin":"1"}'
 capture_page "PostDetail" "14-post-detail" 3 '{"id":"1"}'
 
 # Slice-07 Music + Slice-08 Video
