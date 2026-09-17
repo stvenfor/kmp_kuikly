@@ -15,6 +15,7 @@ import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
+import com.tencent.kuikly.compose.foundation.layout.aspectRatio
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.foundation.layout.Row
@@ -26,7 +27,7 @@ import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
-import com.tencent.kuikly.compose.foundation.lazy.items
+import com.tencent.kuikly.compose.foundation.lazy.itemsIndexed
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.ui.Alignment
@@ -67,6 +68,26 @@ internal object CommunityPalette {
 
     /** Flutter `RichTextContentWidget._linkColor / _tagColor`（#话题 · @用户 · 链接共用）。 */
     val richLink = Color(0xFF576B95)
+
+    /**
+     * Flutter `CommentPreviewWidget` 的底色：`colorScheme.surfaceContainerHighest` @50%，
+     * 实测 golden `13-flutter-main-community.png` = `#F1F1F4`。
+     */
+    val commentFill = Color(0xFFF1F1F4)
+
+    /** Flutter `colorScheme.onSurface`（评论正文），实测 `#1A1B20`。 */
+    val onSurface = Color(0xFF1A1B20)
+
+    /**
+     * 媒体**占位色**（**无图片/视频 SDK** —— 见 Executor Report ceiling）。
+     *
+     * 取 Flutter-ref `13-flutter-main-community.png` 对应区域的**均值**：
+     * 视频封 = `#B2AA9E`（暖灰），左 tile = `#738A94`（冷灰），右 tile = `#5B4B3A`（暖棕）。
+     * 同一均值对纯色块替代误差最小（均方误差下，最优常数估计 = 区域均值）。
+     */
+    val mediaVideoCover = Color(0xFFB2AA9E)
+    val mediaImageTile1 = Color(0xFF738A94)
+    val mediaImageTile2 = Color(0xFF5B4B3A)
 
     const val RADIUS_MD = 12f
 }
@@ -109,9 +130,9 @@ internal fun CommunityTab(statusBarHeight: Float) {
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp),
                 ) {
-                    items(posts, key = { it.id }) { post ->
+                    itemsIndexed(posts, key = { _, post -> post.id }) { index, post ->
                         Box(modifier = Modifier.padding(bottom = 12.dp)) {
-                            PostCard(post = post)
+                            PostCard(post = post, index = index)
                         }
                     }
                 }
@@ -216,10 +237,13 @@ private fun CommunityHeader(
 
 /**
  * Flutter `PostCardWidget`：groupedCard（surface r12 + 0.5 边）内
- * 用户行（44 头像 + headline）+ 标题/正文 + 点赞条（20 图标 + 13 文案，间隔 24）。
+ * 用户行（44 头像 + headline/发布时间）+ 正文 + 媒体 + 点赞条 + 评论预览。
+ *
+ * `index` 只用于**占位派生**（`Post` 缺 images/videoUrl/publishTime/isLiked/previewComments
+ * —— 见文件末尾 `placeholder*` 说明），不参与业务逻辑。
  */
 @Composable
-private fun PostCard(post: Post) {
+private fun PostCard(post: Post, index: Int) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -260,10 +284,10 @@ private fun PostCard(post: Post) {
                     color = CommunityPalette.labelPrimary,
                 )
                 Spacer(Modifier.height(2.dp))
-                // Flutter `'{formatPublishTime} · {source}'`（caption 13）—— mock 无该字段，
-                // 用「点赞 N · 评论 M」保持次级信息行密度。
+                // Flutter `'{formatPublishTime} · {source}'`（caption 13）。`Post` 缺 publishTime /
+                // source 字段 → 按 Flutter mock seed 同规则派生（见文件末尾 `placeholderPublishMeta`）。
                 Text(
-                    "点赞 ${post.likeCount} · 评论 ${post.commentCount}",
+                    placeholderPublishMeta(index),
                     fontSize = 13.sp,
                     color = CommunityPalette.labelSecondary,
                 )
@@ -284,10 +308,20 @@ private fun PostCard(post: Post) {
         // mock `Post` 的 title 即 Flutter content 的首行，故并成一段渲染：保留全部文案，
         // 但去掉 Flutter 不存在的 17 bold 标题（原先每卡多一行粗体 → 卡更高、层级更吵）。
         PostContent(content = post.title + "\n" + post.body)
+        // Flutter `if (post.hasImages) ... [SizedBox(12), ImageGridWidget]` /
+        // `if (post.hasVideo) ... [SizedBox(12), ClipRRect(VideoCardWidget)]`。`Post` 无媒体字段
+        // → 用 ref 均值的**占位色块**顶替（见 Executor Report ceiling）。
+        PostMediaPlaceholder(index = index)
         // Flutter `LikeBarWidget`：♡ / 💬 / ↗（图标 20 + 文案 13，间隔 24，顶部 12）。
         Row(modifier = Modifier.padding(top = 12.dp)) {
-            PostAction(label = if (post.likeCount > 0) post.likeCount.toString() else "赞") {
-                Text("♡", fontSize = 20.sp, color = CommunityPalette.labelSecondary)
+            val liked = placeholderLiked(index)
+            val likeTint = if (liked) CommunityPalette.likeRed else CommunityPalette.labelSecondary
+            // Flutter `heart_fill + likeRed`（已赞）/ `heart + labelSecondary`，文案同色。
+            PostAction(
+                label = if (post.likeCount > 0) post.likeCount.toString() else "赞",
+                color = likeTint,
+            ) {
+                HeartIcon(sizeDp = 20f, tint = likeTint, filled = liked)
             }
             Spacer(Modifier.width(24.dp))
             // Flutter `CupertinoIcons.chat_bubble`（20 / labelSecondary）。原 `💬` 是**全彩 emoji**，
@@ -299,6 +333,11 @@ private fun PostCard(post: Post) {
             PostAction(label = "分享") {
                 Text("↗", fontSize = 20.sp, color = CommunityPalette.labelSecondary)
             }
+        }
+        // Flutter `CommentPreviewWidget`（浅底 r4 / 14sp · 1.35 / 昵称 #576B95 w600 + 正文）。
+        // `Post` 缺 previewComments → 按 `_seedComments` 派生两条占位（见文件末尾说明）。
+        if (post.commentCount > 0) {
+            CommentPreviewPlaceholder(index = index)
         }
     }
 }
@@ -376,9 +415,15 @@ private fun ChatBubbleIcon(sizeDp: Float, tint: Color) {
     }
 }
 
-/** Flutter `_ActionButton`（图标 20 + 4 间隙 + 13 文案 / labelSecondary）。 */
+/**
+ * Flutter `_ActionButton`（图标 20 + 4 间隙 + 13 文案；已赞时 icon 与文案同为 `likeRed`）。
+ */
 @Composable
-private fun PostAction(label: String, icon: @Composable () -> Unit) {
+private fun PostAction(
+    label: String,
+    color: Color = CommunityPalette.labelSecondary,
+    icon: @Composable () -> Unit,
+) {
     Row(
         modifier = Modifier
             .clickable { Utils.currentBridgeModule().toast("「$label」即将接入") }
@@ -387,7 +432,7 @@ private fun PostAction(label: String, icon: @Composable () -> Unit) {
     ) {
         icon()
         Spacer(Modifier.width(4.dp))
-        Text(label, fontSize = 13.sp, color = CommunityPalette.labelSecondary)
+        Text(label, fontSize = 13.sp, color = color)
     }
 }
 
@@ -434,6 +479,199 @@ private fun CommunityError(message: String?) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Text("重试", fontSize = 17.sp, color = Color.White)
+        }
+    }
+}
+
+// ===========================================================================
+// P2-R1a：媒体占位色块 / Canvas 心形 / 评论预览块
+// ===========================================================================
+//
+// **为什么需要 `placeholder*`**：`Post`（`core-data`，本 ticket 锁外、不可改）只有
+// id/author/title/body/likeCount/commentCount，缺 Flutter `PostModel` 的
+// images / videoUrl / publishTime / source / isLiked / previewComments。
+// 为了让跨源 RMSE 不再被"整行结构缺失"主导，这里按 Flutter mock seed
+// （`my_ai_project/features/community/lib/community/repository/mock_post_repository.dart`）
+// 的**同一条规则**派生占位，保证与 Flutter-ref `13-flutter-main-community.png` 的
+// **结构 / 顺序 / 分布**一致（内容本身仍是占位）。真实数据接入后应整体删除本段。
+//
+// 全部为纯函数 / 无副作用。
+
+/** Flutter mock `isVideo = i % 10 == 0` → 本仓 3 条 seed 取 index 0 = 视频。 */
+private enum class CommunityMedia { Video, TwoTiles, SingleTile }
+
+private fun placeholderMedia(index: Int) = when (index % 3) {
+    0 -> CommunityMedia.Video
+    1 -> CommunityMedia.TwoTiles
+    else -> CommunityMedia.SingleTile
+}
+
+/** Flutter mock `isLiked = i % 4 == 0`（→ 首卡已赞，与 ref 一致）。 */
+private fun placeholderLiked(index: Int) = index % 4 == 0
+
+/** Flutter `formatPublishTime` 分桶 + `source`（`i.isEven ? iPhone : Android`）。 */
+private fun placeholderPublishMeta(index: Int): String {
+    val minutes = index * 17 + 7
+    val time = if (minutes < 60) "${minutes}分钟前" else "${minutes / 60}小时前"
+    return "$time · ${if (index % 2 == 0) "来自 iPhone" else "来自 Android"}"
+}
+
+/** Flutter `MockPostRepository._seedComments` 的昵称池 + 文案（每条 2 条 preview）。 */
+private val COMMUNITY_COMMENT_NAMES =
+    listOf("张三", "李四", "王五", "赵六", "小明", "小红", "开发者", "产品经理")
+
+private fun placeholderComments(index: Int): List<Pair<String, String>> {
+    val n = COMMUNITY_COMMENT_NAMES.size
+    val first = COMMUNITY_COMMENT_NAMES[(index + 1) % n]
+    val second = COMMUNITY_COMMENT_NAMES[(index + 3) % n]
+    val replied = COMMUNITY_COMMENT_NAMES[index % n]
+    return listOf(
+        "$first：" to "说得对！",
+        "$second 回复 $replied：" to "同感 +1",
+    )
+}
+
+/**
+ * Flutter `VideoCardWidget`（`AspectRatio 16/9` + `ClipRRect r6` + 居中黑38 圆 + 白 ▶）的占位。
+ *
+ * **无视频 SDK**：封面用 [CommunityPalette.mediaVideoCover] 纯色块（ref 区域均值）。
+ */
+@Composable
+private fun VideoCoverPlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .background(CommunityPalette.mediaVideoCover, RoundedCornerShape(6.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Flutter `Colors.black38` 圆（padding 8 + icon 36 = 52dp）+ 白 `play_arrow`。
+        // 三角形实测 15.6 × 20.2dp；`▶`（U+25B6）在 Android 可能走 emoji → 自绘。
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(Color(0x61000000), RoundedCornerShape(26.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Canvas(modifier = Modifier.width(16.dp).height(20.dp)) {
+                drawPath(
+                    Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(0f, size.height)
+                        lineTo(size.width, size.height / 2f)
+                        close()
+                    },
+                    Color.White,
+                )
+            }
+        }
+    }
+}
+
+/** Flutter `ImageGridWidget` 的占位色块（`_Thumb` r4 / `_SingleImage` r6，`AspectRatio 1`）。 */
+@Composable
+private fun MediaTile(fill: Color, radiusDp: Float, modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .background(fill, RoundedCornerShape(radiusDp.dp)),
+    )
+}
+
+/** Flutter `if (hasImages) [SizedBox(12), ImageGrid]` + `if (hasVideo) [SizedBox(12), Video]`。 */
+@Composable
+private fun PostMediaPlaceholder(index: Int) {
+    when (placeholderMedia(index)) {
+        CommunityMedia.Video -> {
+            Spacer(Modifier.height(12.dp))
+            VideoCoverPlaceholder()
+        }
+        CommunityMedia.TwoTiles -> {
+            Spacer(Modifier.height(12.dp))
+            // Flutter `_RowImages`：等宽 `Expanded AspectRatio(1)`，间隔 4。
+            Row(modifier = Modifier.fillMaxWidth()) {
+                MediaTile(
+                    fill = CommunityPalette.mediaImageTile1,
+                    radiusDp = 4f,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(4.dp))
+                MediaTile(
+                    fill = CommunityPalette.mediaImageTile2,
+                    radiusDp = 4f,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        CommunityMedia.SingleTile -> {
+            Spacer(Modifier.height(12.dp))
+            // Flutter `_SingleImage`：`maxWidth 62% / maxHeight 240`，源图方形。
+            MediaTile(
+                fill = CommunityPalette.mediaImageTile1,
+                radiusDp = 6f,
+                modifier = Modifier.fillMaxWidth(0.62f),
+            )
+        }
+    }
+}
+
+/**
+ * Flutter `CupertinoIcons.heart / heart_fill`（20 / `likeRed`）的 Canvas 近似。
+ *
+ * ponytail: Kuikly 无 icon font；`♥`（U+2665）/ `❤`（U+2764）在 Android 上会走 emoji
+ * 呈现，与社区页灰阶 chrome 冲突（同 `💬` 的 P2-V2c 判定）—— 自绘两瓣 + 尖。
+ */
+@Composable
+private fun HeartIcon(sizeDp: Float, tint: Color, filled: Boolean) {
+    Canvas(modifier = Modifier.size(sizeDp.dp)) {
+        val w = size.width
+        val h = size.height
+        val heart = Path().apply {
+            moveTo(w * 0.50f, h * 0.95f)
+            cubicTo(w * 0.06f, h * 0.62f, w * 0.00f, h * 0.30f, w * 0.26f, h * 0.16f)
+            cubicTo(w * 0.40f, h * 0.09f, w * 0.50f, h * 0.20f, w * 0.50f, h * 0.30f)
+            cubicTo(w * 0.50f, h * 0.20f, w * 0.60f, h * 0.09f, w * 0.74f, h * 0.16f)
+            cubicTo(w * 1.00f, h * 0.30f, w * 0.94f, h * 0.62f, w * 0.50f, h * 0.95f)
+            close()
+        }
+        if (filled) {
+            drawPath(heart, tint)
+        } else {
+            drawPath(heart, tint, style = Stroke(width = h * 0.09f, join = StrokeJoin.Round))
+        }
+    }
+}
+
+/**
+ * Flutter `CommentPreviewWidget`：`margin-top 8 / padding 10 / r4`，
+ * 底色 `surfaceContainerHighest@.5`，每行 `昵称：`（`richLink` w600）+ 正文（onSurface，14 / 1.35）。
+ */
+@Composable
+private fun CommentPreviewPlaceholder(index: Int) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .background(CommunityPalette.commentFill, RoundedCornerShape(4.dp))
+            .padding(10.dp),
+    ) {
+        placeholderComments(index).forEach { (prefix, body) ->
+            Text(
+                buildAnnotatedString {
+                    withStyle(
+                        SpanStyle(
+                            color = CommunityPalette.richLink,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    ) { append(prefix) }
+                    append(body)
+                },
+                fontSize = 14.sp,
+                // Flutter `height: 1.35` × 14 = 18.9。
+                lineHeight = 18.9.sp,
+                color = CommunityPalette.onSurface,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
         }
     }
 }

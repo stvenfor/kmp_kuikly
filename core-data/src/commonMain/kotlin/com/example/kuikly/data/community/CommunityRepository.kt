@@ -18,22 +18,26 @@ interface CommunityRepository {
 }
 
 class FakeCommunityRepository : CommunityRepository {
+    // 镜像 Flutter `13-flutter-main-community` 真实截图（ADR-0018 P2-R1b）。
+    // 富文本样式由 `feature-home/CommunityTab.PostContent` 解析 `@张三` / `#Flutter开发` /
+    // `https://flutter.dev`；只动 seed 文案与计数，Post 字段保持最小集（不加 timeLabel /
+    // sourceLabel / liked / mediaKind，避免与 P2-R1a UI 票撞字段）。
     private val seed = listOf(
         Post(
             id = "1",
             author = "张三",
-            title = "今天去了推荐的咖啡店",
-            body = "环境不错，适合写代码。\n#Kuikly开发",
-            likeCount = 42,
+            title = "Flutter 跨端开发",
+            body = "新的跨端框架体验：@张三 强力推荐 #Flutter开发 官方文档 https://flutter.dev 写得很详细",
+            likeCount = 158,
             commentCount = 6,
         ),
         Post(
             id = "2",
             author = "李四",
             title = "周末 hiking",
-            body = "天气太好了！#户外",
-            likeCount = 18,
-            commentCount = 3,
+            body = "天气太好了！周末 hiking… #户外",
+            likeCount = 77,
+            commentCount = 2,
         ),
         Post(
             id = "3",

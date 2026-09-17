@@ -38,6 +38,31 @@ import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 
 /**
+ * Flutter chat detail 的几何令牌（真源同 [ChatDetailPage] KDoc）。
+ *
+ * chat 模块不用 `flutter_screenutil`，故这些值原样落到裸 dp/sp（与 [ChatPalette] 同尺度）。
+ */
+private object ChatDetailTokens {
+    /** 头部 `CupertinoButton` 与输入条 `_PanelIconButton` 的命中区（Flutter 两者都是 44）。 */
+    const val HIT = 44f
+
+    /** 返回 / 输入条图标（Flutter 显式 `size: 24`）。 */
+    const val GLYPH = 24f
+
+    /** 头部 ⋯：`CupertinoIcons.ellipsis` 未给 size → `actionTextStyle 17 × 1.2 ≈ 20`。 */
+    const val MORE_GLYPH = 20f
+
+    /**
+     * Flutter `MessageBubble` 用 `Flexible` 约束气泡宽（无固定 maxWidth）：
+     * 上限 = 屏宽 −（Row 水平 padding 12×2 + 头像 32 + 间隙 8）= 屏宽 − 64。
+     */
+    const val BUBBLE_CHROME = 64f
+
+    /** `ChatTheme.body` / `selfBubbleText` / `peerBubbleText` 的 `height: 1.35` × 17 = 22.95 ≈ 23。 */
+    const val BUBBLE_LINE_HEIGHT = 23f
+}
+
+/**
  * Mock chat detail — Flutter `ChatDetailPage` 复刻（Phase-2 / P2-W2b）。
  * 真源：`features/chat/lib/chat/view/chat_detail_page.dart` + `widgets/message_bubble.dart`
  * + `widgets/input_panel.dart`（收起态）。刻度同 `ChatPalette` KDoc：裸 dp/sp。
@@ -50,6 +75,8 @@ internal class ChatDetailPage : BaseComposePager() {
         val id = pageData.params.optString("id").ifBlank { "1" }
         val top = statusBarInset()
         val bottom = bottomSafeInset()
+        // Flutter `Flexible` 上限随屏宽走；这里按页面宽度反推，避免再用 285dp 经验值过早换行。
+        val bubbleMaxWidth = pagerData.pageViewWidth - ChatDetailTokens.BUBBLE_CHROME
         setContent {
             val result = remember(id) { ChatStore.repo.messages(id) }
             // 头部需要会话名 / 在线态：从 conversations 里取同 id 项（mock 同源）。
@@ -84,7 +111,7 @@ internal class ChatDetailPage : BaseComposePager() {
                                 ),
                             ) {
                                 items(messages, key = { it.id }) { message ->
-                                    MessageBubble(message = message)
+                                    MessageBubble(message = message, maxWidth = bubbleMaxWidth)
                                 }
                             }
                         }
@@ -119,14 +146,13 @@ private fun ChatDetailHeader(conversation: Conversation?, topInset: Float) {
             .padding(start = 4.dp, end = 4.dp, top = topInset.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Flutter `CupertinoButton(CupertinoIcons.back, color: accent, size: 24)`。
-        Text(
-            "‹",
-            fontSize = 24.sp,
+        // Flutter `CupertinoButton(padding: zero, child: Icon(back, accent, size: 24))`：
+        // 命中区被 `kMinInteractiveDimensionCupertino(44)` 撑满，故整条头部高 44 + bottom 8。
+        GlyphButton(
+            glyph = "‹",
+            fontSize = ChatDetailTokens.GLYPH,
             color = ChatPalette.accent,
-            modifier = Modifier
-                .clickable { Utils.currentBridgeModule().closePage() }
-                .padding(12.dp),
+            onClick = { Utils.currentBridgeModule().closePage() },
         )
         // Flutter `CacheImageUtils.circle(peerAvatar, size: 36)` 未加载占位。
         Box(
@@ -160,14 +186,12 @@ private fun ChatDetailHeader(conversation: Conversation?, topInset: Float) {
                 color = if (conversation?.isOnline == true) ChatPalette.online else ChatPalette.labelSecondary,
             )
         }
-        // Flutter `CupertinoButton(CupertinoIcons.ellipsis, color: accent)`。
-        Text(
-            "⋯",
-            fontSize = 22.sp,
+        // Flutter `CupertinoButton(padding: zero, child: Icon(ellipsis, color: accent))`（同为 44 命中区）。
+        GlyphButton(
+            glyph = "⋯",
+            fontSize = ChatDetailTokens.MORE_GLYPH,
             color = ChatPalette.accent,
-            modifier = Modifier
-                .clickable { Utils.currentBridgeModule().toast("「会话操作」即将接入") }
-                .padding(12.dp),
+            onClick = { Utils.currentBridgeModule().toast("「会话操作」即将接入") },
         )
     }
 }
@@ -175,9 +199,11 @@ private fun ChatDetailHeader(conversation: Conversation?, topInset: Float) {
 /**
  * Flutter `MessageBubble`（text 分支）：h12 v4 外边距 + 32 头像 + 8 间隙 +
  * 气泡（self `#007AFF` / peer `#E9E9EB`，r18 + 尾角 4）+ 17sp 正文。
+ *
+ * 宽度：Flutter 用 `Flexible` 兜底（内容撑到屏宽 − 64），[maxWidth] 由调用方按页面宽度算好传入。
  */
 @Composable
-private fun MessageBubble(message: ChatMessage) {
+private fun MessageBubble(message: ChatMessage, maxWidth: Float) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -192,10 +218,12 @@ private fun MessageBubble(message: ChatMessage) {
         Text(
             message.content,
             fontSize = 17.sp,
+            // Flutter `ChatTheme.body/selfBubbleText/peerBubbleText` 显式 `height: 1.35`。
+            lineHeight = ChatDetailTokens.BUBBLE_LINE_HEIGHT.sp,
             color = if (message.isSelf) Color.White else ChatPalette.labelPrimary,
             modifier = Modifier
-                // Flutter phone cap ≈ 75% 屏宽 (375dp → ~280dp)，K 留 285dp 余量避免过早换行。
-                .widthIn(max = 285.dp)
+                // Flutter `Flexible` 上限 = 屏宽 −（h12×2 + 头像 32 + 间隙 8）。
+                .widthIn(max = maxWidth.dp)
                 .background(
                     if (message.isSelf) ChatPalette.accent else ChatPalette.fillSecondary,
                     // Flutter `ChatTheme.bubbleRadiusFor`：顶角 18，尾角（对侧）4。
@@ -237,24 +265,35 @@ private fun BubbleAvatar(initial: String, self: Boolean) {
 }
 
 /**
- * Flutter `_PanelIconButton`：44×44 SizedBox + 24 icon + IconButton 默认内 padding。
- * Kuikly 没有 IconButton，故等价用 44×44 Box + 24sp emoji 居中（命中区与 Flutter 完全一致）。
+ * Flutter `_PanelIconButton`（输入条）/ `CupertinoButton`（头部）的等价：44×44 命中区 + 居中 glyph。
+ *
+ * `IconButton` / `CupertinoButton` 的最小命中区都是 44，Kuikly 没有内建图标矢量集，
+ * 故用同尺寸 Box + emoji/字形占位，命中区与 Flutter 完全一致。
  */
 @Composable
-private fun PanelIconButton(glyph: String, onClick: () -> Unit) {
+private fun GlyphButton(
+    glyph: String,
+    fontSize: Float,
+    color: Color,
+    onClick: () -> Unit,
+) {
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(ChatDetailTokens.HIT.dp)
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, fontSize = 24.sp, color = ChatPalette.labelSecondary)
+        Text(glyph, fontSize = fontSize.sp, color = color)
     }
 }
 
 /**
  * Flutter `InputPanel` 收起态的静态等价：白底 + mic 44 位 + r20 灰输入框（hint「信息」）
  * + smiley / plus 44 位。输入为 mock（点击 toast），不做真实键盘交互。
+ *
+ * 排布照抄 Flutter：`Row(crossAxisAlignment: end, padding: 8)`，四枚 44 位控件**相邻无额外间距**
+ * （空文本时 Flutter 的 `Expanded(_TextInput)` 直接夹在 mic 与 smiley 之间，
+ * 有文本才用 `_SendButton` 顶替 smiley + plus）。
  */
 @Composable
 private fun ChatInputPanel(bottomInset: Float) {
@@ -267,16 +306,17 @@ private fun ChatInputPanel(bottomInset: Float) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Bottom,
         ) {
-            // Flutter `_PanelIconButton`：44×44 SizedBox + 24 icon 内嵌。这里同样显式锁定
-            // 44×44 命中区，把 emoji 字号抬到 24.sp 与 Cupertino 视觉一致。
-            PanelIconButton(
+            // Flutter `_PanelIconButton(CupertinoIcons.mic)`：44×44 SizedBox + 24 icon。
+            GlyphButton(
                 glyph = "🎤",
+                fontSize = ChatDetailTokens.GLYPH,
+                color = ChatPalette.labelSecondary,
                 onClick = { Utils.currentBridgeModule().toast("「语音输入」即将接入") },
             )
-            Spacer(Modifier.width(4.dp))
             // Flutter `_TextInput`：fillSecondary r20 / 0.5 separator 边 / h14 v10 / hint 17。
+            // 注意没有 Spacer——Flutter 的 Expanded 紧贴左侧 mic。
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -289,16 +329,17 @@ private fun ChatInputPanel(bottomInset: Float) {
             ) {
                 Text("信息", fontSize = 17.sp, color = ChatPalette.labelTertiary)
             }
-            Spacer(Modifier.width(4.dp))
-            // Flutter `_PanelIconButton(CupertinoIcons.smiley | plus)`（无输入时的收起态）。
-            PanelIconButton(
+            // Flutter `_PanelIconButton(CupertinoIcons.smiley | plus)`：两者相邻，间距就是各自 44 宽。
+            GlyphButton(
                 glyph = "☺",
+                fontSize = ChatDetailTokens.GLYPH,
+                color = ChatPalette.labelSecondary,
                 onClick = { Utils.currentBridgeModule().toast("「表情」即将接入") },
             )
-            // IconButton 默认 8dp 内 padding → 相邻两个 icon 间视觉间距 ≈ 16dp（smiley 右边 8 + plus 左边 8）。
-            Spacer(Modifier.width(8.dp))
-            PanelIconButton(
+            GlyphButton(
                 glyph = "＋",
+                fontSize = ChatDetailTokens.GLYPH,
+                color = ChatPalette.labelSecondary,
                 onClick = { Utils.currentBridgeModule().toast("「更多」即将接入") },
             )
         }

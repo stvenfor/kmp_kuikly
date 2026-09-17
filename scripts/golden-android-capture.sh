@@ -7,6 +7,8 @@
 #   ./scripts/golden-android-capture.sh --update  # copy actual → goldens/android/baseline/
 #   ./scripts/golden-android-diff.sh              # diff actual vs baseline
 set -euo pipefail
+# JSON pageData contains `{a,b}` — bash braceexpand must stay off or commas split args.
+set +o braceexpand 2>/dev/null || set +B
 # shellcheck source=common.sh
 source "$(cd "$(dirname "$0")" && pwd)/common.sh"
 
@@ -42,39 +44,41 @@ capture_page() {
   log "capture $page → $name.png"
   adb shell am force-stop "$PACKAGE" >/dev/null 2>&1 || true
   if [[ -n "$page_data" ]]; then
-    adb shell am start -n "$PACKAGE/.KuiklyRenderActivity" \
-      --es pageName "$page" --es pageData "$page_data" >/dev/null
+    # Entire am cmdline must be ONE remote shell string — otherwise commas in JSON
+    # split args and fragments like mockLogin:1 become VIEW data URIs / crash JSONObject.
+    adb shell "am start -n ${PACKAGE}/.KuiklyRenderActivity --es pageName ${page} --es pageData '${page_data}'" >/dev/null
   else
-    adb shell am start -n "$PACKAGE/.KuiklyRenderActivity" --es pageName "$page" >/dev/null
+    adb shell "am start -n ${PACKAGE}/.KuiklyRenderActivity --es pageName ${page}" >/dev/null
   fi
   sleep "$wait_s"
   adb exec-out screencap -p >"$OUT_DIR/$name.png"
 }
 
 # Closed checklist (product path pages that can be deep-linked by pageName).
-capture_page "Splash" "01-splash" 2
-capture_page "Main" "02-main-home" 2
-capture_page "Login" "03-login" 2
-capture_page "UsedCarList" "04-usedcar-list" 2
-capture_page "UsedCarDetail" "05-usedcar-detail" 2 '{"id":"1"}'
+# Settle defaults raised for Phase-2 Cross-Source (under-settled ≈85KB blanks).
+capture_page "Splash" "01-splash" 3
+capture_page "Main" "02-main-home" 4
+capture_page "Login" "03-login" 3
+capture_page "UsedCarList" "04-usedcar-list" 4
+capture_page "UsedCarDetail" "05-usedcar-detail" 3 '{"id":"1"}'
 # Me tab + Settings (Slice-02). Guest vs logged-in primed via pageData
 # (MainPage reads tab=Me / mockLogin=1); each capture force-stops first,
 # so 06 is always guest (fresh process) and 07 always logged-in.
-capture_page "Main" "06-main-me-guest" 2 '{"tab":"Me"}'
-capture_page "Main" "07-main-me-logged-in" 3 '{"tab":"Me","mockLogin":"1"}'
-capture_page "Settings" "08-settings" 2
+capture_page "Main" "06-main-me-guest" 4 '{"tab":"Me"}'
+capture_page "Main" "07-main-me-logged-in" 5 '{"tab":"Me","mockLogin":"1"}'
+capture_page "Settings" "08-settings" 3
 # Password-mode Login (Slice-03). LoginPage reads pageData mode=password.
-capture_page "Login" "09-login-password" 2 '{"mode":"password"}'
+capture_page "Login" "09-login-password" 3 '{"mode":"password"}'
 # SearchPage (Slice-04). Deep-linked by pageName; reads no pageData.
 # 02-main-home now includes the search chrome (Home SearchBar) — re-lock on device gates.
-capture_page "Search" "10-search" 2
+capture_page "Search" "10-search" 3
 
 
 # Slice-05/06 Chat + Community
-capture_page "Main" "11-main-chat" 2 '{"tab":"Chat"}'
-capture_page "ChatDetail" "12-chat-detail" 2 '{"id":"1"}'
-capture_page "Main" "13-main-community" 2 '{"tab":"Community"}'
-capture_page "PostDetail" "14-post-detail" 2 '{"id":"1"}'
+capture_page "Main" "11-main-chat" 4 '{"tab":"Chat","mockLogin":"1"}'
+capture_page "ChatDetail" "12-chat-detail" 3 '{"id":"1"}'
+capture_page "Main" "13-main-community" 4 '{"tab":"Community","mockLogin":"1"}'
+capture_page "PostDetail" "14-post-detail" 3 '{"id":"1"}'
 
 # Slice-07 Music + Slice-08 Video
 capture_page "MusicList" "15-music-list" 2

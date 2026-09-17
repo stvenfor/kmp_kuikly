@@ -19,10 +19,19 @@ MASK_BOTTOM="${MASK_BOTTOM_PX:-40}"
 mkdir -p "$DIFF"
 fail=0
 
+# Kuikly actual stem = Flutter-ref baseline stem
 MAP=(
   "02-main-home=02-flutter-main-home"
   "06-main-me-guest=03-flutter-main-me-guest"
+  "07-main-me-logged-in=08-flutter-main-me-logged-in"
+  "03-login=07-flutter-login"
+  "10-search=10-flutter-search"
+  "04-usedcar-list=04-flutter-usedcar-list"
+  "11-main-chat=11-flutter-main-chat"
+  "13-main-community=13-flutter-main-community"
 )
+# Chat detail deferred until Flutter-ref settles (deeplink/UI tap flaky on session).
+
 
 MAGICK_BIN=""
 if command -v magick >/dev/null 2>&1; then
