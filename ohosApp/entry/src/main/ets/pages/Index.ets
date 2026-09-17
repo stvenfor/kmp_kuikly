@@ -24,6 +24,23 @@ struct Index {
       this.pageName = params.pageName as string;
       this.pageData = (params.pageData as KRRecord | null) ?? {};
     }
+    if (!this.pageName) {
+      const stored = AppStorage.get('kuiklyPageName') as string;
+      if (stored) {
+        this.pageName = stored;
+      }
+    }
+    if (!this.pageData || Object.keys(this.pageData).length === 0) {
+      // golden capture priming: aa start --ps pageData '<json>' → AppStorage
+      const storedData = AppStorage.get('kuiklyPageData') as string;
+      if (storedData) {
+        try {
+          this.pageData = JSON.parse(storedData) as KRRecord;
+        } catch (e) {
+          this.pageData = {};
+        }
+      }
+    }
   }
 
   onPageShow(): void {
@@ -38,7 +55,7 @@ struct Index {
     Stack() {
       if (this.showKuikly) {
         Kuikly({
-          pageName: this.pageName ?? 'HelloWorld',
+          pageName: this.pageName ?? 'Splash',
           pageData: this.pageData ?? {},
           delegate: this.kuiklyViewDelegate,
           onControllerReadyCallback: (controller) => {

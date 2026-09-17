@@ -10,13 +10,13 @@ usage() {
   cat <<EOF
 kmp_kuikly demo runners
 
-  ./scripts/run.sh android [--page Home] [--avd Pixel_7_Pro]
-  ./scripts/run.sh ios     [--page Home] [--sim "iPhone 16"] [--skip-pods]
-  ./scripts/run.sh ohos    [--page Home] [--open-deveco]
-  ./scripts/run.sh h5      [--page Home] [--port 8080]
+  ./scripts/run.sh android [--page Splash] [--avd Pixel_7_Pro]
+  ./scripts/run.sh ios     [--page Splash] [--sim "iPhone 16"] [--skip-pods]
+  ./scripts/run.sh ohos    [--page Splash] [--open-deveco]
+  ./scripts/run.sh h5      [--page Splash] [--port 8080]
   ./scripts/run.sh list              # show tools / simulators / devices
 
-Default page is Home (Android/iOS/H5). Ohos Index defaults to HelloWorld in UI.
+Default page is Splash (product path). Demo pages (Home / HelloWorld) via --page only.
 EOF
 }
 

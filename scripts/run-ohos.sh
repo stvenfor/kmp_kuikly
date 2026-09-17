@@ -20,7 +20,7 @@ Usage: $0 [--page PAGE] [--open-deveco]
   Ohos KMP link often needs DevEco signing; --open-deveco opens the project.
 
   Bundle: com.example.kuikly / EntryAbility
-  Page default in Index.ets is HelloWorld (router params); CLI start uses ability only.
+  Page default in Index.ets is Splash (router params); CLI start uses ability only.
 EOF
       exit 0
       ;;
@@ -42,7 +42,9 @@ mkdir -p "$LIBS_DIR"
 
 # Prefer an already-built shared lib from Kotlin/Native ohos target
 SO_CANDIDATES=(
+  "$ROOT/app-shared/build/bin/ohosArm64/sharedDebugShared/libshared.so"
   "$ROOT/app-shared/build/bin/ohosArm64/debugShared/libshared.so"
+  "$ROOT/app-shared/build/bin/ohosArm64/sharedReleaseShared/libshared.so"
   "$ROOT/app-shared/build/bin/ohosArm64/releaseShared/libshared.so"
 )
 SO=""
@@ -51,9 +53,11 @@ for c in "${SO_CANDIDATES[@]}"; do
 done
 
 if [[ -z "$SO" ]]; then
-  warn "libshared.so not found — attempting ohos Gradle link (may fail after module split)"
+  warn "libshared.so not found — attempting ohos Gradle link"
   if ./gradlew -c settings.ohos.gradle.kts :app-shared:linkDebugSharedOhosArm64; then
-    SO="$ROOT/app-shared/build/bin/ohosArm64/debugShared/libshared.so"
+    for c in "${SO_CANDIDATES[@]}"; do
+      [[ -f "$c" ]] && { SO="$c"; break; }
+    done
   else
     warn "Gradle ohos link failed. Build/run from DevEco (Signing Configs → Run entry)."
     warn "See docs/runbooks/ohos.md"
@@ -65,6 +69,16 @@ fi
 [[ -f "$SO" ]] || die "still no libshared.so"
 log "copy $SO → $LIBS_DIR/"
 cp -f "$SO" "$LIBS_DIR/libshared.so"
+API_H="$(dirname "$SO")/libshared_api.h"
+HEADER_DIR="$ROOT/ohosApp/entry/src/main/cpp/thirdparty/biz_entry"
+if [[ -f "$API_H" ]]; then
+  mkdir -p "$HEADER_DIR"
+  cp -f "$API_H" "$HEADER_DIR/libshared_api.h"
+  log "copy $API_H → $HEADER_DIR/"
+fi
+
+export NODE_HOME="${NODE_HOME:-/Applications/DevEco-Studio.app/Contents/tools/node}"
+export PATH="${NODE_HOME}/bin:${PATH}"
 
 if ! ensure_hvigorw; then
   warn "hvigorw not found; open DevEco to assemble HAP"
@@ -91,7 +105,7 @@ TARGET="$("$HDC_BIN" list targets | awk 'NF && $1 !~ /\[/ {print $1; exit}')"
 log "install $HAP → $TARGET"
 "$HDC_BIN" -t "$TARGET" install -r "$HAP"
 
-log "start EntryAbility (page UI default HelloWorld; PAGE=$PAGE noted for Index router)"
+log "start EntryAbility (page UI default Splash; PAGE=$PAGE noted for Index router)"
 "$HDC_BIN" -t "$TARGET" shell aa start -a EntryAbility -b com.example.kuikly || \
   "$HDC_BIN" -t "$TARGET" shell aa start -a EntryAbility -b com.example.kuikly -m entry
 

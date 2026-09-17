@@ -10,6 +10,8 @@
 
 Script flow: find/copy `libshared.so` → `hvigor` assemble HAP → `hdc install` → start `EntryAbility`.
 
+Cold start default page in `Index.ets`: **Splash** (not HelloWorld).
+
 ## DevEco (authoritative)
 
 1. Open `ohosApp/` in **DevEco Studio**

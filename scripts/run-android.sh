@@ -19,7 +19,7 @@ while [[ $# -gt 0 ]]; do
       cat <<EOF
 Usage: $0 [--page PAGE] [--avd AVD_NAME] [--no-boot]
 
-  --page   Kuikly pageName (default: Home)
+  --page   Kuikly pageName (default: Splash)
   --avd    Android Virtual Device name (default: Pixel_7_Pro)
   --no-boot  Do not start an emulator if none is connected
 EOF

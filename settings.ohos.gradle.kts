@@ -35,6 +35,10 @@ include(":feature-home")
 include(":app-shared")
 project(":app-shared").buildFileName = ohosBuildfFileName
 project(":core-pager").buildFileName = ohosBuildfFileName
+project(":core-data").buildFileName = ohosBuildfFileName
+project(":core-navigation").buildFileName = ohosBuildfFileName
+project(":platform-permission").buildFileName = ohosBuildfFileName
+project(":platform-share").buildFileName = ohosBuildfFileName
 project(":feature-auth").buildFileName = ohosBuildfFileName
 project(":feature-feed").buildFileName = ohosBuildfFileName
 project(":feature-home").buildFileName = ohosBuildfFileName

@@ -24,6 +24,11 @@ kotlin {
                 implementation("com.tencent.kuikly-open:compose:${Version.getKuiklyVersion()}")
             }
         }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         val androidMain by getting
         val iosX64Main by getting
         val iosArm64Main by getting

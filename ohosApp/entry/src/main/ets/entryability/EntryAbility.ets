@@ -6,6 +6,23 @@ import Napi from 'libkuikly_entry.so';
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(0x0000, 'kuikly', '%{public}s', 'Ability onCreate');
+    this.handleWant(want);
+  }
+
+  onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    this.handleWant(want);
+  }
+
+  // --ps pageName / --ps pageData '<json>' from aa start (golden capture priming)
+  private handleWant(want: Want): void {
+    const pageName = want?.parameters?.['pageName'];
+    if (typeof pageName === 'string' && pageName.length > 0) {
+      AppStorage.setOrCreate('kuiklyPageName', pageName);
+    }
+    const pageData = want?.parameters?.['pageData'];
+    if (typeof pageData === 'string' && pageData.length > 0) {
+      AppStorage.setOrCreate('kuiklyPageData', pageData);
+    }
   }
 
   onDestroy(): void {

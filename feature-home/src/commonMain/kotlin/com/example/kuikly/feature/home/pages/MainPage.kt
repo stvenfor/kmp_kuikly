@@ -8,79 +8,160 @@ import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.auth.AuthSession
-import com.example.kuikly.data.feed.FeedItem
-import com.example.kuikly.data.feed.FeedStore
-import com.example.kuikly.data.mock.MockBackend
+import com.example.kuikly.data.auth.FakeAuthRepository
+import com.example.kuikly.data.chat.ChatStore
+import com.example.kuikly.data.chat.Conversation
+import com.example.kuikly.data.mine.MineStore
+import com.example.kuikly.data.music.MusicPlaybackStore
+import com.example.kuikly.data.music.MusicStore
+import com.example.kuikly.data.music.Song
+import com.example.kuikly.navigation.MainTabLaunch
 import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.Canvas
 import com.tencent.kuikly.compose.foundation.background
-import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
-import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.foundation.layout.Row
 import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.fillMaxHeight
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
-import com.tencent.kuikly.compose.foundation.layout.padding
-import com.tencent.kuikly.compose.foundation.layout.size
-import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.lazy.items
+import com.tencent.kuikly.compose.foundation.layout.padding
+import com.tencent.kuikly.compose.foundation.layout.PaddingValues
+import com.tencent.kuikly.compose.foundation.layout.size
+import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
-import com.tencent.kuikly.compose.material3.Button
-import com.tencent.kuikly.compose.material3.ButtonDefaults
-import com.tencent.kuikly.compose.material3.Card
-import com.tencent.kuikly.compose.material3.CardDefaults
-import com.tencent.kuikly.compose.material3.HorizontalDivider
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.geometry.Offset
-import com.tencent.kuikly.compose.ui.geometry.Size
-import com.tencent.kuikly.compose.ui.graphics.Brush
+import com.tencent.kuikly.compose.ui.geometry.Rect
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.graphics.Path
+import com.tencent.kuikly.compose.ui.graphics.StrokeCap
+import com.tencent.kuikly.compose.ui.graphics.StrokeJoin
+import com.tencent.kuikly.compose.ui.graphics.drawscope.DrawScope
+import com.tencent.kuikly.compose.ui.graphics.drawscope.DrawStyle
+import com.tencent.kuikly.compose.ui.graphics.drawscope.Fill
 import com.tencent.kuikly.compose.ui.graphics.drawscope.Stroke
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
+import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
 /**
- * 四 Tab 主壳：首页 / 动态 / 实验室 / 我的
- *
- * - 不用 Scaffold bottomBar：Kuikly 在 edge-to-edge 下 bottomBar 易被系统导航栏盖住；
- *   改用 Column + weight，底栏始终在布局流内（对齐沉浸式「顶铺满、底自垫」）
- * - 顶：Hero/标题用 statusBarInset 内侧避让；底：bottomSafeInset 垫在 Tab 下
+ * Product Main shell: 首页 / 聊天 / 社区 / 我的.
+ * 首页 = Flutter「首页」dashboard 复刻（见 [HomeTab]）；其余非 Home tab 仍为 Phase-1 形态。
+ * 有音频会话时，Tab 栏上方显示 mock 迷你播放条（影响 Home 底部留白）。
  */
 @Page(name = "Main", moduleId = "feature_home")
 internal class MainPage : BaseComposePager() {
+
+    // Mock 音频会话的 Compose 镜像：MusicList 页写入 MusicPlaybackStore，
+    // 本页 pageDidAppear（从上层页面返回）时刷新，驱动迷你条显隐。
+    private var musicSong by mutableStateOf<Song?>(null)
+    private var musicPlaying by mutableStateOf(false)
+
+    override fun pageDidAppear() {
+        super.pageDidAppear()
+        refreshMusicPlayback()
+    }
+
+    private fun refreshMusicPlayback() {
+        musicSong = MusicPlaybackStore.currentSong
+        musicPlaying = MusicPlaybackStore.playing
+    }
+
     override fun willInit() {
         super.willInit()
+        // Golden capture priming: deep-link pageData params pick the initial tab
+        // (scripts/golden-*-capture.sh pass {"tab":"Me"}).
+        val params = pageData.params
+        when (params.optString("tab")) {
+            "Me" -> MainTabLaunch.requestMe()
+            "Chat" -> MainTabLaunch.requestChat()
+            "Community" -> MainTabLaunch.requestCommunity()
+        }
+        // ponytail: golden priming — debug-only pageData mockLogin=1 performs one
+        // FakeAuth OTP login so capture scripts can render the logged-in Me state.
+        if (params.optString("mockLogin") == "1" && !AuthSession.repo.isLoggedIn()) {
+            AuthSession.repo.loginWithOtp(
+                FakeAuthRepository.MOCK_PHONE,
+                FakeAuthRepository.MOCK_OTP,
+            )
+        }
+        // ponytail: golden priming — mockPlay=1 starts a FakeMusic session so
+        // capture can show the mini-player + Home inset without UI taps.
+        if (params.optString("mockPlay") == "1" && !MusicPlaybackStore.hasSession) {
+            MusicStore.repo.list().getOrNull()?.let { songs ->
+                songs.firstOrNull()?.let { MusicPlaybackStore.play(it, songs) }
+            }
+        }
+        refreshMusicPlayback()
+        // ponytail: golden priming — homeTopTab / homeGreeting 复现 Flutter 参考图里
+        // 视频 / Club tab 与问候语状态（Flutter 问候语按小时算，默认取参考图锁定的「早上好」）。
+        val homeTopTab = params.optString("homeTopTab").toIntOrNull() ?: 0
+        val greeting = params.optString("homeGreeting").ifEmpty {
+            val name = if (AuthSession.repo.isLoggedIn()) {
+                MineStore.repo.profile().getOrNull()?.displayName ?: "访客"
+            } else {
+                "访客"
+            }
+            "早上好，$name"
+        }
         val statusBarHeight = statusBarInset()
         val bottomInset = bottomSafeInset()
         setContent {
-            var tab by remember { mutableStateOf(MainTab.Home) }
+            val initial = when (MainTabLaunch.consume()) {
+                MainTabLaunch.Tab.Chat -> MainTab.Chat
+                MainTabLaunch.Tab.Community -> MainTab.Community
+                MainTabLaunch.Tab.Me -> MainTab.Me
+                MainTabLaunch.Tab.Home, null -> MainTab.Home
+            }
+            var tab by remember { mutableStateOf(initial) }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MainColors.pageBg),
+                    .background(Color(0xFFF3F5F8)),
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     when (tab) {
                         MainTab.Home -> HomeTab(
                             statusBarHeight = statusBarHeight,
-                            onOpenFeed = { tab = MainTab.Feed },
+                            pageWidth = pagerData.pageViewWidth,
+                            miniPlayerVisible = musicSong != null,
+                            greeting = greeting,
+                            initialTopTab = homeTopTab,
+                            onOpenCommunity = { tab = MainTab.Community },
                         )
-                        MainTab.Feed -> FeedTab(statusBarHeight = statusBarHeight)
-                        MainTab.Lab -> LabTab(statusBarHeight = statusBarHeight)
-                        MainTab.Me -> MeTab(statusBarHeight = statusBarHeight)
+                        MainTab.Chat -> ChatTab(statusBarHeight)
+                        MainTab.Me -> MineTab(statusBarHeight = statusBarHeight, pageWidth = pagerData.pageViewWidth)
+                        MainTab.Community -> CommunityTab(statusBarHeight)
                     }
+                }
+                if (musicSong != null) {
+                    // 迷你条 = Flutter `MusicMiniPlayerBar`（P2-W2c 与 MusicList 页共用同一实现，
+                    // 见 MusicListPage.kt）。
+                    MusicMiniPlayerBar(
+                        song = musicSong!!,
+                        playing = musicPlaying,
+                        onToggle = {
+                            MusicPlaybackStore.toggle()
+                            refreshMusicPlayback()
+                        },
+                        onClose = {
+                            MusicPlaybackStore.clear()
+                            refreshMusicPlayback()
+                        },
+                    )
                 }
                 MainBottomBar(
                     selected = tab,
@@ -92,23 +173,39 @@ internal class MainPage : BaseComposePager() {
     }
 }
 
-private object MainColors {
-    val primary = Color(0xFF1565C0)
-    val primaryDark = Color(0xFF0D47A1)
-    val accent = Color(0xFF00897B)
-    val pageBg = Color(0xFFF3F5F8)
-    val card = Color.White
-    val textPrimary = Color(0xFF1A1A1A)
-    val textSecondary = Color(0xFF6B7280)
-    val divider = Color(0xFFE5E7EB)
-    val danger = Color(0xFFC62828)
-}
-
 private enum class MainTab(val label: String) {
     Home("首页"),
-    Feed("动态"),
-    Lab("实验室"),
+    Chat("聊天"),
+    Community("社区"),
     Me("我的"),
+}
+
+/**
+ * Flutter `AppTheme` 底栏令牌 + `IosTabBar` 几何
+ * （`commons/ui/lib/widgets/ios_tab_bar.dart`、`commons/ui/lib/theme/app_theme.dart`）。
+ *
+ * **刻度**：Flutter `IosTabBar` 全用**裸逻辑 px**（49 / 44 / 28 / 22 / 10），
+ * 不走 `flutter_screenutil`。故此处一律裸 `dp` / `sp`，**不要** `.su()`——
+ * 加 su 会按 548.6/375≈1.463 放大（Pixel_7_Pro 实测 dpr 2.625：
+ * 选中 pill 高 73px = 27.8 逻辑 px ≈ Flutter 的 28，宽度 114px ≈ 44）。
+ */
+private object TabBarTokens {
+    val accent = Color(0xFF007AFF)
+    val labelSecondary = Color(0x993C3C43)
+    val separator = Color(0xFFC6C6C8)
+    val background = Color(0xF2FFFFFF)
+
+    const val HAIRLINE = 0.5f
+    const val BAR_HEIGHT = 49f
+    const val PILL_WIDTH = 44f
+    const val PILL_HEIGHT = 28f
+    const val PILL_CORNER = 14f
+    const val ICON_SIZE = 22f
+    const val LABEL_GAP = 2f
+    const val LABEL_SIZE = 10f
+
+    /** Flutter `TextStyle(height: 1.1)` × 10。 */
+    const val LABEL_LINE_HEIGHT = 11f
 }
 
 @Composable
@@ -117,678 +214,371 @@ private fun MainBottomBar(
     onSelect: (MainTab) -> Unit,
     bottomInset: Float,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
-        HorizontalDivider(color = MainColors.divider, thickness = 0.5.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(TabBarTokens.background),
+    ) {
+        // Flutter `BoxDecoration(border: Border(top: 0.5 / separator@0.6))`。
+        // ponytail: 无 BackdropFilter blur(20) 等价物 —— `tabBarBackground` 半透明白已够
+        // （Flutter ref 实测底栏像素即纯白 255）。
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(TabBarTokens.HAIRLINE.dp)
+                .background(TabBarTokens.separator.copy(alpha = 0.6f)),
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp),
+                .height(TabBarTokens.BAR_HEIGHT.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MainTab.entries.forEach { item ->
-                val isSelected = selected == item
-                val tint = if (isSelected) MainColors.primary else Color(0xFF9CA3AF)
+            MainTab.entries.forEach { tab ->
+                val selectedTab = tab == selected
+                val tint = if (selectedTab) TabBarTokens.accent else TabBarTokens.labelSecondary
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { onSelect(item) }
-                        .padding(vertical = 6.dp),
+                        .fillMaxHeight()
+                        .clickable { onSelect(tab) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    TabIcon(tab = item, color = tint, selected = isSelected)
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = item.label,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = tint,
-                    )
-                }
-            }
-        }
-        // edge-to-edge：垫系统底 inset；为 0 时兜底 16，并封顶 48 防异常大值把 Tab 顶出屏
-        val safeBottom = when {
-            bottomInset <= 0f -> 16f
-            bottomInset > 48f -> 48f
-            else -> bottomInset
-        }
-        Spacer(Modifier.height(safeBottom.dp))
-    }
-}
-
-/** Canvas 矢量图标，对齐官方 NavigationBarDemo 的 SimpleIcon 做法 */
-@Composable
-private fun TabIcon(tab: MainTab, color: Color, selected: Boolean) {
-    val indicator = if (selected) MainColors.primary.copy(alpha = 0.12f) else Color.Transparent
-    Box(
-        modifier = Modifier
-            .size(width = 48.dp, height = 28.dp)
-            .background(indicator, RoundedCornerShape(14.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.size(22.dp)) {
-            val stroke = 2.dp.toPx()
-            when (tab) {
-                MainTab.Home -> {
-                    val path = Path().apply {
-                        moveTo(size.width / 2, stroke)
-                        lineTo(size.width - stroke, size.height * 0.45f)
-                        lineTo(size.width - stroke, size.height - stroke)
-                        lineTo(stroke, size.height - stroke)
-                        lineTo(stroke, size.height * 0.45f)
-                        close()
-                    }
-                    drawPath(path, color, style = Stroke(width = stroke))
-                    drawRect(
-                        color = color,
-                        topLeft = Offset(size.width * 0.38f, size.height * 0.55f),
-                        size = Size(
-                            size.width * 0.24f,
-                            size.height * 0.45f - stroke,
-                        ),
-                    )
-                }
-                MainTab.Feed -> {
-                    val gap = size.height / 4f
-                    for (i in 0..2) {
-                        val y = gap * (i + 0.7f)
-                        drawLine(
-                            color,
-                            start = Offset(stroke * 2, y),
-                            end = Offset(size.width - stroke * 2, y),
-                            strokeWidth = stroke,
-                        )
-                    }
-                }
-                MainTab.Lab -> {
-                    drawCircle(
-                        color,
-                        radius = size.minDimension * 0.18f,
-                        center = Offset(size.width * 0.35f, size.height * 0.35f),
-                        style = Stroke(width = stroke),
-                    )
-                    drawCircle(
-                        color,
-                        radius = size.minDimension * 0.22f,
-                        center = Offset(size.width * 0.62f, size.height * 0.58f),
-                        style = Stroke(width = stroke),
-                    )
-                }
-                MainTab.Me -> {
-                    val headR = size.width * 0.18f
-                    drawCircle(
-                        color,
-                        headR,
-                        Offset(size.width / 2, size.height * 0.28f),
-                        style = Stroke(width = stroke),
-                    )
-                    val body = Path().apply {
-                        moveTo(stroke, size.height - stroke)
-                        quadraticBezierTo(
-                            size.width / 2,
-                            size.height * 0.42f,
-                            size.width - stroke,
-                            size.height - stroke,
-                        )
-                    }
-                    drawPath(body, color, style = Stroke(width = stroke))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeTab(statusBarHeight: Float, onOpenFeed: () -> Unit) {
-    val user = AuthSession.repo.currentUser()
-    val name = user?.name ?: "访客"
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp),
-    ) {
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(MainColors.primary, MainColors.primaryDark),
-                        ),
-                    )
-                    .padding(horizontal = 20.dp)
-                    .padding(top = (statusBarHeight + 20f).dp, bottom = 28.dp),
-            ) {
-                Column {
-                    Text(
-                        text = "Kuikly Demo",
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.85f),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "你好，$name",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Compose Track · 四端 Demo Skeleton",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.9f),
-                    )
-                }
-            }
-        }
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 16.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MainColors.card),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            ) {
-                Text(
-                    text = "今日概览",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MainColors.textPrimary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                )
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                ) {
-                    StatChip(
-                        modifier = Modifier.weight(1f),
-                        label = "登录态",
-                        value = if (user != null) "已登录" else "未登录",
-                        accent = if (user != null) MainColors.accent else MainColors.textSecondary,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    StatChip(
-                        modifier = Modifier.weight(1f),
-                        label = "Mock",
-                        value = MockBackend.scenario.name,
-                        accent = MainColors.primary,
-                    )
-                }
-            }
-        }
-        item {
-            Text(
-                text = "快捷入口",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MainColors.textPrimary,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-            )
-        }
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            ) {
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "动态",
-                    subtitle = "Feed + Mock",
-                    tint = MainColors.primary,
-                    onClick = onOpenFeed,
-                )
-                Spacer(Modifier.width(10.dp))
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "完整 Feed",
-                    subtitle = "FeedList 页",
-                    tint = MainColors.accent,
-                    onClick = { Utils.currentBridgeModule().openPage(PageNames.FeedList) },
-                )
-            }
-        }
-        item {
-            Spacer(Modifier.height(10.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            ) {
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "动画 Lab",
-                    subtitle = "Compose Anim",
-                    tint = Color(0xFFE65100),
-                    onClick = { Utils.currentBridgeModule().openPage(PageNames.ComposeAnim) },
-                )
-                Spacer(Modifier.width(10.dp))
-                QuickActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Demo Map",
-                    subtitle = "全部样例",
-                    tint = Color(0xFF5E35B1),
-                    onClick = { Utils.currentBridgeModule().openPage(PageNames.Home) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatChip(
-    modifier: Modifier = Modifier,
-    label: String,
-    value: String,
-    accent: Color,
-) {
-    Column(
-        modifier = modifier
-            .background(MainColors.pageBg, RoundedCornerShape(10.dp))
-            .padding(12.dp),
-    ) {
-        Text(label, fontSize = 12.sp, color = MainColors.textSecondary)
-        Spacer(Modifier.height(4.dp))
-        Text(value, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = accent)
-    }
-}
-
-@Composable
-private fun QuickActionCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    subtitle: String,
-    tint: Color,
-    onClick: () -> Unit,
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MainColors.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(14.dp)
-                .size(36.dp)
-                .background(tint.copy(alpha = 0.12f), RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(tint, RoundedCornerShape(3.dp)),
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        Text(
-            title,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MainColors.textPrimary,
-            modifier = Modifier.padding(horizontal = 14.dp),
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            subtitle,
-            fontSize = 12.sp,
-            color = MainColors.textSecondary,
-            modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
-        )
-    }
-}
-
-@Composable
-private fun FeedTab(statusBarHeight: Float) {
-    var items by remember { mutableStateOf<List<FeedItem>>(emptyList()) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var booted by remember { mutableStateOf(false) }
-    var scenario by remember { mutableStateOf(MockBackend.scenario) }
-
-    fun reload() {
-        scenario = MockBackend.scenario
-        FeedStore.repo.list()
-            .onSuccess {
-                items = it
-                error = null
-            }
-            .onFailure {
-                items = emptyList()
-                error = it.message
-            }
-    }
-
-    if (!booted) {
-        booted = true
-        if (AuthSession.repo.currentUser() == null) {
-            error = "请先登录"
-        } else {
-            reload()
-        }
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            bottom = 16.dp,
-            top = (statusBarHeight + 16f).dp,
-        ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        item {
-            Text(
-                text = "动态",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MainColors.textPrimary,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Mock Backend 驱动的 Feed 预览",
-                fontSize = 13.sp,
-                color = MainColors.textSecondary,
-            )
-        }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ActionChip(
-                    text = "Mock · ${scenario.name}",
-                    onClick = {
-                        MockBackend.cycle()
-                        if (AuthSession.repo.currentUser() != null) reload()
-                        else scenario = MockBackend.scenario
-                    },
-                )
-                ActionChip(
-                    text = "完整列表",
-                    onClick = { Utils.currentBridgeModule().openPage(PageNames.FeedList) },
-                )
-            }
-        }
-        when {
-            error != null -> item {
-                StatusCard(
-                    title = "加载失败",
-                    message = error ?: "",
-                    tint = MainColors.danger,
-                )
-            }
-            items.isEmpty() -> item {
-                StatusCard(
-                    title = "暂无动态",
-                    message = "切换 Mock 场景或打开完整 FeedList",
-                    tint = MainColors.textSecondary,
-                )
-            }
-            else -> items(items, key = { it.id }) { item ->
-                Card(
-                    onClick = {
-                        Utils.currentBridgeModule().openPage(PageNames.FeedList)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MainColors.card),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                ) {
-                    Text(
-                        item.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MainColors.textPrimary,
-                        modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 14.dp),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        item.body,
-                        fontSize = 13.sp,
-                        color = MainColors.textSecondary,
-                        modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActionChip(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        fontSize = 13.sp,
-        color = MainColors.primary,
-        fontWeight = FontWeight.Medium,
-        modifier = Modifier
-            .border(1.dp, MainColors.primary.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    )
-}
-
-@Composable
-private fun StatusCard(title: String, message: String, tint: Color) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MainColors.card),
-    ) {
-        Text(
-            title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = tint,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp).fillMaxWidth(),
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            message,
-            fontSize = 13.sp,
-            color = MainColors.textSecondary,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp).fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun LabTab(statusBarHeight: Float) {
-    val labs = listOf(
-        Triple("Compose Anim", "动画：Visibility / Color / Size", PageNames.ComposeAnim),
-        Triple("Compose List", "LazyColumn 样例", PageNames.ComposeList),
-        Triple("Compose Pager", "HorizontalPager 样例", PageNames.ComposePager),
-        Triple("Gallery", "色块网格", PageNames.Gallery),
-        Triple("Perf Lab", "长列表性能", PageNames.PerfLab),
-        Triple("Legacy DSL Lab", "传统 DSL 对照", PageNames.DslLab),
-        Triple("Demo Map", "旧 Home 导航地图", PageNames.Home),
-    )
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            bottom = 16.dp,
-            top = (statusBarHeight + 16f).dp,
-        ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        item {
-            Text(
-                text = "实验室",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MainColors.textPrimary,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Compose Track 与 Legacy DSL 教学入口",
-                fontSize = 13.sp,
-                color = MainColors.textSecondary,
-            )
-            Spacer(Modifier.height(8.dp))
-        }
-        items(labs.size) { index ->
-            val (title, subtitle, page) = labs[index]
-            Card(
-                onClick = { Utils.currentBridgeModule().openPage(page) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MainColors.card),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(TabBarTokens.PILL_WIDTH.dp, TabBarTokens.PILL_HEIGHT.dp)
                             .background(
-                                MainColors.primary.copy(alpha = 0.1f),
-                                RoundedCornerShape(10.dp),
+                                if (selectedTab) {
+                                    TabBarTokens.accent.copy(alpha = 0.12f)
+                                } else {
+                                    Color.Transparent
+                                },
+                                RoundedCornerShape(TabBarTokens.PILL_CORNER.dp),
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = "${index + 1}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MainColors.primary,
-                        )
+                        TabBarIcon(tab = tab, tint = tint, filled = selectedTab)
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Box(modifier = Modifier.weight(1f)) {
-                        Text(
-                            title,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MainColors.textPrimary,
-                        )
-                        Text(
-                            subtitle,
-                            fontSize = 12.sp,
-                            color = MainColors.textSecondary,
-                            modifier = Modifier.padding(top = 20.dp),
-                        )
-                    }
-                    Text("›", fontSize = 22.sp, color = Color(0xFFB0B7C3))
+                    Spacer(Modifier.height(TabBarTokens.LABEL_GAP.dp))
+                    Text(
+                        tab.label,
+                        fontSize = TabBarTokens.LABEL_SIZE.sp,
+                        lineHeight = TabBarTokens.LABEL_LINE_HEIGHT.sp,
+                        fontWeight = if (selectedTab) FontWeight.SemiBold else FontWeight.Normal,
+                        color = tint,
+                        maxLines = 1,
+                    )
                 }
             }
+        }
+        Spacer(Modifier.height(bottomInset.dp))
+    }
+}
+
+/**
+ * Tab 图标：Flutter `CupertinoIcons.house / chat_bubble / person_2 / person` 的 Canvas 线稿近似
+ * （选中的 `*_fill` 用实心）。
+ *
+ * ponytail: Kuikly 无 icon font/矢量图资源，用 `Path` + `arc` 画几何体；
+ * 与 Cupertino 原图非像素级一致，但语义/尺寸/着色（`#007AFF` vs `#993C3C43`）对齐。
+ */
+@Composable
+private fun TabBarIcon(tab: MainTab, tint: Color, filled: Boolean) {
+    Canvas(modifier = Modifier.size(TabBarTokens.ICON_SIZE.dp)) {
+        val w = size.width
+        val h = size.height
+        val style: DrawStyle = if (filled) {
+            Fill
+        } else {
+            Stroke(width = h * 0.08f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        }
+        when (tab) {
+            MainTab.Home -> drawPath(homeIconPath(w, h), tint, style = style)
+            MainTab.Chat -> drawPath(chatIconPath(w, h), tint, style = style)
+            MainTab.Community -> drawCommunityIcon(w, h, tint, style)
+            MainTab.Me -> drawPersonIcon(w, h, tint, style)
         }
     }
 }
 
+/** 房子：五边形（屋顶 + 屋身），Fill 即 Cupertino `house_fill` 的实心剪影。 */
+private fun homeIconPath(w: Float, h: Float): Path = Path().apply {
+    moveTo(w * 0.50f, h * 0.05f)
+    lineTo(w * 0.95f, h * 0.42f)
+    lineTo(w * 0.95f, h * 0.95f)
+    lineTo(w * 0.05f, h * 0.95f)
+    lineTo(w * 0.05f, h * 0.42f)
+    close()
+}
+
+/** 对话气泡：椭圆 + 左下小尾巴（Fill 时两段子路径一起填实）。 */
+private fun chatIconPath(w: Float, h: Float): Path = Path().apply {
+    addOval(Rect(w * 0.05f, h * 0.12f, w * 0.95f, h * 0.80f))
+    moveTo(w * 0.30f, h * 0.66f)
+    lineTo(w * 0.26f, h * 0.95f)
+    lineTo(w * 0.52f, h * 0.74f)
+}
+
+/** 单人：头 + 肩（半椭圆；Fill 时 `drawPath` 隐式闭合，Stroke 时保持开弧）。 */
+private fun DrawScope.drawPersonIcon(w: Float, h: Float, tint: Color, style: DrawStyle) {
+    drawCircle(tint, radius = w * 0.20f, center = Offset(w * 0.50f, h * 0.27f), style = style)
+    drawPath(
+        Path().apply { addArc(Rect(w * 0.15f, h * 0.55f, w * 0.85f, h * 0.97f), 180f, 180f) },
+        tint,
+        style = style,
+    )
+}
+
+/** 双人（社区）：左前 + 右后各一组头/肩。 */
+private fun DrawScope.drawCommunityIcon(w: Float, h: Float, tint: Color, style: DrawStyle) {
+    drawCircle(tint, radius = w * 0.15f, center = Offset(w * 0.70f, h * 0.27f), style = style)
+    drawPath(
+        Path().apply { addArc(Rect(w * 0.45f, h * 0.52f, w * 0.97f, h * 0.88f), 180f, 180f) },
+        tint,
+        style = style,
+    )
+    drawCircle(tint, radius = w * 0.17f, center = Offset(w * 0.34f, h * 0.30f), style = style)
+    drawPath(
+        Path().apply { addArc(Rect(w * 0.04f, h * 0.56f, w * 0.66f, h * 0.96f), 180f, 180f) },
+        tint,
+        style = style,
+    )
+}
+
+/**
+ * 迷你播放条实测高度（Flutter `MusicMiniPlayerBar`：2 进度 + 8×2 内距 + 44 内容 = 62）。
+ *
+ * 注：Flutter 另有一个**留白常量** `musicMiniPlayerBarHeight = 72`（列表/FAB 避让用），
+ * 见 [MUSIC_MINI_BAR_INSET]。本常量只描述条的渲染高度（Home 底部留白引用）。
+ */
+internal const val MUSIC_MINI_BAR_HEIGHT = 62
+
+/**
+ * `ChatTheme` 令牌镜像（`my_ai_project/features/chat/lib/chat/theme/chat_theme.dart`）。
+ *
+ * **刻度**：Flutter Chat 模块全用**裸逻辑 px**（`chat_page` / `conversation_list_item` /
+ * `chat_theme` 均无 `.w/.h/.sp`），不走 `flutter_screenutil`。故此处一律裸 `dp`/`sp`，
+ * **不要** `.su()`——判断法与 P2-03 `TabBarTokens` KDoc 相同（若加 su 会 ×1.463 破坏 parity）。
+ */
+internal object ChatPalette {
+    val accent = Color(0xFF007AFF)
+    val background = Color(0xFFF2F2F7)
+    val surface = Color(0xFFFFFFFF)
+    val fillSecondary = Color(0xFFE9E9EB)
+    val labelPrimary = Color(0xFF000000)
+    val labelSecondary = Color(0x993C3C43)
+    val labelTertiary = Color(0x4D3C3C43)
+    val separator = Color(0xFFC6C6C8)
+    val online = Color(0xFF34C759)
+    val unreadBadge = Color(0xFFFF3B30)
+
+    const val RADIUS_MD = 12f
+}
+
+/**
+ * 「聊天」tab — Flutter `ChatPage` 复刻（Phase-2 / P2-W2b）。
+ * 真源：`features/chat/lib/chat/view/chat_page.dart` + `widgets/conversation_list_item.dart`。
+ */
 @Composable
-private fun MeTab(statusBarHeight: Float) {
-    val user = AuthSession.repo.currentUser()
+private fun ChatTab(statusBarHeight: Float) {
+    val result = remember { ChatStore.repo.conversations() }
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .padding(top = (statusBarHeight + 16f).dp, bottom = 16.dp),
+            .background(ChatPalette.background),
     ) {
-        Text(
-            text = "我的",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MainColors.textPrimary,
-        )
-        Spacer(Modifier.height(14.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MainColors.card),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        // Flutter `Padding(EdgeInsets.fromLTRB(16, AppSafeInsets.top + 8, 8, 8))`。
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = 16.dp,
+                    end = 8.dp,
+                    top = (statusBarHeight + 8f).dp,
+                    bottom = 8.dp,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(MainColors.primary, MainColors.accent),
-                            ),
-                            RoundedCornerShape(28.dp),
-                        ),
-                    contentAlignment = Alignment.Center,
+            // Flutter `ChatTheme.largeTitle`（32 / w700 / 黑）。
+            Text(
+                "消息",
+                modifier = Modifier.weight(1f),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = ChatPalette.labelPrimary,
+            )
+            // Flutter `IconButton(CupertinoIcons.search | square_pencil, color: accent)`
+            // （Material IconButton 默认 48×48 / 图标 24，用 22sp 字形 + 13dp padding 近似）。
+            Text(
+                "⌕",
+                fontSize = 22.sp,
+                color = ChatPalette.accent,
+                modifier = Modifier
+                    .clickable { Utils.currentBridgeModule().toast("「搜索」即将接入") }
+                    .padding(13.dp),
+            )
+            Text(
+                "✎",
+                fontSize = 22.sp,
+                color = ChatPalette.accent,
+                modifier = Modifier
+                    .clickable { Utils.currentBridgeModule().toast("「发起聊天」即将接入") }
+                    .padding(13.dp),
+            )
+        }
+        result
+            .onSuccess { conversations ->
+                if (conversations.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("暂无消息", fontSize = 13.sp, color = ChatPalette.labelSecondary)
+                    }
+                } else {
+                    // Flutter `ListView(padding: EdgeInsets.fromLTRB(16, 8, 16, 24))`
+                    // + `ChatTheme.groupedCardDecoration`（白底 r12 卡 + 组内 0.5 分隔线）。
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
+                    ) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(ChatPalette.surface, RoundedCornerShape(ChatPalette.RADIUS_MD.dp)),
+                            ) {
+                                conversations.forEachIndexed { index, conversation ->
+                                    ConversationRow(conversation = conversation)
+                                    if (index < conversations.lastIndex) {
+                                        // Flutter `ChatTheme.groupedDivider()`（0.5 / indent 72）。
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(start = 72.dp)
+                                                .height(0.5.dp)
+                                                .background(ChatPalette.separator),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .onFailure {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = (user?.name?.firstOrNull() ?: '?').toString(),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-                Spacer(Modifier.width(14.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = user?.name ?: "未登录",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MainColors.textPrimary,
-                    )
-                    Text(
-                        text = if (user != null) "Mock Auth Session" else "请从 Login 进入",
+                        it.message ?: "加载失败",
                         fontSize = 13.sp,
-                        color = MainColors.textSecondary,
-                        modifier = Modifier.padding(top = 26.dp),
+                        color = ChatPalette.labelSecondary,
                     )
                 }
             }
-        }
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MainColors.card),
+    }
+}
+
+/** Flutter `ConversationListItem`：52 头像 + 名字/时间 + 摘要/未读红胶囊。 */
+@Composable
+private fun ConversationRow(conversation: Conversation) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(ChatPalette.surface)
+            .clickable {
+                Utils.currentBridgeModule().openPage(
+                    PageNames.ChatDetail,
+                    userData = JSONObject().apply { put("id", conversation.id) },
+                )
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Flutter `CacheImageUtils.circle(52)` 的未加载占位（灰底圆 + 首字母，同仓库惯例）。
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(ChatPalette.fillSecondary, RoundedCornerShape(26.dp)),
+            contentAlignment = Alignment.Center,
         ) {
-            MenuRow("Permission Demo", PageNames.PermissionDemo)
-            HorizontalDivider(color = MainColors.divider, thickness = 0.5.dp)
-            MenuRow("Share Demo", PageNames.ShareDemo)
+            Text(
+                text = conversation.title.take(1),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ChatPalette.labelPrimary,
+            )
         }
-        Spacer(Modifier.weight(1f))
-        Button(
-            onClick = {
-                AuthSession.repo.logout()
-                Utils.currentBridgeModule().openPage(PageNames.Login, closeCurPage = true)
-            },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MainColors.danger),
-        ) {
-            Text("退出登录", fontSize = 15.sp, color = Color.White)
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            // 名字（headline 17 / w600）+ 时间（caption 13）。
+            Row {
+                Text(
+                    conversation.title,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ChatPalette.labelPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    conversation.timeLabel,
+                    fontSize = 13.sp,
+                    color = ChatPalette.labelSecondary,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            // 摘要（subhead 15）+ 未读红胶囊（r10 / h7v2 / 12 w600 / 99+）。
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    conversation.lastMessage,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 15.sp,
+                    color = ChatPalette.labelSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (conversation.unreadCount > 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(ChatPalette.unreadBadge, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                        )
+                    }
+                }
+            }
         }
-        Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun MenuRow(title: String, page: String) {
-    Row(
+private fun PlaceholderTab(title: String, statusBarHeight: Float) {
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { Utils.currentBridgeModule().openPage(page) }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .fillMaxSize()
+            .padding(top = (statusBarHeight + 24f).dp, start = 24.dp, end = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
+        Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Spacer(Modifier.height(12.dp))
         Text(
-            text = title,
-            fontSize = 15.sp,
-            color = MainColors.textPrimary,
-            modifier = Modifier.weight(1f),
+            "后续竖切 · 本页为占位，非业务 1:1",
+            fontSize = 14.sp,
+            color = Color(0xFF6B7280),
         )
-        Text("›", fontSize = 20.sp, color = Color(0xFFB0B7C3))
     }
 }

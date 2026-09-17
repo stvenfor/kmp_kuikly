@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
       cat <<EOF
 Usage: $0 [--page PAGE] [--sim "iPhone 16"] [--skip-pods]
 
-  --page       Kuikly page (passed as SIMCTL_CHILD_KUIKLY_PAGE; default: Home)
+  --page       Kuikly page (passed as SIMCTL_CHILD_KUIKLY_PAGE; default: Splash)
   --sim        Simulator device name (default: iPhone 16)
   --skip-pods  Skip generateDummyFramework / xcodegen / pod install
 EOF
