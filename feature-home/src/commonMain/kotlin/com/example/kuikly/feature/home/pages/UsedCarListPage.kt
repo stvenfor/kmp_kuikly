@@ -29,10 +29,12 @@ import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.lazy.items
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Button
+import com.tencent.kuikly.compose.material3.CircularProgressIndicator
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextAlign
@@ -51,6 +53,8 @@ private object UsedCarPalette {
     val gray500 = Color(0xFF9E9E9E)
     val gray600 = Color(0xFF757575)
     val hairline = Color(0x14000000)
+    // Flutter BoxShadow: Colors.black 4%, blurRadius 8, offset(0,2)
+    val cardShadow = Color(0x0A000000)
 }
 
 /**
@@ -71,6 +75,7 @@ internal class UsedCarListPage : BaseComposePager() {
             var items by remember { mutableStateOf<List<UsedCarItem>>(emptyList()) }
             var error by remember { mutableStateOf<String?>(null) }
             var empty by remember { mutableStateOf(false) }
+            var loading by remember { mutableStateOf(true) }
             var hasMore by remember { mutableStateOf(false) }
             var page by remember { mutableStateOf(0) }
             var booted by remember { mutableStateOf(false) }
@@ -78,6 +83,7 @@ internal class UsedCarListPage : BaseComposePager() {
 
             fun load(reset: Boolean) {
                 scenario = MockBackend.scenario
+                loading = true
                 val nextPage = if (reset) 0 else page
                 // Flutter TransactionMockData.pageSize = 20
                 UsedCarStore.repo.listPage(nextPage, pageSize = 20)
@@ -87,6 +93,7 @@ internal class UsedCarListPage : BaseComposePager() {
                         hasMore = result.hasMore
                         empty = items.isEmpty()
                         error = null
+                        loading = false
                     }
                     .onFailure {
                         if (reset) {
@@ -94,6 +101,7 @@ internal class UsedCarListPage : BaseComposePager() {
                             empty = false
                         }
                         error = it.message
+                        loading = false
                     }
             }
 
@@ -158,6 +166,15 @@ internal class UsedCarListPage : BaseComposePager() {
                 }
 
                 when {
+                    // Flutter: isLoading && items.isEmpty → Center(CircularProgressIndicator)
+                    loading && items.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
                     error != null && items.isEmpty() -> {
                         // _ErrorState
                         Column(
@@ -165,9 +182,18 @@ internal class UsedCarListPage : BaseComposePager() {
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Text("加载失败", fontSize = 16.sp, color = UsedCarPalette.textPrimary)
+                            // Icon(Icons.error_outline, size 48, Colors.grey)
+                            Text("⚠", fontSize = 48.sp, color = UsedCarPalette.gray500)
+                            Spacer(Modifier.height(12.dp))
+                            Text("加载失败", fontSize = 14.sp, color = UsedCarPalette.textPrimary)
                             Spacer(Modifier.height(8.dp))
-                            Text(error ?: "", fontSize = 12.sp, color = UsedCarPalette.gray600)
+                            Text(
+                                error ?: "",
+                                fontSize = 12.sp,
+                                color = UsedCarPalette.gray600,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 32.dp),
+                            )
                             Spacer(Modifier.height(16.dp))
                             Button(onClick = { load(reset = true) }) { Text("点击重试") }
                         }
@@ -222,6 +248,8 @@ private fun TransactionCard(item: UsedCarItem) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            // Flutter BoxShadow: black 4%, blur 8, offset(0,2)
+            .shadow(8.dp, RoundedCornerShape(12.dp), ambientColor = UsedCarPalette.cardShadow, spotColor = UsedCarPalette.cardShadow)
             .background(UsedCarPalette.surface, RoundedCornerShape(12.dp))
             .clickable {
                 Utils.currentBridgeModule().openPage(
@@ -252,6 +280,8 @@ private fun TransactionCard(item: UsedCarItem) {
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = UsedCarPalette.textPrimary,
+                // Flutter TextStyle height: 1.1
+                lineHeight = 24.2.sp,
             )
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -259,7 +289,8 @@ private fun TransactionCard(item: UsedCarItem) {
                 Spacer(Modifier.width(4.dp))
                 Text(item.date, fontSize = 13.sp, color = UsedCarPalette.gray600)
                 val note = item.note
-                if (!note.isNullOrBlank()) {
+                // Flutter: note != null && note!.isNotEmpty
+                if (!note.isNullOrEmpty()) {
                     Spacer(Modifier.width(12.dp))
                     Text(
                         note,
@@ -280,10 +311,12 @@ private fun TransactionCard(item: UsedCarItem) {
 /** `_TypeTag` 复刻：income→收入 / expense→支出 / 其他原样。 */
 @Composable
 private fun TypeTag(type: String) {
+    // Flutter 先 lowercase 再匹配
+    val lower = type.lowercase()
     val (label, color, bgColor) = when {
-        type.contains("income") || type.contains("收入") ->
+        lower.contains("income") || type.contains("收入") ->
             Triple("收入", Color(0xFF2E7D32), Color(0xFFE8F5E9))
-        type.contains("expense") || type.contains("支出") ->
+        lower.contains("expense") || type.contains("支出") ->
             Triple("支出", Color(0xFFC62828), Color(0xFFFFEBEE))
         else -> Triple(type, Color(0xFF1565C0), Color(0xFFE3F2FD))
     }

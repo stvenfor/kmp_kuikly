@@ -33,7 +33,7 @@ import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.lazy.LazyRow
-import com.tencent.kuikly.compose.foundation.lazy.items
+import com.tencent.kuikly.compose.foundation.lazy.itemsIndexed
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.foundation.text.BasicTextField
 import com.tencent.kuikly.compose.material3.HorizontalDivider
@@ -44,6 +44,7 @@ import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.TextStyle
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.style.TextAlign
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
@@ -261,12 +262,12 @@ internal class SearchPage : BaseComposePager() {
                                     bottom = 8.dp,
                                 ),
                             ) {
-                                items(repo.rankTabs()) { tab ->
+                                itemsIndexed(repo.rankTabs()) { index, tab ->
                                     val active = tab == selectedTab
                                     Column(
                                         modifier = Modifier
                                             .clickable { selectedTab = tab }
-                                            .padding(end = 20.dp),
+                                            .padding(end = if (index < repo.rankTabs().size - 1) 20.dp else 0.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                     ) {
                                         Text(
@@ -358,13 +359,14 @@ private fun RankRow(item: SearchRankItem) {
             .fillMaxWidth()
             .clickable { }
             .padding(horizontal = 16.su, vertical = 14.su),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             item.rank.toString(),
             fontSize = if (rankColor != null) 16.susp else 15.susp,
             fontWeight = if (rankColor != null) FontWeight.Bold else FontWeight.Medium,
             color = rankColor ?: SearchPalette.labelSecondary,
+            textAlign = TextAlign.Center,
             modifier = Modifier.width(24.su),
         )
         Spacer(Modifier.width(12.su))
@@ -391,6 +393,7 @@ private fun RankRow(item: SearchRankItem) {
             Text(
                 item.subtitle,
                 fontSize = 13.susp,
+                lineHeight = 18.2.susp,
                 color = SearchPalette.labelSecondary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

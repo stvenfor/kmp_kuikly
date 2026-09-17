@@ -12,6 +12,7 @@ import com.example.kuikly.data.friend.FriendStore
 import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
+import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
@@ -109,12 +110,15 @@ internal class FriendListPage : BaseComposePager() {
                     }
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
+                        // Flutter 列表卡间留白（`AppTheme.grouped` 形制下，单卡 r12 之间保留
+                        // 视觉间距以露出每个卡片的圆角，而非堆叠成长方块）。首卡顶部 `top = 12.dp`。
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             top = 12.dp,
                             end = 16.dp,
                             bottom = (bottom + 24f).dp,
                         ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(items, key = { it.id }) { item ->
                             FriendRow(

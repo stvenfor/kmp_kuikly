@@ -31,6 +31,7 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Brush
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
@@ -150,6 +151,9 @@ private object DubbingPalette {
     val hotRankRankSilver = Color(0xFFCFD8DC)
     val hotRankRankBronze = Color(0xFFFFCCBC)
     val hotRankRankDefault = Color(0xFFBDBDBD)
+
+    /** Flutter `dubbing_home_theme.dart` `hotRankDropdownShadow = Color(0x1A000000)`。 */
+    val hotRankDropdownShadow = Color(0x1A000000)
 }
 
 private val HOT_RANK_CATEGORIES = listOf("热读榜", "新书榜", "童话榜", "热搜榜", "科普榜", "高分榜")
@@ -263,7 +267,9 @@ private fun HotRankSidebar(selected: Int, onSelect: (Int) -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (active && label == "热搜榜") {
-                    // Flutter `Image.asset(badge_top20.png, 36×16)`。
+                    // Flutter `Image.asset(badge_top20.png, 36×16)`：原版用 `Stack +
+                    // Positioned(top: -18.h)` 让徽章悬浮在 item 之上（天花板：PNG 无图片加载器，
+                    // 徽章落在 item 内顶部，统一 Unicode 字形）。
                     Box(
                         modifier = Modifier
                             .background(DubbingPalette.svipGold, RoundedCornerShape(3.su))
@@ -297,6 +303,9 @@ private fun HotRankSidebar(selected: Int, onSelect: (Int) -> Unit) {
                 )
             }
         }
+        // Flutter `ListView.builder(padding: EdgeInsets.only(top: 8.h, bottom: 24.h))`：补足
+        // 底距让最末一项（"高分榜"）不贴底边；loudest 之一（与下拉阴影、右对齐并列为 V8d 三件套）。
+        Spacer(Modifier.height(24.su))
     }
 }
 
@@ -328,11 +337,20 @@ private fun AgeFilterBar(
             )
         }
         if (open) {
-            // Flutter `Material(elevation: 8, r10, width: 120)` 定位在 pill 下方 36。
+            // Flutter `Material(elevation: 8, r10, width: 120)` 定位在 pill 下方 36、右对齐
+            // （`Positioned(top: 36.h, right: 0, ...)`）。Kuikly 用 `.align(TopEnd)` + 同色
+            // 阴影还原：原版未加 `align` 会让下拉从 pill 左缘向右铺出，超出页面右沿 (loudest)。
             Column(
                 modifier = Modifier
+                    .align(Alignment.TopEnd)
                     .padding(top = 36.su)
                     .width(120.su)
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = RoundedCornerShape(10.su),
+                        ambientColor = DubbingPalette.hotRankDropdownShadow,
+                        spotColor = DubbingPalette.hotRankDropdownShadow,
+                    )
                     .background(Color.White, RoundedCornerShape(10.su)),
             ) {
                 AGE_FILTERS.forEachIndexed { index, item ->

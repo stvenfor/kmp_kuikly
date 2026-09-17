@@ -8,7 +8,6 @@ import com.example.kuikly.base.su
 import com.example.kuikly.base.susp
 import com.example.kuikly.data.auth.AuthSession
 import com.example.kuikly.data.mine.FakeMineRepository
-import com.example.kuikly.data.mine.MineFunctionItem
 import com.example.kuikly.data.mine.MineProfile
 import com.example.kuikly.data.mine.MineStore
 import com.example.kuikly.navigation.LoginRedirect
@@ -42,15 +41,18 @@ import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
 
 /**
- * 「我的」tab root. Flutter-density Mine parity (Phase-2 / P2-02).
+ * 「我的」tab root. Flutter-density Mine parity (Phase-2 / P2-02, polish P2-V1b).
  *
  * Sections (mirroring Flutter `MinePage` / `MineHeaderWidget` etc.):
  *  - top icon bar (`我的` + info / calendar / settings / login-logout)
- *  - header card: 72dp avatar · displayName + RoleBadge · storeName + chevron ·
- *    `电子名片` chip + maskedPhone
- *  - 3-up stats bar (客户 / 订单 / 跟进)
+ *  - header card: 72dp avatar · displayName + RoleBadge · storeLine + chevron ·
+ *    `电子名片` chip + maskedPhone（guest 文案对齐 Flutter：访客/未登录/— — —，
+ *    无 `登录 / 注册` 按钮 —— 登录入口在右上角图标）
+ *  - stats bar: guest 4 列（加入天数/员工数/店铺天数/累计客户，全 0，Flutter
+ *    `guestStats`）；登录后沿用 repo 3 列（客户/订单/跟进）
  *  - 4-up 常用服务 (商城/HOT, 我的钱包, 我的课程, 我的订单)
- *  - 4×2 个人功能 grid (Flutter `mine_function_data.dart` titles)
+ *  - 2×4 个人功能 grid（Flutter `mine_function_data.dart` catalog 8 项，
+ *    aspectRatio 0.92）+ `长按拖动顺序` hint
  *  - 6-row menu list (商务合作 / 提醒事项 / 邀请好友 / 粉丝群 / 意见反馈 / 设置)
  *
  * Guest vs logged-in via [AuthSession.repo.isLoggedIn]. Settings / Login real
@@ -97,11 +99,12 @@ internal fun MineTab(statusBarHeight: Float, pageWidth: Float) {
                     showLater = showLater,
                 )
             }
-            item { MineHeaderCard(isLoggedIn = isLoggedIn, profile = profile, onLoginClick = openLogin) }
+            item { MineHeaderCard(isLoggedIn = isLoggedIn, profile = profile) }
             item { Spacer(Modifier.height(16.su)) }
-            item { MineStatsBar(profile = profile) }
+            item { MineStatsBar(isLoggedIn = isLoggedIn, profile = profile) }
+            item { Spacer(Modifier.height(8.su)) }
             item { MineQuickServicesSection(items = quickServices, showLater = showLater) }
-            item { MineFunctionGrid(items = functions, showLater = showLater) }
+            item { MineFunctionGrid(showLater = showLater) }
             item { MineMenuList(items = menu, openSettings = openSettings, showLater = showLater) }
             item { Spacer(Modifier.height(24.su)) }
         }
@@ -117,7 +120,7 @@ private object MinePalette {
     val fillSecondary = Color(0xFFE9E9EB)
     val labelPrimary = Color(0xFF000000)
     val labelSecondary = Color(0x993C3C43)
-    val labelTertiary = Color(0xFF8E8E93)
+    val labelTertiary = Color(0x4D3C3C43)
     val separator = Color(0xFFC6C6C8)
     val destructive = Color(0xFFFF3B30)
     val badgeRed = Color(0xFFFF3B30)
@@ -141,11 +144,12 @@ private data class QuickServiceSpec(
     val badge: String?,
 )
 
+// Repo keys are "courses"/"orders" (FakeMineRepository); spec keys must match.
 private val QUICK_SERVICES = listOf(
     QuickServiceSpec("mall", "商城", MinePalette.iconBlue, "🛍", "HOT"),
     QuickServiceSpec("wallet", "我的钱包", MinePalette.iconPurple, "💳", null),
-    QuickServiceSpec("course", "我的课程", MinePalette.iconOrange, "▶", null),
-    QuickServiceSpec("order", "我的订单", MinePalette.iconGreen, "🗎", null),
+    QuickServiceSpec("courses", "我的课程", MinePalette.iconOrange, "▶", null),
+    QuickServiceSpec("orders", "我的订单", MinePalette.iconGreen, "🗎", null),
 )
 
 private data class FunctionSpec(
@@ -158,29 +162,26 @@ private data class FunctionSpec(
 )
 
 /**
- * 视觉规格 key→spec 映射。Flutter `mine_function_data.dart` 的 8 项 + FakeMineRepository
- * 既有 5 项的本地兜底；测试依赖 `mine.functions()` 仍返回非空+唯一 keys，故不在数据层
- * 改动规格。
+ * 视觉规格：Flutter `mine_function_data.dart` catalog 的 8 项镜像。
+ * 数据层（core-data）不在本 ticket 文件锁内，故网格直接按 Flutter 默认顺序渲染
+ * 这 8 项（P2-V1b 视觉对齐）；repo `functions()` 仍用于驱动非视觉逻辑/测试。
  */
 private val FUNCTION_DISPLAY: Map<String, FunctionSpec> = mapOf(
     "sms" to FunctionSpec("短信模板", "一键发送 轻松快捷", MinePalette.softBlue, MinePalette.iconBlue, "✉"),
-    "calculator" to FunctionSpec("购车计算器", "全款/贷款/保险全能算", MinePalette.softBlue, MinePalette.iconBlue, "🧮", "¥5830.00"),
+    "calculator" to FunctionSpec("购车计算器", "全款/贷款/保险全能算", MinePalette.softBlue, MinePalette.iconBlue, "🧮", "5830.00"),
     "used_car" to FunctionSpec("二手车", "置换/专卖/估价", MinePalette.softBlue, MinePalette.iconBlue, "🚗"),
     "short_video" to FunctionSpec("小视频", "用小视频秀车秀店", MinePalette.softPurple, MinePalette.iconPurple, "🎬"),
     "after_sales" to FunctionSpec("售后专区", "售后维修保养记录", MinePalette.softOrange, MinePalette.iconOrange, "🔧"),
     "qr_pay" to FunctionSpec("店铺收款码", "常见问题 功能介绍", MinePalette.softBlue, MinePalette.iconBlue, "▦"),
     "qa" to FunctionSpec("选买问答", "在线解答客户问题", MinePalette.softBlue, MinePalette.iconBlue, "💬"),
     "poster" to FunctionSpec("商家海报", "置换/专卖/估价", MinePalette.softOrange, MinePalette.iconOrange, "📊"),
-    "sales_report" to FunctionSpec("销售报表", "查看销售数据", MinePalette.softBlue, MinePalette.iconBlue, "📈"),
-    "customers" to FunctionSpec("客户管理", "客户跟进 / 标签", MinePalette.softBlue, MinePalette.iconBlue, "👥"),
-    "inventory" to FunctionSpec("我的车源", "库存 / 上下架", MinePalette.softBlue, MinePalette.iconBlue, "🚙"),
-    "training" to FunctionSpec("培训中心", "课程 / 考试", MinePalette.softPurple, MinePalette.iconPurple, "🎓"),
-    "ranking" to FunctionSpec("业绩排行", "团队 / 个人", MinePalette.softOrange, MinePalette.iconOrange, "🏆"),
 )
 
-private fun specFor(item: MineFunctionItem): FunctionSpec =
-    FUNCTION_DISPLAY[item.key]
-        ?: FunctionSpec(item.label, "功能服务", MinePalette.softBlue, MinePalette.iconBlue, "•")
+/** Flutter `MineFunctionData.defaultOrderIds`. */
+private val FUNCTION_ORDER = listOf(
+    "sms", "calculator", "used_car", "short_video",
+    "after_sales", "qr_pay", "qa", "poster",
+)
 
 private data class MenuSpec(
     val key: String,
@@ -218,7 +219,8 @@ private fun MineTopBar(
             .padding(
                 start = 16.su,
                 end = 8.su,
-                top = (statusBarHeight + LocalDesignScale.current.raw(8)).dp,
+                // Flutter `AppSafeInsets.top(context) + 8`：8 为裸字面量（不吃 screenutil）。
+                top = (statusBarHeight + 8).dp,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -256,11 +258,7 @@ private fun TopIcon(glyph: String, onClick: () -> Unit) {
 // ─────────────────────────── header card ───────────────────────────
 
 @Composable
-private fun MineHeaderCard(
-    isLoggedIn: Boolean,
-    profile: MineProfile?,
-    onLoginClick: () -> Unit,
-) {
+private fun MineHeaderCard(isLoggedIn: Boolean, profile: MineProfile?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -271,6 +269,7 @@ private fun MineHeaderCard(
     ) {
         Row(verticalAlignment = Alignment.Top) {
             // Avatar placeholder: 72dp circle, surface 2dp ring, fillSecondary bg.
+            // Flutter guest placeholder is person_fill icon (36, labelTertiary).
             Box(
                 modifier = Modifier
                     .size(72.su)
@@ -279,8 +278,12 @@ private fun MineHeaderCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = profile?.displayName?.take(1) ?: "?",
-                    fontSize = 24.susp,
+                    text = if (!isLoggedIn) {
+                        "👤"
+                    } else {
+                        profile?.displayName?.take(1) ?: "?"
+                    },
+                    fontSize = if (!isLoggedIn) 36.susp else 24.susp,
                     fontWeight = FontWeight.SemiBold,
                     color = MinePalette.labelTertiary,
                 )
@@ -288,8 +291,13 @@ private fun MineHeaderCard(
             Spacer(Modifier.width(16.su))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Flutter guest: displayName '访客' + roleBadge '未登录'.
                     Text(
-                        text = profile?.displayName ?: FakeMineRepository.GUEST_DISPLAY_NAME,
+                        text = if (!isLoggedIn) {
+                            "访客"
+                        } else {
+                            profile?.displayName ?: FakeMineRepository.GUEST_DISPLAY_NAME
+                        },
                         fontSize = 20.susp,
                         fontWeight = FontWeight.SemiBold,
                         color = MinePalette.labelPrimary,
@@ -307,62 +315,39 @@ private fun MineHeaderCard(
                     }
                 }
                 Spacer(Modifier.height(8.su))
-                val storeLine = profile?.storeLine
-                if (isLoggedIn && storeLine != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
-                            Utils.currentBridgeModule().toast("「切换门店」即将接入")
-                        },
-                    ) {
-                        Text(
-                            storeLine,
-                            fontSize = 13.susp,
-                            color = MinePalette.labelSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.width(4.su))
-                        Text("▾", fontSize = 14.susp, color = MinePalette.labelSecondary)
-                    }
+                // Flutter store row always renders with chevron_down (guest copy
+                // is '登录后查看门店信息').
+                val storeText = if (isLoggedIn) {
+                    profile?.storeLine ?: "— — —"
                 } else {
+                    "登录后查看门店信息"
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        Utils.currentBridgeModule().toast("「切换门店」即将接入")
+                    },
+                ) {
                     Text(
-                        text = if (isLoggedIn) "— — —" else "登录后查看门店信息",
+                        storeText,
                         fontSize = 13.susp,
                         color = MinePalette.labelSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    Spacer(Modifier.width(4.su))
+                    Text("▾", fontSize = 14.susp, color = MinePalette.labelSecondary)
                 }
                 Spacer(Modifier.height(12.su))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     MetaChip("💳", "电子名片") {
                         Utils.currentBridgeModule().toast("「电子名片」即将接入")
                     }
-                    val phone = profile?.maskedPhone
-                    if (phone != null) {
-                        Spacer(Modifier.width(16.su))
-                        Text(phone, fontSize = 13.susp, color = MinePalette.labelSecondary)
-                    }
+                    // Flutter guest maskedPhone is '— — —' (always rendered).
+                    val phone = profile?.maskedPhone ?: "— — —"
+                    Spacer(Modifier.width(16.su))
+                    Text(phone, fontSize = 13.susp, color = MinePalette.labelSecondary)
                 }
-            }
-        }
-        if (!isLoggedIn) {
-            Spacer(Modifier.height(16.su))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MinePalette.accent, RoundedCornerShape(MinePalette.radiusMdDesign.su))
-                    .clickable(onClick = onLoginClick)
-                    .padding(vertical = 10.su),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    "登录 / 注册",
-                    fontSize = 15.susp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                )
             }
         }
     }
@@ -400,19 +385,27 @@ private fun MetaChip(glyph: String, label: String, onClick: () -> Unit) {
 // ─────────────────────────── stats bar ───────────────────────────
 
 @Composable
-private fun MineStatsBar(profile: MineProfile?) {
-    val stats = profile?.stats
+private fun MineStatsBar(isLoggedIn: Boolean, profile: MineProfile?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.su, end = 16.su, top = 12.su)
+            .padding(start = 16.su, end = 16.su)
             .background(MinePalette.surface, RoundedCornerShape(MinePalette.radiusMdDesign.su))
             .border(0.5.su, MinePalette.separator, RoundedCornerShape(MinePalette.radiusMdDesign.su))
             .padding(vertical = 20.su, horizontal = 8.su),
     ) {
-        StatBlock(stats?.customerCount?.toString() ?: "0", "客户", Modifier.weight(1f))
-        StatBlock(stats?.orderCount?.toString() ?: "0", "订单", Modifier.weight(1f))
-        StatBlock(stats?.followUpCount?.toString() ?: "0", "跟进", Modifier.weight(1f))
+        if (!isLoggedIn) {
+            // Flutter guestStats: 4 columns, all "0" (加入天数/员工数/店铺天数/累计客户).
+            StatBlock("0", "加入天数", Modifier.weight(1f))
+            StatBlock("0", "员工数", Modifier.weight(1f))
+            StatBlock("0", "店铺天数", Modifier.weight(1f))
+            StatBlock("0", "累计客户", Modifier.weight(1f))
+        } else {
+            val stats = profile?.stats
+            StatBlock(stats?.customerCount?.toString() ?: "0", "客户", Modifier.weight(1f))
+            StatBlock(stats?.orderCount?.toString() ?: "0", "订单", Modifier.weight(1f))
+            StatBlock(stats?.followUpCount?.toString() ?: "0", "跟进", Modifier.weight(1f))
+        }
     }
 }
 
@@ -507,10 +500,7 @@ private fun MineQuickServicesSection(
 // ─────────────────────────── function grid ───────────────────────────
 
 @Composable
-private fun MineFunctionGrid(
-    items: List<MineFunctionItem>,
-    showLater: (String) -> Unit,
-) {
+private fun MineFunctionGrid(showLater: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -536,8 +526,8 @@ private fun MineFunctionGrid(
                 .fillMaxWidth()
                 .padding(horizontal = 16.su),
         ) {
-            val specs = items.map { specFor(it) }
-            specs.chunked(2).forEach { rowSpecs ->
+            val specs = FUNCTION_ORDER.map { FUNCTION_DISPLAY.getValue(it) }
+            specs.chunked(2).forEachIndexed { rowIdx, rowSpecs ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.su),
@@ -553,7 +543,10 @@ private fun MineFunctionGrid(
                         Spacer(Modifier.weight(1f))
                     }
                 }
-                Spacer(Modifier.height(12.su))
+                // Flutter grid mainAxisSpacing 12 — only between rows.
+                if (rowIdx < (specs.size + 1) / 2 - 1) {
+                    Spacer(Modifier.height(12.su))
+                }
             }
         }
     }
@@ -561,9 +554,10 @@ private fun MineFunctionGrid(
 
 @Composable
 private fun FunctionCard(spec: FunctionSpec, onTap: () -> Unit, modifier: Modifier) {
+    // Flutter grid childAspectRatio 0.92：cell 宽 (375-32-12)/2=165.5 → 高 ≈180 设计单位。
     Column(
         modifier = modifier
-            .height(110.su)
+            .height(180.su)
             .background(MinePalette.surface, RoundedCornerShape(MinePalette.radiusMdDesign.su))
             .border(0.5.su, MinePalette.separator, RoundedCornerShape(MinePalette.radiusMdDesign.su))
             .clickable(onClick = onTap)
@@ -575,7 +569,7 @@ private fun FunctionCard(spec: FunctionSpec, onTap: () -> Unit, modifier: Modifi
                 .background(spec.accent, RoundedCornerShape(12.su)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(spec.glyph, fontSize = 22.susp, color = spec.iconColor)
+            Text(spec.glyph, fontSize = 24.susp, color = spec.iconColor)
         }
         Spacer(Modifier.weight(1f))
         Text(
@@ -596,7 +590,7 @@ private fun FunctionCard(spec: FunctionSpec, onTap: () -> Unit, modifier: Modifi
         )
         val extra = spec.extraValue
         if (extra != null) {
-            Spacer(Modifier.height(6.su))
+            Spacer(Modifier.height(8.su))
             Text(extra, fontSize = 16.susp, fontWeight = FontWeight.Bold, color = spec.iconColor)
         }
     }

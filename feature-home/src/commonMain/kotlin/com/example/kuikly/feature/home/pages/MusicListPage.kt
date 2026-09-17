@@ -38,6 +38,7 @@ import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.core.annotations.Page
 
 /**
@@ -53,6 +54,8 @@ private object MusicPalette {
     val accent = Color(0xFF4DD0C8)
     val trackInactive = Color(0x1FFFFFFF)
     val fallbackCover = Color(MUSIC_PLACEHOLDER_FALLBACK)
+    /** Flutter `Material(elevation: 8)` 在深色底上的 ambient+spot 影调。 */
+    val miniBarShadow = Color(0x66000000)
 }
 
 /** Flutter `musicMiniPlayerBarHeight`（列表/首页底部留白）。 */
@@ -284,6 +287,12 @@ internal fun MusicMiniPlayerBar(
 ) {    Column(
         modifier = Modifier
             .fillMaxWidth()
+            // Flutter `Material(elevation: 8)` 投影，ambient+spot 同色（黑色 40% @ 深色底）。
+            .shadow(
+                8.dp,
+                ambientColor = MusicPalette.miniBarShadow,
+                spotColor = MusicPalette.miniBarShadow,
+            )
             .background(MusicPalette.miniBar),
     ) {
         // Flutter `LinearProgressIndicator(value: progress, minHeight: 2)`

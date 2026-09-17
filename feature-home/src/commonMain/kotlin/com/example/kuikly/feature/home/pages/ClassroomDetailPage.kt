@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.classroom.ClassroomStore
+import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.unit.dp
@@ -59,14 +61,6 @@ internal class ClassroomDetailPage : BaseComposePager() {
                     onBack = { Utils.currentBridgeModule().closePage() },
                     background = ClassroomPalette.background,
                     foreground = ClassroomPalette.titleBlack,
-                    actions = {
-                        Text(
-                            "#$id",
-                            fontSize = 11.sp,
-                            color = ClassroomPalette.textGrayLight,
-                            modifier = Modifier.padding(end = 12.dp),
-                        )
-                    },
                 )
                 val course = result.getOrNull()
                 if (course == null) {
@@ -90,13 +84,14 @@ internal class ClassroomDetailPage : BaseComposePager() {
                         ),
                     ) {
                         item {
+                            val cardShape = RoundedCornerShape(ClassroomPalette.CARD_RADIUS.dp)
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(
-                                        ClassroomPalette.cardWhite,
-                                        RoundedCornerShape(ClassroomPalette.CARD_RADIUS.dp),
-                                    )
+                                    // Flutter `_ClassCard` BoxShadow: black 4% / blur 8 / offset(0, 2)——
+                                    // 与 `ClassroomListPage.ClassCard` 同形制（ADR-0018 跨源一致性）。
+                                    .shadow(8.dp, cardShape, ambientColor = ClassroomPalette.cardShadow, spotColor = ClassroomPalette.cardShadow)
+                                    .background(ClassroomPalette.cardWhite, cardShape)
                                     .padding(16.dp),
                             ) {
                                 Text(
@@ -105,10 +100,13 @@ internal class ClassroomDetailPage : BaseComposePager() {
                                     fontWeight = FontWeight.SemiBold,
                                     color = ClassroomPalette.titleBlack,
                                 )
-                                Spacer(Modifier.height(12.dp))
-                                InfoLine("邀请码", course.inviteCode)
                                 Spacer(Modifier.height(8.dp))
-                                InfoLine("班级成员", "${course.memberCount} 人")
+                                // Flutter `_ClassCard` 同形制：「邀请码：X」左灰 / 「班级成员：N」右灰，一行。
+                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("邀请码：${course.inviteCode}", fontSize = 13.sp, color = ClassroomPalette.textGray)
+                                    Spacer(Modifier.weight(1f))
+                                    Text("班级成员：${course.memberCount} 人", fontSize = 13.sp, color = ClassroomPalette.textGray)
+                                }
                                 Spacer(Modifier.height(12.dp))
                                 // 授课老师行（头像 36·浅绿底 + 绿字，同 Flutter 上传者行形制）
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -150,6 +148,17 @@ internal class ClassroomDetailPage : BaseComposePager() {
                                 Text(course.summary, fontSize = 13.sp, color = ClassroomPalette.textGray)
                             }
                             Spacer(Modifier.height(16.dp))
+                            // Flutter 真源里「领取礼品卡」是作业详情页的绿字链接（「点击领取」）；
+                            // 本页无 1:1 真源，按 P2-W4b 用同一形制绿字链接接入已注册的 ClassroomGiftClaim。
+                            Text(
+                                "领取礼品卡 >",
+                                fontSize = 13.sp,
+                                color = ClassroomPalette.primaryGreen,
+                                modifier = Modifier.clickable {
+                                    Utils.currentBridgeModule().openPage(PageNames.ClassroomGiftClaim)
+                                },
+                            )
+                            Spacer(Modifier.height(12.dp))
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -159,7 +168,9 @@ internal class ClassroomDetailPage : BaseComposePager() {
                                         RoundedCornerShape(ClassroomPalette.BUTTON_RADIUS.dp),
                                     )
                                     .clickable {
-                                        Utils.currentBridgeModule().toast("「进入班级」即将接入")
+                                        // Flutter `classroomMyClass` 的真源入口是首页全部服务「班级教学」
+                                        // （AllServicesPage 不在本 ticket 锁内），故由本页既有 CTA 承接进入班级。
+                                        Utils.currentBridgeModule().openPage(PageNames.ClassroomMyClass)
                                     },
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -175,14 +186,5 @@ internal class ClassroomDetailPage : BaseComposePager() {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun InfoLine(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, fontSize = 13.sp, color = ClassroomPalette.textGray)
-        Spacer(Modifier.weight(1f))
-        Text(value, fontSize = 13.sp, color = ClassroomPalette.titleBlack)
     }
 }

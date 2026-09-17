@@ -33,8 +33,13 @@ import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.text.SpanStyle
 import com.tencent.kuikly.compose.ui.text.TextStyle
+import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.input.PasswordVisualTransformation
+import com.tencent.kuikly.compose.ui.text.input.VisualTransformation
+import com.tencent.kuikly.compose.ui.text.withStyle
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
@@ -47,7 +52,8 @@ private enum class LoginMode(val label: String) {
 }
 
 /** `AuthTheme`（module_auth iOS 极简令牌）镜像。 */
-private object AuthPalette {
+/** Shared with RegisterPage (P2-W4a); keep internal to feature-auth. */
+internal object AuthPalette {
     val accent = Color(0xFF007AFF)
     val background = Color(0xFFF2F2F7)
     val surface = Color(0xFFFFFFFF)
@@ -160,6 +166,7 @@ internal class LoginPage : BaseComposePager() {
                         value = password,
                         onValueChange = { password = it },
                         hint = "密码",
+                        obscure = true,
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -268,7 +275,12 @@ internal class LoginPage : BaseComposePager() {
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = AuthPalette.accent,
-                        modifier = Modifier.clickable { }.padding(horizontal = 8.dp),
+                        // P2-W4d：压栈打开注册页（不关登录页，Register「‹」返回即回到本页）。
+                        modifier = Modifier
+                            .clickable {
+                                Utils.currentBridgeModule().openPage(PageNames.Register)
+                            }
+                            .padding(horizontal = 8.dp),
                     )
                     Spacer(Modifier.width(16.dp))
                     Box(
@@ -298,6 +310,7 @@ private fun LoginField(
     value: String,
     onValueChange: (String) -> Unit,
     hint: String,
+    obscure: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -315,6 +328,11 @@ private fun LoginField(
                 value = value,
                 onValueChange = onValueChange,
                 textStyle = TextStyle(fontSize = 17.sp, color = AuthPalette.labelPrimary),
+                visualTransformation = if (obscure) {
+                    PasswordVisualTransformation()
+                } else {
+                    VisualTransformation.None
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             if (value.isEmpty()) {
@@ -357,9 +375,16 @@ private fun PrivacyRow(agreed: Boolean, onToggle: (Boolean) -> Unit) =
             }
         }
         Text(
-            "我已阅读并同意《某个隐私条款》",
+            // Flutter RichText：说明文字 labelSecondary，书名号条款名 accent。
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = AuthPalette.labelSecondary)) {
+                    append("我已阅读并同意")
+                }
+                withStyle(SpanStyle(color = AuthPalette.accent)) {
+                    append("《某个隐私条款》")
+                }
+            },
             fontSize = 13.sp,
-            color = AuthPalette.labelSecondary,
             modifier = Modifier
                 .weight(1f)
                 .padding(top = 12.dp),
@@ -368,13 +393,12 @@ private fun PrivacyRow(agreed: Boolean, onToggle: (Boolean) -> Unit) =
 
 /**
  * `CupertinoSlidingSegmentedControl` 复刻：
- * fillSecondary 12 圆角 + 白色 thumb + 15/w500 文案。
+ * 内容自适应宽度（非撑满）、fillSecondary 12 圆角 + 白色 thumb + 15/w500 文案。
  */
 @Composable
 private fun LoginModeSwitcher(mode: LoginMode, onSelect: (LoginMode) -> Unit) =
     Row(
         modifier = Modifier
-            .fillMaxWidth()
             .background(AuthPalette.fillSecondary, RoundedCornerShape(12.dp))
             .padding(4.dp),
     ) {
@@ -382,7 +406,6 @@ private fun LoginModeSwitcher(mode: LoginMode, onSelect: (LoginMode) -> Unit) =
             val selected = item == mode
             Box(
                 modifier = Modifier
-                    .weight(1f)
                     .background(
                         if (selected) AuthPalette.surface else Color.Transparent,
                         RoundedCornerShape(8.dp),
@@ -394,7 +417,7 @@ private fun LoginModeSwitcher(mode: LoginMode, onSelect: (LoginMode) -> Unit) =
                 Text(
                     item.label,
                     fontSize = 15.sp,
-                    fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                    fontWeight = FontWeight.Medium,
                     color = AuthPalette.labelPrimary,
                 )
             }

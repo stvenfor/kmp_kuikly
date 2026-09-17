@@ -6,7 +6,6 @@ import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.friend.FriendStore
 import com.tencent.kuikly.compose.foundation.background
-import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
@@ -26,17 +25,18 @@ import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.style.TextAlign
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 
 /**
- * 好友资料（Phase-1 路由，P2-W2c 按 Flutter 共享 AppTheme/AppNavBar 令牌重定型）。
+ * 好友资料（Phase-1 路由，P2-W2c 按 Flutter 共享 AppTheme/AppNavBar 令牌重定型；P2-V5a 视觉加厚）。
  *
  * ponytail 天花板：Flutter `features/friend` **无资料页真源**（模块整体是占位桩，见
  * [FriendListPage]），故保留 Kuikly Phase-1 的 mock 字段，仅按 `AppTheme` 分组卡形制加厚
- * （头像 72 + 名字 20·w700 + 简介卡行 15/15 + 0.5 hairline）。
+ * （头像 72 + 名字 20·w600 + 简介 13·textAlign center + 卡内 16 槽 + 资料行 15/15 + 0.5 hairline）。
  */
 @Page(name = "FriendDetail", moduleId = "feature_home")
 internal class FriendDetailPage : BaseComposePager() {
@@ -83,7 +83,11 @@ internal class FriendDetailPage : BaseComposePager() {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(AppChrome.surface, RoundedCornerShape(12.dp))
-                                    .padding(vertical = 24.dp),
+                                    // 卡内 16 水平槽：原为 0，20 sp 名字 / 13 sp 简介会**贴到卡圆角边**
+                                    // （2 行简介整段齐平左/右边缘）；16 = 下方分组卡 `InfoRow` /
+                                    // `Hairline` 同一水平槽，两卡文字左缘对齐（同 `FriendRow`
+                                    // `padding(horizontal = 16.dp, …)` 与 `MineHeaderCard` `.padding(16.su)`）。
+                                    .padding(horizontal = 16.dp, vertical = 24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Box(
@@ -103,8 +107,15 @@ internal class FriendDetailPage : BaseComposePager() {
                                 Text(
                                     friend.name,
                                     fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    // 权重对齐同域已落地的名字层级：`FriendRow` 名字 17·w600、
+                                    // `MineHeaderCard` 20·w600、`AppNavBarBar` 标题 17·w600
+                                    // （AppChrome 令牌族统一 w600）；原 w700 与三者不一致。
+                                    fontWeight = FontWeight.SemiBold,
                                     color = AppChrome.labelPrimary,
+                                    // 居中是"块居中"，行内仍左对齐 → 简介换行时第二行会齐平左缘、
+                                    // 在居中名字下方形成错位块（同 `SearchPage` / `HotRankDetailPage`
+                                    // 的 `textAlign = TextAlign.Center` 处理）。
+                                    textAlign = TextAlign.Center,
                                 )
                                 Spacer(Modifier.height(6.dp))
                                 Text(
@@ -113,6 +124,7 @@ internal class FriendDetailPage : BaseComposePager() {
                                     color = AppChrome.labelSecondary,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
                                 )
                             }
                             Spacer(Modifier.height(16.dp))

@@ -25,9 +25,9 @@ import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
-import com.tencent.kuikly.compose.foundation.shape.CircleShape
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Switch
+import com.tencent.kuikly.compose.material3.SwitchDefaults
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
@@ -58,27 +58,26 @@ internal class CheckInMallPage : BaseComposePager() {
             ProvideDesignScale(pagerData.pageViewWidth) {
                 var reminderEnabled by remember { mutableStateOf(false) }
 
-                Column(
+                // P2-V8c：Flutter 真源是**单个** `CustomScrollView`（slivers[0] = `_buildHeader`，
+                // check_in_mall_page.dart:66-83），即「蓝头 + 公告 + 双指标」随内容一起滚出视口。
+                // 原实现把 header 放在滚动容器外（钉死）→ 改为首个 `item`，口径同 P2-V1b `MineTab`。
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(CheckInPalette.background),
+                    contentPadding = PaddingValues(bottom = (bottom + 24f).su),
                 ) {
-                    CheckInHeader(topInset = top)
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(bottom = (bottom + 24f).su),
-                    ) {
-                        item {
-                            CheckInCard(
-                                reminderEnabled = reminderEnabled,
-                                onReminderChange = { reminderEnabled = it },
-                            )
-                        }
-                        item { Spacer(Modifier.height(16.su)) }
-                        item { TaskSection() }
-                        item { Spacer(Modifier.height(16.su)) }
-                        item { GiftSection() }
+                    item { CheckInHeader(topInset = top) }
+                    item {
+                        CheckInCard(
+                            reminderEnabled = reminderEnabled,
+                            onReminderChange = { reminderEnabled = it },
+                        )
                     }
+                    item { Spacer(Modifier.height(16.su)) }
+                    item { TaskSection() }
+                    item { Spacer(Modifier.height(16.su)) }
+                    item { GiftSection() }
                 }
             }
         }
@@ -204,7 +203,9 @@ private fun CheckInCard(reminderEnabled: Boolean, onReminderChange: (Boolean) ->
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.su, end = 16.su, top = 16.su)
+            // Flutter `_buildCheckInCard` 的 `margin` 只有 `symmetric(horizontal: 16.w)`：
+            // 与 header 尾部的 `SizedBox(height: 16.h)` 合起来正好 16 间距（原多出 top 16 → 32）。
+            .padding(horizontal = 16.su)
             .background(CheckInPalette.cardWhite, RoundedCornerShape(12.su))
             .padding(16.su),
     ) {
@@ -259,8 +260,22 @@ private fun CheckInCard(reminderEnabled: Boolean, onReminderChange: (Boolean) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("签到提醒", fontSize = 12.susp, color = CheckInPalette.textSecondary)
                 Spacer(Modifier.width(8.su))
-                Box(modifier = Modifier.size(44.su, 24.su), contentAlignment = Alignment.CenterEnd) {
-                    Switch(checked = reminderEnabled, onCheckedChange = onReminderChange)
+                // Flutter 真源 `SizedBox(44.w × 24.h)` + `Switch`：M3 track 固定 52×32，
+                // 收缩约束下**居中溢出**（`_computeTrackPaintOffset` 取 (canvas - track)/2，
+                // flutter/lib/src/material/switch.dart:1712-1718）→ 故对齐用 Center 而非 CenterEnd。
+                Box(modifier = Modifier.size(44.su, 24.su), contentAlignment = Alignment.Center) {
+                    Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = onReminderChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = CheckInPalette.primaryBlue,
+                            checkedBorderColor = Color.Transparent,
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = CheckInPalette.textHint.copy(alpha = 0.3f),
+                            uncheckedBorderColor = Color.Transparent,
+                        ),
+                    )
                 }
             }
         }
@@ -408,12 +423,9 @@ private fun GiftSection() {
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.su)
-                    .background(CheckInPalette.textHint.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
+            // Flutter `_buildGiftSection` 只有一个 80.sp 的 `card_giftcard_outlined`
+            // （color: textHint@30%，无任何底色/圆形底板）→ 去掉原自造的 80 圆底。
+            Box(modifier = Modifier.size(80.su), contentAlignment = Alignment.Center) {
                 Text("🎁", fontSize = 40.susp)
             }
             Spacer(Modifier.height(16.su))

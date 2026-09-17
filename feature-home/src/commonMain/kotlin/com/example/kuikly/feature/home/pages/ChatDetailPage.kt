@@ -194,7 +194,8 @@ private fun MessageBubble(message: ChatMessage) {
             fontSize = 17.sp,
             color = if (message.isSelf) Color.White else ChatPalette.labelPrimary,
             modifier = Modifier
-                .widthIn(max = 260.dp)
+                // Flutter phone cap ≈ 75% 屏宽 (375dp → ~280dp)，K 留 285dp 余量避免过早换行。
+                .widthIn(max = 285.dp)
                 .background(
                     if (message.isSelf) ChatPalette.accent else ChatPalette.fillSecondary,
                     // Flutter `ChatTheme.bubbleRadiusFor`：顶角 18，尾角（对侧）4。
@@ -236,6 +237,22 @@ private fun BubbleAvatar(initial: String, self: Boolean) {
 }
 
 /**
+ * Flutter `_PanelIconButton`：44×44 SizedBox + 24 icon + IconButton 默认内 padding。
+ * Kuikly 没有 IconButton，故等价用 44×44 Box + 24sp emoji 居中（命中区与 Flutter 完全一致）。
+ */
+@Composable
+private fun PanelIconButton(glyph: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(glyph, fontSize = 24.sp, color = ChatPalette.labelSecondary)
+    }
+}
+
+/**
  * Flutter `InputPanel` 收起态的静态等价：白底 + mic 44 位 + r20 灰输入框（hint「信息」）
  * + smiley / plus 44 位。输入为 mock（点击 toast），不做真实键盘交互。
  */
@@ -252,14 +269,11 @@ private fun ChatInputPanel(bottomInset: Float) {
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Flutter `_PanelIconButton(CupertinoIcons.mic)`（labelSecondary 24 / 44×44 位）。
-            Text(
-                "🎤",
-                fontSize = 20.sp,
-                color = ChatPalette.labelSecondary,
-                modifier = Modifier
-                    .clickable { Utils.currentBridgeModule().toast("「语音输入」即将接入") }
-                    .padding(10.dp),
+            // Flutter `_PanelIconButton`：44×44 SizedBox + 24 icon 内嵌。这里同样显式锁定
+            // 44×44 命中区，把 emoji 字号抬到 24.sp 与 Cupertino 视觉一致。
+            PanelIconButton(
+                glyph = "🎤",
+                onClick = { Utils.currentBridgeModule().toast("「语音输入」即将接入") },
             )
             Spacer(Modifier.width(4.dp))
             // Flutter `_TextInput`：fillSecondary r20 / 0.5 separator 边 / h14 v10 / hint 17。
@@ -277,21 +291,15 @@ private fun ChatInputPanel(bottomInset: Float) {
             }
             Spacer(Modifier.width(4.dp))
             // Flutter `_PanelIconButton(CupertinoIcons.smiley | plus)`（无输入时的收起态）。
-            Text(
-                "☺",
-                fontSize = 20.sp,
-                color = ChatPalette.labelSecondary,
-                modifier = Modifier
-                    .clickable { Utils.currentBridgeModule().toast("「表情」即将接入") }
-                    .padding(10.dp),
+            PanelIconButton(
+                glyph = "☺",
+                onClick = { Utils.currentBridgeModule().toast("「表情」即将接入") },
             )
-            Text(
-                "＋",
-                fontSize = 20.sp,
-                color = ChatPalette.labelSecondary,
-                modifier = Modifier
-                    .clickable { Utils.currentBridgeModule().toast("「更多」即将接入") }
-                    .padding(10.dp),
+            // IconButton 默认 8dp 内 padding → 相邻两个 icon 间视觉间距 ≈ 16dp（smiley 右边 8 + plus 左边 8）。
+            Spacer(Modifier.width(8.dp))
+            PanelIconButton(
+                glyph = "＋",
+                onClick = { Utils.currentBridgeModule().toast("「更多」即将接入") },
             )
         }
         // Flutter `SizedBox(height: MediaQuery.paddingOf(context).bottom)`。

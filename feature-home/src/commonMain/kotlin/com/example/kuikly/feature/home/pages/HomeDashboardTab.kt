@@ -34,6 +34,7 @@ import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Brush
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
@@ -354,34 +355,34 @@ private fun HomeSearchRow() {
     }
 }
 
-/** Flutter `HomeTopTabBar`：首页 / 视频 / Club，选中项 17sp w600 + 20×2 蓝条。 */
+/** Flutter `HomeTopTabBar`：首页 / 视频 / Club，硬编码 dp，选中项 17sp w600 + 20×2 蓝条。 */
 @Composable
 private fun HomeTopTabBar(selected: Int, onSelected: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.su, end = 16.su, top = 16.su, bottom = 4.su),
+            .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 4.dp),
     ) {
         HOME_TOP_TABS.forEachIndexed { index, label ->
             val active = index == selected
             Column(
                 modifier = Modifier
                     .clickable { onSelected(index) }
-                    .padding(end = if (index < HOME_TOP_TABS.lastIndex) 24.su else 0.su),
+                    .padding(end = if (index < HOME_TOP_TABS.lastIndex) 24.dp else 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     label,
-                    fontSize = if (active) 17.susp else 16.susp,
+                    fontSize = if (active) 17.sp else 16.sp,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (active) HomePalette.labelPrimary else HomePalette.labelSecondary,
                 )
-                Spacer(Modifier.height(6.su))
+                Spacer(Modifier.height(6.dp))
                 Box(
                     modifier = Modifier
-                        .width(if (active) 20.su else 0.su)
-                        .height(2.su)
-                        .background(HomePalette.accent, RoundedCornerShape(1.su)),
+                        .width(if (active) 20.dp else 0.dp)
+                        .height(2.dp)
+                        .background(HomePalette.accent, RoundedCornerShape(1.dp)),
                 )
             }
         }
@@ -403,6 +404,7 @@ private fun HomeDashboardSections() {
             title = "投资策略",
             subtitle = "资产九宫格 · 恐贪定投 · 趋势策略",
             onClick = { open(PageNames.Strategy) },
+            withBorder = true,
         )
         HomeServiceGrid()
         HomeContactList()
@@ -412,24 +414,35 @@ private fun HomeDashboardSections() {
             title = "学习报告",
             subtitle = "今日高光 · 学习记录",
             onClick = { open(PageNames.LearningReport) },
+            withBorder = false,
         )
     }
 }
 
-/** Flutter `HomeBannerSection`：132 高圆角卡 + 标题/副标题/CTA。 */
+/** Flutter `HomeBannerSection`：surface 底 + accent 0.55→透明 渐变蒙层 + 16/4 阴影。 */
 @Composable
 private fun HomeBanner() {
+    val bannerShape = RoundedCornerShape(HomePalette.radiusMdDesign.su)
+    val shadowColor = Color(0xFF8E8E93).copy(alpha = 0.08f)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.su, end = 16.su, top = 16.su)
             .height(132.su)
-            .background(
-                Brush.horizontalGradient(listOf(Color(0xFF3E86D8), Color(0xFFB6BEC9))),
-                RoundedCornerShape(HomePalette.radiusMdDesign.su),
-            )
+            .shadow(8.dp, bannerShape, ambientColor = shadowColor, spotColor = shadowColor)
+            .background(HomePalette.surface, bannerShape)
             .clickable { toast("「朋友圈营销」即将接入") },
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(HomePalette.accent.copy(alpha = 0.55f), Color.Transparent),
+                    ),
+                    bannerShape,
+                ),
+        )
         Column(modifier = Modifier.padding(start = 20.su, top = 24.su)) {
             Text(
                 "朋友圈营销",
@@ -700,15 +713,22 @@ private fun HomeStoreMetricsCard() {
     }
 }
 
-/** Flutter `_StrategyEntry` / `_LearningReportEntry` 共用形制。 */
+/** Flutter `_StrategyEntry`（带 border）/ `_LearningReportEntry`（无 border）共用形制。 */
 @Composable
-private fun HomeEntryCard(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+private fun HomeEntryCard(
+    icon: String,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    withBorder: Boolean = true,
+) {
+    val entryShape = RoundedCornerShape(HomePalette.radiusMdDesign.su)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.su, end = 16.su, top = 16.su)
-            .background(HomePalette.surface, RoundedCornerShape(HomePalette.radiusMdDesign.su))
-            .border(0.5.su, HomePalette.separator, RoundedCornerShape(HomePalette.radiusMdDesign.su))
+            .background(HomePalette.surface, entryShape)
+            .then(if (withBorder) Modifier.border(0.5.su, HomePalette.separator, entryShape) else Modifier)
             .clickable(onClick = onClick)
             .padding(16.su),
         verticalAlignment = Alignment.CenterVertically,
@@ -907,7 +927,12 @@ private fun HomeNewsList() {
                     )
                 }
                 Spacer(Modifier.width(12.su))
-                ImagePlaceholder(size = 96.su, corner = 10.su, ring = 24.su)
+                Box(
+                    modifier = Modifier
+                        .width(96.su)
+                        .height(72.su)
+                        .background(HomePalette.fillSecondary, RoundedCornerShape(10.su)),
+                )
             }
         }
     }

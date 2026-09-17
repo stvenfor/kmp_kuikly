@@ -23,6 +23,7 @@ import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Button
 import com.tencent.kuikly.compose.material3.ButtonDefaults
+import com.tencent.kuikly.compose.material3.CircularProgressIndicator
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.material3.TextButton
 import com.tencent.kuikly.compose.setContent
@@ -63,24 +64,18 @@ internal class SplashPage : BaseComposePager() {
                     .background(Color.White),
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp),
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        "kmp_kuikly",
-                        fontSize = 28.sp,
-                        color = Color.Black,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(8.dp))
+                    if (!denied) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(16.dp))
+                    }
                     Text(
                         when {
                             denied -> "需同意隐私政策后才能继续使用"
-                            showPrivacy -> "请阅读并同意隐私政策"
-                            else -> "正在启动…"
+                            else -> "正在进入应用..."
                         },
                         fontSize = 16.sp,
                         color = Color.Gray,

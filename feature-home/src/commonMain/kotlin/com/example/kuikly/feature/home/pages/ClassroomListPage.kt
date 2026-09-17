@@ -29,6 +29,7 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.unit.dp
@@ -52,6 +53,9 @@ internal object ClassroomPalette {
     val textGray = Color(0xFF8C8C8C)
     val textGrayLight = Color(0xFFBFBFBF)
     val divider = Color(0xFFEEEEEE)
+
+    /** Flutter `_ClassCard` `BoxShadow(color: black.withValues(alpha: 0.04))`。 */
+    val cardShadow = Color(0x0A000000)
 
     const val CARD_RADIUS = 12f
     const val BUTTON_RADIUS = 24f
@@ -199,10 +203,13 @@ internal class ClassroomListPage : BaseComposePager() {
  */
 @Composable
 private fun ClassCard(course: Course, onTap: () -> Unit) {
+    val cardShape = RoundedCornerShape(ClassroomPalette.CARD_RADIUS.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(ClassroomPalette.cardWhite, RoundedCornerShape(ClassroomPalette.CARD_RADIUS.dp)),
+            // Flutter `_ClassCard` BoxShadow: black 4% / blur 8 / offset(0, 2)
+            .shadow(8.dp, cardShape, ambientColor = ClassroomPalette.cardShadow, spotColor = ClassroomPalette.cardShadow)
+            .background(ClassroomPalette.cardWhite, cardShape),
     ) {
         Column(
             modifier = Modifier
@@ -241,14 +248,30 @@ private fun ClassCard(course: Course, onTap: () -> Unit) {
             }
         }
         Spacer(Modifier.height(4.dp))
-        Text(
-            "作业点评 >",
-            fontSize = 13.sp,
-            color = ClassroomPalette.primaryGreen,
+        Row(
             modifier = Modifier
-                .clickable { Utils.currentBridgeModule().toast("作业点评功能开发中") }
-                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp, top = 4.dp),
-        )
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "作业点评 >",
+                fontSize = 13.sp,
+                color = ClassroomPalette.primaryGreen,
+                modifier = Modifier.clickable { Utils.currentBridgeModule().toast("作业点评功能开发中") },
+            )
+            Spacer(Modifier.weight(1f))
+            // Flutter 真源该卡只有一个绿字链接（「作业点评 >」→ classroomHomeworkReview，未注册）。
+            // P2-W4b：为已注册的 `ClassroomVideoDetail` 补最小列表级入口（不新增 chrome，仅加一条同形制链接）。
+            Text(
+                "课程视频 >",
+                fontSize = 13.sp,
+                color = ClassroomPalette.primaryGreen,
+                modifier = Modifier.clickable {
+                    Utils.currentBridgeModule().openPage(PageNames.ClassroomVideoDetail)
+                },
+            )
+        }
     }
 }
 

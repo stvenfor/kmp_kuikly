@@ -25,8 +25,11 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.graphics.RectangleShape
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.style.TextDecoration
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
@@ -105,6 +108,7 @@ internal class PayConfirmPage : BaseComposePager() {
                             ConfirmBar(
                                 tier = p.tier,
                                 priceText = if (p.price > 0.0) "¥${formatMoney(p.price)}" else p.priceLabel,
+                                wechat = wechat,
                                 bottomInset = bottom,
                                 onConfirm = {
                                     Utils.currentBridgeModule().toast("开通成功：${p.title}（mock）")
@@ -176,10 +180,12 @@ private fun OrderCard(plan: Plan, accent: Color) {
             )
             if (plan.originalPrice > 0.0) {
                 Spacer(Modifier.width(8.dp))
+                // Flutter `PlanCard` 原价：`TextDecoration.lineThrough`，无「原价」前缀。
                 Text(
-                    "原价 ¥${plan.originalPrice.roundToInt()}",
+                    "¥${plan.originalPrice.roundToInt()}",
                     fontSize = 11.sp,
                     color = PayPalette.originalPriceGray,
+                    textDecoration = TextDecoration.LineThrough,
                 )
             }
         }
@@ -193,17 +199,26 @@ private fun OrderCard(plan: Plan, accent: Color) {
 private fun ConfirmBar(
     tier: PayTier,
     priceText: String,
+    wechat: Boolean,
     bottomInset: Float,
     onConfirm: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // Flutter `MembershipRenewBar`：`BoxShadow(Color(0x14000000), blurRadius: 12, offset(0, -2))`
+            // 的向上投影近似（Kuikly `.shadow` 四向投影，底侧出屏不可见）。
+            .shadow(
+                4.dp,
+                RectangleShape,
+                ambientColor = Color(0x14000000),
+                spotColor = Color(0x14000000),
+            )
             .background(PayPalette.cardWhite)
             .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = (bottomInset + 12f).dp),
     ) {
         Text(
-            "支付方式：微信支付",
+            "支付方式：${if (wechat) "微信支付" else "支付宝支付"}",
             fontSize = 11.sp,
             color = PayPalette.textGray,
             maxLines = 1,

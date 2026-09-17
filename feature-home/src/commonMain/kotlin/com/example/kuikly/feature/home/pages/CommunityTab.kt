@@ -9,6 +9,7 @@ import com.example.kuikly.base.Utils
 import com.example.kuikly.data.community.CommunityStore
 import com.example.kuikly.data.community.Post
 import com.example.kuikly.navigation.PageNames
+import com.tencent.kuikly.compose.foundation.Canvas
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
@@ -30,9 +31,18 @@ import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.geometry.Rect
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.graphics.Path
+import com.tencent.kuikly.compose.ui.graphics.StrokeCap
+import com.tencent.kuikly.compose.ui.graphics.StrokeJoin
+import com.tencent.kuikly.compose.ui.graphics.drawscope.Stroke
+import com.tencent.kuikly.compose.ui.text.SpanStyle
+import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.style.TextDecoration
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
+import com.tencent.kuikly.compose.ui.text.withStyle
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
@@ -55,10 +65,21 @@ internal object CommunityPalette {
     val separator = Color(0xFFC6C6C8)
     val likeRed = Color(0xFFFF3B30)
 
+    /** Flutter `RichTextContentWidget._linkColor / _tagColor`（#话题 · @用户 · 链接共用）。 */
+    val richLink = Color(0xFF576B95)
+
     const val RADIUS_MD = 12f
 }
 
 private val COMMUNITY_FILTER_TABS = listOf("最新", "热门", "关注")
+
+/**
+ * Flutter `RichTextParser._pattern` 的镜像：`@用户` / `#话题` / `http(s)://链接`。
+ *
+ * Flutter 对 mention 与 hashtag 用同一套样式（[CommunityPalette.richLink] + w500），故合并 `[@#]`；
+ * 用真实 CJK 区间字符（一–龥 = U+4E00–U+9FA5）代替 `\uXXXX` 转义，保证 KMP 各端 Regex 一致。
+ */
+private val COMMUNITY_RICH_TOKEN = Regex("([@#][一-龥A-Za-z0-9_]+|https?://\\S+)")
 
 /**
  * 社区 tab root — Flutter `CommunityPage` 复刻（Phase-2 / P2-W2b）。
@@ -175,6 +196,8 @@ private fun CommunityHeader(
                     Text(
                         label,
                         fontSize = 15.sp,
+                        // Flutter `CommunityTheme.headline.copyWith(fontSize: 15)` → height 1.25。
+                        lineHeight = 18.75.sp,
                         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (active) CommunityPalette.labelPrimary else CommunityPalette.labelSecondary,
                     )
@@ -255,35 +278,114 @@ private fun PostCard(post: Post) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        // Flutter 帖子正文（body 15 / labelPrimary）；mock Post 额外有 title，作为首行渲染。
-        Text(post.title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = CommunityPalette.labelPrimary)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            post.body,
-            fontSize = 15.sp,
-            color = CommunityPalette.labelPrimary,
-        )
+        // Flutter `ExpandTextWidget` → `RichTextContentWidget(post.content)`：**单段**富文本
+        // （16 / height 1.45 / labelPrimary，`#话题`·`@用户` 走 richLink + w500，链接加下划线）——
+        // 卡内没有独立的加粗标题层级（`PostModel` 也没有 title 字段，只有 content）。
+        // mock `Post` 的 title 即 Flutter content 的首行，故并成一段渲染：保留全部文案，
+        // 但去掉 Flutter 不存在的 17 bold 标题（原先每卡多一行粗体 → 卡更高、层级更吵）。
+        PostContent(content = post.title + "\n" + post.body)
         // Flutter `LikeBarWidget`：♡ / 💬 / ↗（图标 20 + 文案 13，间隔 24，顶部 12）。
         Row(modifier = Modifier.padding(top = 12.dp)) {
-            PostAction(glyph = "♡", label = if (post.likeCount > 0) post.likeCount.toString() else "赞")
+            PostAction(label = if (post.likeCount > 0) post.likeCount.toString() else "赞") {
+                Text("♡", fontSize = 20.sp, color = CommunityPalette.labelSecondary)
+            }
             Spacer(Modifier.width(24.dp))
-            PostAction(glyph = "💬", label = if (post.commentCount > 0) post.commentCount.toString() else "评论")
+            // Flutter `CupertinoIcons.chat_bubble`（20 / labelSecondary）。原 `💬` 是**全彩 emoji**，
+            // 与社区页灰阶 chrome 冲突，改为 Canvas 线稿（几何同 `MainPage` 底栏 chat 图标）。
+            PostAction(label = if (post.commentCount > 0) post.commentCount.toString() else "评论") {
+                ChatBubbleIcon(sizeDp = 20f, tint = CommunityPalette.labelSecondary)
+            }
             Spacer(Modifier.width(24.dp))
-            PostAction(glyph = "↗", label = "分享")
+            PostAction(label = "分享") {
+                Text("↗", fontSize = 20.sp, color = CommunityPalette.labelSecondary)
+            }
         }
+    }
+}
+
+/**
+ * Flutter `RichTextContentWidget`：单段正文 + 富文本着色。
+ *
+ * `@用户` / `#话题` → `#576B95` w500；链接 → 同色 + 下划线（Flutter 的 tap-toast /
+ * 跳转行为未复刻：本 ticket 只做视觉）。
+ */
+@Composable
+private fun PostContent(content: String) {
+    val annotated = remember(content) {
+        buildAnnotatedString {
+            var cursor = 0
+            COMMUNITY_RICH_TOKEN.findAll(content).forEach { match ->
+                if (match.range.first > cursor) {
+                    append(content.substring(cursor, match.range.first))
+                }
+                val token = match.value
+                if (token.startsWith("http")) {
+                    withStyle(
+                        SpanStyle(
+                            color = CommunityPalette.richLink,
+                            textDecoration = TextDecoration.Underline,
+                        ),
+                    ) { append(token) }
+                } else {
+                    withStyle(
+                        SpanStyle(
+                            color = CommunityPalette.richLink,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    ) { append(token) }
+                }
+                cursor = match.range.last + 1
+            }
+            if (cursor < content.length) append(content.substring(cursor))
+        }
+    }
+    Text(
+        annotated,
+        fontSize = 16.sp,
+        // Flutter `RichTextContentWidget` baseStyle：fontSize 16 / height 1.45。
+        lineHeight = 23.2.sp,
+        color = CommunityPalette.labelPrimary,
+    )
+}
+
+/**
+ * Flutter `CupertinoIcons.chat_bubble` 的 Canvas 线稿近似（与 `MainPage` 底栏 chat 图标同几何）。
+ *
+ * ponytail: Kuikly 无 icon font；此处只为**去掉全彩 emoji**，非追求 Cupertino 像素级一致。
+ */
+@Composable
+private fun ChatBubbleIcon(sizeDp: Float, tint: Color) {
+    Canvas(modifier = Modifier.size(sizeDp.dp)) {
+        val w = size.width
+        val h = size.height
+        val stroke = Stroke(width = h * 0.08f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        drawPath(
+            Path().apply { addOval(Rect(w * 0.05f, h * 0.12f, w * 0.95f, h * 0.80f)) },
+            tint,
+            style = stroke,
+        )
+        drawPath(
+            Path().apply {
+                moveTo(w * 0.30f, h * 0.66f)
+                lineTo(w * 0.26f, h * 0.95f)
+                lineTo(w * 0.52f, h * 0.74f)
+            },
+            tint,
+            style = stroke,
+        )
     }
 }
 
 /** Flutter `_ActionButton`（图标 20 + 4 间隙 + 13 文案 / labelSecondary）。 */
 @Composable
-private fun PostAction(glyph: String, label: String) {
+private fun PostAction(label: String, icon: @Composable () -> Unit) {
     Row(
         modifier = Modifier
             .clickable { Utils.currentBridgeModule().toast("「$label」即将接入") }
             .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(glyph, fontSize = 20.sp, color = CommunityPalette.labelSecondary)
+        icon()
         Spacer(Modifier.width(4.dp))
         Text(label, fontSize = 13.sp, color = CommunityPalette.labelSecondary)
     }
@@ -297,7 +399,8 @@ private fun CommunityEmpty() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("💬", fontSize = 56.sp, color = CommunityPalette.labelTertiary)
+        // Flutter `CupertinoIcons.chat_bubble_2`（56 / labelTertiary）——同上，去全彩 emoji。
+        ChatBubbleIcon(sizeDp = 56f, tint = CommunityPalette.labelTertiary)
         Spacer(Modifier.height(12.dp))
         Text("暂无动态", fontSize = 13.sp, color = CommunityPalette.labelSecondary)
         Spacer(Modifier.height(8.dp))

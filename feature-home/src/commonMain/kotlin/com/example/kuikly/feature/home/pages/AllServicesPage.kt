@@ -19,6 +19,7 @@ import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.foundation.layout.Row
 import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.aspectRatio
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
@@ -132,6 +133,13 @@ private object AllServicesPalette {
 private const val MIN_FAVORITE = 3
 private const val MAX_FAVORITE = 8
 
+/**
+ * Flutter `GridDelegateWithFixedCrossAxisCount(childAspectRatio: 0.72)` 的 **宽/高比**
+ * （`crossAxisExtent / mainAxisExtent`）。tile 宽 = 可用宽 / 5（= Flutter 同式），
+ * 故 tile 高 = tile 宽 / 0.72 —— 与设备刻度无关，`su` 缩放自动跟随。
+ */
+private const val GRID_CELL_ASPECT_RATIO = 0.72f
+
 private data class ServiceItem(val id: String, val label: String, val glyph: String, val page: String? = null)
 private data class ServiceSectionSpec(val title: String, val ids: List<String>)
 
@@ -156,7 +164,7 @@ private val CATALOG: Map<String, ServiceItem> = listOf(
     ServiceItem("dubbing_home.png", "配音首页", "🎙"),
     ServiceItem("dubbing_video_list.png", "视频列表", "🎬", PageNames.VideoList),
     ServiceItem("dubbing_work_list.png", "作品列表", "🏆", PageNames.VideoList),
-    ServiceItem("classroom_my_class.png", "班级教学", "🎓", PageNames.ClassroomList),
+    ServiceItem("classroom_my_class.png", "班级教学", "🎓", PageNames.ClassroomMyClass),
     ServiceItem("pay_membership.png", "会员续费", "💳", PageNames.PayList),
 ).associateBy { it.id }
 
@@ -208,6 +216,10 @@ private val CATALOG_SECTIONS = listOf(
 /**
  * Flutter `AppNavBar(title: '全部服务', leading: 24×24 返回图, backgroundColor: white,
  * foregroundColor: #1A1A1A)`。无 56 工具栏常量（AppNavBar 自持），此处沿用 [AppChrome.NAV_BAR_HEIGHT]。
+ *
+ * 本页未传 `style:` → 走 `AppNavBarStyle.solid` 默认值 → Flutter 侧**有**
+ * `border: Border(bottom: BorderSide(dividerColor.withValues(alpha: 0.08)))`，
+ * 白底页面上这条发丝线就是导航栏唯一的边界，故按 [AppChrome] 同款令牌补上（形制同 `AppNavBarBar`）。
  */
 @Composable
 private fun AllServicesNavBar(topInset: Float) {
@@ -238,6 +250,12 @@ private fun AllServicesNavBar(topInset: Float) {
                 )
             }
         }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(AppChrome.HAIRLINE.dp)
+                .background(AppChrome.hairline),
+        )
     }
 }
 
@@ -305,7 +323,8 @@ private fun ServiceSectionCard(
         items.chunked(5).forEach { rowItems ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 rowItems.forEach { item ->
-                    Box(modifier = Modifier.weight(1f)) {
+                    // Flutter `GridView` 每格 = tile 宽 × (tile 宽 / 0.72)；内容在格内顶部对齐。
+                    Box(modifier = Modifier.weight(1f).aspectRatio(GRID_CELL_ASPECT_RATIO)) {
                         ServiceGridCell(
                             item = item,
                             editing = editing,
@@ -325,7 +344,12 @@ private fun ServiceSectionCard(
     }
 }
 
-/** Flutter `_ServiceGridCell`：48 图标 + 6 间隙 + 11 标签；编辑态叠 16 圆角标。 */
+/**
+ * Flutter `_ServiceGridCell`：48 图标 + 6 间隙 + 11 标签；编辑态叠 16 圆角标。
+ *
+ * Flutter 把整格包在 `Opacity(opacity: dimmed ? 0.4 : 1)` 里 → **图标与标签一起降透明**；
+ * 此处按同一口径把 `alpha` 同时施于图标底色 / 字形 / 标签色（不再只降图标）。
+ */
 @Composable
 private fun ServiceGridCell(
     item: ServiceItem,
@@ -399,7 +423,7 @@ private fun ServiceGridCell(
             item.label,
             modifier = Modifier.fillMaxWidth(),
             fontSize = 11.susp,
-            color = AllServicesPalette.labelGray,
+            color = AllServicesPalette.labelGray.copy(alpha = alpha),
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -407,7 +431,14 @@ private fun ServiceGridCell(
     }
 }
 
-/** Flutter `_ActionBadge`：16×16 圆 + 1 边框，右上角外溢 4（Kuikly 无负偏移 → 内贴角）。 */
+/**
+ * Flutter `_ActionBadge`：16×16 圆 + 1 边框，`Positioned(top: -4, right: -4)` 叠在 48 图标右上角外溢。
+ *
+ * Kuikly 侧内贴角（差 4dp×4dp）：`Modifier.offset` 本身接受负值
+ * （`foundation/layout/Offset.kt` — "The offsets can be positive as well as non-positive"），
+ * 但父 `Box` 超出部分是否被裁剪未在真机验证，负偏移有把角标裁掉的风险；4dp 属亚显著性，
+ * 故保持内贴并记入天花板，不做未验证的溢出布局。
+ */
 @Composable
 private fun ActionBadge(
     glyph: String,

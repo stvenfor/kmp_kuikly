@@ -30,6 +30,12 @@ class BridgeModule : Module() {
         callNativeMethod("toast", methodArgs, null)
     }
 
+    fun copyToPasteboard(content: String) {
+        val methodArgs = JSONObject()
+        methodArgs.put("content", content)
+        callNativeMethod(COPY_TO_PASTEBOARD, methodArgs, null)
+    }
+
     fun openPage(url: String, closeCurPage: Boolean = false, closeSamePage: Boolean = false, userData: JSONObject? = null, callbackFn: CallbackFn? = null) {
         val methodArgs = JSONObject()
         methodArgs.put("url", url)
@@ -83,6 +89,7 @@ class BridgeModule : Module() {
         const val OPEN_PAGE = "openPage"
         const val CLOSE_PAGE = "closePage"
         const val LOG = "log"
+        const val COPY_TO_PASTEBOARD = "copyToPasteboard"
         const val SSO_REQUEST = "ssoRequest"
         const val CURRENT_TIMESTAMP = "currentTimestamp"
         const val DATE_FORMATTER = "dateFormatter"

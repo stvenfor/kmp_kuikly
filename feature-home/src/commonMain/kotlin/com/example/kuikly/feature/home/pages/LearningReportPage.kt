@@ -85,15 +85,22 @@ internal class LearningReportPage : BaseComposePager() {
                             item { Spacer(Modifier.height(10.su)) }
                             item { LearningRecordCard() }
                         }
+                        // Flutter 源 `Positioned(bottom + 12)` 的会员横幅 — 全宽，左右 16 边距。
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(start = 16.su, end = 16.su, bottom = (bottom + 12f).su),
+                        ) {
+                            MembershipBanner()
+                        }
+                        // Flutter 源 `Positioned(bottom + 88)` 的家长助手胶囊 — 仅右贴。
                         Column(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(start = 16.su, end = 16.su, bottom = (bottom + 88f).su),
+                                .padding(end = 16.su, bottom = (bottom + 88f).su),
                             horizontalAlignment = Alignment.End,
                         ) {
                             ParentAssistantChip()
-                            Spacer(Modifier.height(10.su))
-                            MembershipBanner()
                         }
                     }
                 }

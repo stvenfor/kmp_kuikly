@@ -39,6 +39,7 @@ import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.graphics.Path
 import com.tencent.kuikly.compose.ui.text.font.FontStyle
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.style.TextDecoration
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
@@ -166,6 +167,7 @@ internal class PayListPage : BaseComposePager() {
             val tierPlans = plans.filter { it.tier == tier }
             val selectedPlan = tierPlans.firstOrNull { it.id == selectedPlanId } ?: tierPlans.firstOrNull()
             val accent = if (tier == PayTier.Svip) PayPalette.svipAccent else PayPalette.aiAccent
+            val accentLight = if (tier == PayTier.Svip) PayPalette.svipAccentLight else PayPalette.aiAccentLight
 
             Column(
                 modifier = Modifier
@@ -219,6 +221,7 @@ internal class PayListPage : BaseComposePager() {
                                         plans = tierPlans,
                                         selectedPlanId = selectedPlan?.id,
                                         accent = accent,
+                                        accentLight = accentLight,
                                         pageWidth = pageWidth,
                                         redPacketCountdown = PayMock.RED_PACKET_COUNTDOWN,
                                         onSelect = { selectedPlanId = it },
@@ -488,6 +491,7 @@ private fun PlanCarousel(
     plans: List<Plan>,
     selectedPlanId: String?,
     accent: Color,
+    accentLight: Color,
     pageWidth: Float,
     redPacketCountdown: String,
     onSelect: (String) -> Unit,
@@ -517,6 +521,7 @@ private fun PlanCarousel(
                 plan = plan,
                 selected = plan.id == selectedPlanId,
                 accent = accent,
+                accentLight = accentLight,
                 redPacketCountdown = redPacketCountdown,
                 onSelect = { onSelect(plan.id) },
             )
@@ -531,6 +536,7 @@ private fun PlanCard(
     plan: Plan,
     selected: Boolean,
     accent: Color,
+    accentLight: Color,
     redPacketCountdown: String,
     onSelect: () -> Unit,
 ) {
@@ -552,7 +558,11 @@ private fun PlanCard(
             Column(modifier = Modifier.fillMaxSize()) {
                 Spacer(Modifier.height(if (plan.badge != null) 22.dp else 12.dp))
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Flutter `_PlanCardContent` Padding(horizontal: 8)。
+                    Column(
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         Text(plan.title, fontSize = 14.sp, color = PayPalette.titleBlack, maxLines = 1)
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.Bottom) {
@@ -574,6 +584,8 @@ private fun PlanCard(
                             "¥${plan.originalPrice.roundToInt()}",
                             fontSize = 11.sp,
                             color = PayPalette.originalPriceGray,
+                            // Flutter `TextDecoration.lineThrough`
+                            textDecoration = TextDecoration.LineThrough,
                         )
                     }
                 }
@@ -629,7 +641,8 @@ private fun PlanCard(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0.65f))),
+                                    // Flutter 渐变 `[palette.accent, palette.accentLight]`
+                                    Brush.horizontalGradient(listOf(accent, accentLight)),
                                     RoundedCornerShape(
                                         topStart = PayPalette.PLAN_CARD_RADIUS.dp,
                                         bottomEnd = 8.dp,
@@ -809,7 +822,8 @@ private fun PaymentTile(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(glyph, fontSize = 22.sp)
+        // Flutter 图标 28×28 → 字形 28sp 近似
+        Text(glyph, fontSize = 28.sp)
         Spacer(Modifier.width(12.dp))
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(title, fontSize = 15.sp, color = PayPalette.titleBlack)

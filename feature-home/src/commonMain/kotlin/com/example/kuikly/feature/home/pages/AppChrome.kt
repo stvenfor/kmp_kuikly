@@ -37,10 +37,10 @@ internal object AppChrome {
     const val TITLE_SIZE = 17f
 
     /** Flutter `Icon(Icons.arrow_back_ios_new, size: 20)` 的 Unicode 字形近似（无矢量资源）。 */
-    const val BACK_SIZE = 22f
+    const val BACK_SIZE = 20f
 
-    /** IconButton 48×48 触达区（22 字形 + 13×2 padding）。 */
-    const val ICON_TAP_PADDING = 13f
+    /** IconButton 48×48 触达区（20 字形 + 14×2 padding，对齐 Material `materialTapTargetSize=pad`）。 */
+    const val ICON_TAP_PADDING = 14f
 
     const val HAIRLINE = 0.5f
 

@@ -12,8 +12,11 @@ import com.example.kuikly.data.video.VideoStore
 import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
+import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
+import com.tencent.kuikly.compose.foundation.layout.ExperimentalLayoutApi
+import com.tencent.kuikly.compose.foundation.layout.FlowRow
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.foundation.layout.Row
 import com.tencent.kuikly.compose.foundation.layout.Spacer
@@ -30,6 +33,7 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
@@ -57,6 +61,9 @@ internal object VideoPalette {
     val likeRed = Color(0xFFE85D5D)
     val orange = Color(0xFFFF8A34)
     val tipBackground = Color(0xFFFFE4EC)
+
+    /** Flutter `_VideoCard` `BoxShadow(color: black.withValues(alpha: 0.04))`。 */
+    val cardShadow = Color(0x0A000000)
 }
 
 /**
@@ -132,11 +139,11 @@ internal class VideoListPage : BaseComposePager() {
                             end = 16.dp,
                             bottom = (bottom + 16f).dp,
                         ),
+                        // Flutter `separatorBuilder: SizedBox(height: 12)` — 只在条目之间，末条后无间隔。
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(items, key = { it.id }) { item ->
                             VideoCard(item = item)
-                            // Flutter `separatorBuilder: SizedBox(height: 12)`
-                            Spacer(Modifier.height(12.dp))
                         }
                     }
                 }
@@ -146,15 +153,19 @@ internal class VideoListPage : BaseComposePager() {
 }
 
 /**
- * Flutter `_VideoCard`：白卡 r12 + 120×90 封面（左圆角）+ 12 内距列
+ * Flutter `_VideoCard`：白卡 r12（+ black 4% / blur 8 / offset(0,2) 阴影）+ 120×90 封面（左圆角）+ 12 内距列
  * （标题 14·w600 / 4 间隙 chip 组（h6·v2·r4，绿 12% 或 `#F5F5F5`，10sp）/ 8 / 点赞行 14+4+12 + › 18）。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun VideoCard(item: VideoItem) {
+    val shape = RoundedCornerShape(12.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(12.dp))
+            // Flutter `_VideoCard` BoxShadow: black 4% / blur 8 / offset(0, 2)
+            .shadow(8.dp, shape, ambientColor = VideoPalette.cardShadow, spotColor = VideoPalette.cardShadow)
+            .background(Color.White, shape)
             .clickable {
                 Utils.currentBridgeModule().openPage(
                     PageNames.VideoDetail,
@@ -191,11 +202,11 @@ private fun VideoCard(item: VideoItem) {
             )
             Spacer(Modifier.height(8.dp))
             // Flutter `Wrap(spacing: 4, runSpacing: 4, children: item.tags.take(3))`
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                item.tags.take(3).forEach { tag ->
-                    VideoTag(tag)
-                    Spacer(Modifier.width(4.dp))
-                }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                item.tags.take(3).forEach { tag -> VideoTag(tag) }
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

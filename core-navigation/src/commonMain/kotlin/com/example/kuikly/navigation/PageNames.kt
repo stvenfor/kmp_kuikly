@@ -34,6 +34,13 @@ object PageNames {
     const val CheckInMall = "CheckInMall"
     const val ClassroomList = "ClassroomList"
     const val ClassroomDetail = "ClassroomDetail"
+    /** Pre-seeded by Orchestrator for parallel P2-W4a (do not rename). */
+    const val ClassroomMyClass = "ClassroomMyClass"
+    const val ClassroomGiftClaim = "ClassroomGiftClaim"
+    const val ClassroomVideoDetail = "ClassroomVideoDetail"
+    const val PersonalizedSettings = "PersonalizedSettings"
+    const val Register = "Register"
+    const val DealInvoiceUpload = "DealInvoiceUpload"
     const val FriendList = "FriendList"
     const val FriendDetail = "FriendDetail"
     const val LiveList = "LiveList"

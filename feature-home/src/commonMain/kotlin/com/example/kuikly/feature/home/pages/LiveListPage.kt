@@ -12,6 +12,7 @@ import com.example.kuikly.data.live.LiveStore
 import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
+import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
@@ -37,6 +39,15 @@ import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
+
+/**
+ * Live 域私有色板（与 V2b UsedCarListPage、V3a UsedCarDetailPage、V3d VideoListPage 同款
+ * 命名约定，避免与共享 `AppChrome` 混淆）。Flutter `LivePage` 是调试桩无卡形真源，本令牌
+ * 与 `AppTheme` 的分组卡同语义（black 4% / blur 8 / offset 0,2）。
+ */
+private object LivePalette {
+    val cardShadow = Color(0x0A000000)
+}
 
 /**
  * 直播列表 — 按 Flutter `LivePage` chrome + 共享 AppTheme 令牌加厚（P2-W2c）。
@@ -134,6 +145,8 @@ internal class LiveListPage : BaseComposePager() {
                             end = 16.dp,
                             bottom = (bottom + 24f).dp,
                         ),
+                        // Flutter `separatorBuilder: SizedBox(height: 10)` — 仅条目之间，末条后无间隔。
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         items(rooms, key = { it.id }) { room ->
                             LiveRoomRow(
@@ -145,7 +158,6 @@ internal class LiveListPage : BaseComposePager() {
                                     )
                                 },
                             )
-                            Spacer(Modifier.height(10.dp))
                         }
                     }
                 }
@@ -172,10 +184,14 @@ internal fun PrimaryAction(label: String, onClick: () -> Unit) {
 /** 房间卡（Phase-1 mock 内容按 AppTheme grouped 卡形制重排）。 */
 @Composable
 private fun LiveRoomRow(room: LiveRoom, onTap: () -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(AppChrome.surface, RoundedCornerShape(12.dp))
+            // 白卡 r12 + black 4% / blur 8 / offset(0,2) 阴影（与 V2b UsedCarListPage.kt、V3a
+            // UsedCarDetailPage、V3d VideoListPage 同款令牌，让分组卡在 #F2F2F7 页底「浮」起来）。
+            .shadow(8.dp, shape, ambientColor = LivePalette.cardShadow, spotColor = LivePalette.cardShadow)
+            .background(AppChrome.surface, shape)
             .clickable(onClick = onTap)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

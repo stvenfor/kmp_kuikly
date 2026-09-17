@@ -23,6 +23,7 @@ import com.tencent.kuikly.compose.foundation.layout.height
 import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
+import com.tencent.kuikly.compose.foundation.layout.widthIn
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
@@ -167,7 +168,9 @@ private fun AssetGridCard(period: Int, onPeriod: (Int) -> Unit) {
         Text(
             "「大类资产九宫格策略」通过分散配置降低波动，帮助你在不同市场环境下保持稳健收益。",
             fontSize = 13.sp,
-            lineHeight = 17.5.sp,
+            // Flutter 真源 `sectionLabel.copyWith(color: labelPrimary, height: 1.5)`
+            // → 13 × 1.5 = 19.5 sp。原 17.5 sp 漏抄 height。
+            lineHeight = 19.5.sp,
             color = HomeDashboardPalette.labelPrimary,
         )
         Spacer(Modifier.height(16.dp))
@@ -324,6 +327,10 @@ private fun StrategyCard() {
             )
             Box(
                 modifier = Modifier
+                    // Flutter 真源 `FilledButton.styleFrom(minimumSize: Size(72, 36), padding: EdgeInsets.symmetric(horizontal: 16))`
+                    // → 最小宽度 72 dp。原实现 `height(36.dp) + 文字内 padding 16dp` 只 ~60 dp，
+                    //   比 Flutter 视觉窄 12 dp，统一加 `widthIn(min = 72.dp)`。
+                    .widthIn(min = 72.dp)
                     .height(36.dp)
                     .background(HomeDashboardPalette.accent, RoundedCornerShape(18.dp))
                     .clickable { Utils.currentBridgeModule().toast("已订阅「黄金恐贪定投」") }
@@ -337,7 +344,8 @@ private fun StrategyCard() {
         Text(
             "在恐慌时买入、贪婪时卖出，通过定期定额降低择时压力，适合长期持有的投资者。",
             fontSize = 13.sp,
-            lineHeight = 17.5.sp,
+            // Flutter 真源 `sectionLabel.copyWith(height: 1.5)` → 13 × 1.5 = 19.5 sp。
+            lineHeight = 19.5.sp,
             color = HomeDashboardPalette.labelSecondary,
         )
     }

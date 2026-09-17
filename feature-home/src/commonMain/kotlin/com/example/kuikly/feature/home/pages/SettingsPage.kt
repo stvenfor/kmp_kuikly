@@ -123,6 +123,26 @@ internal class SettingsPage : BaseComposePager() {
                                 onClick = { sheet = 2 },
                             )
                         }
+                        // P2-W4a：接入 inventory 行 29 / 37 的真实路由（PersonalizedSettings /
+                        // DealInvoiceUpload），chrome 与文案不动，仅加两行入口。
+                        item {
+                            SettingRow(
+                                title = "个性化设置",
+                                subtitle = "护眼 / 教学模式 / 推荐开关",
+                                onClick = {
+                                    Utils.currentBridgeModule().openPage(PageNames.PersonalizedSettings)
+                                },
+                            )
+                        }
+                        item {
+                            SettingRow(
+                                title = "上传发票",
+                                subtitle = "购车客户 · 发票图片 · 审核",
+                                onClick = {
+                                    Utils.currentBridgeModule().openPage(PageNames.DealInvoiceUpload)
+                                },
+                            )
+                        }
                         item {
                             SettingRow(
                                 title = "蓝牙连接示例",
@@ -144,7 +164,7 @@ internal class SettingsPage : BaseComposePager() {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(0.5.dp)
+                                    .height(1.dp)
                                     .background(AppChrome.separator),
                             )
                         }
@@ -186,7 +206,7 @@ internal class SettingsPage : BaseComposePager() {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(0.5.dp)
+                                        .height(1.dp)
                                         .background(AppChrome.separator),
                                 )
                             }
@@ -268,7 +288,7 @@ private fun SettingRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontSize = 16.sp, color = titleColor)
             if (subtitle != null) {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
                     subtitle,
                     fontSize = 14.sp,
@@ -296,12 +316,12 @@ private fun SwitchRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppChrome.surface)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontSize = 16.sp, color = AppChrome.labelPrimary)
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(4.dp))
             Text(subtitle, fontSize = 14.sp, color = AppChrome.labelSecondary)
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
@@ -338,7 +358,7 @@ private fun PickerRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontSize = 16.sp, color = AppChrome.labelPrimary)
             if (subtitle != null) {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(subtitle, fontSize = 14.sp, color = AppChrome.labelSecondary)
             }
         }

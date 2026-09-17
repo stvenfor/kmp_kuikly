@@ -75,25 +75,32 @@ internal class MusicNowPlayingPage : BaseComposePager() {
         refresh()
         setContent {
             val current = song
+            // Flutter 空态分支**不裹** `musicDarkTheme`（`if (song == null) return Scaffold(...)`），
+            // 故走宿主 `AppTheme.light`：白 AppBar / F2F2F7 背景 / 黑 bodyMedium 文本。
+            val empty = current == null
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black),
+                    .background(if (empty) AppChrome.background else Color.Black),
             ) {
                 AppNavBarBar(
                     title = "Now Playing",
                     topInset = top,
                     onBack = { Utils.currentBridgeModule().closePage() },
-                    background = Color.Black,
-                    foreground = Color.White,
+                    background = if (empty) AppChrome.surface else Color.Black,
+                    foreground = if (empty) AppChrome.labelPrimary else Color.White,
                 )
-                if (current == null) {
+                if (empty) {
                     // Flutter `Scaffold(appBar: 'Now Playing', body: Center(Text('暂无播放歌曲')))`。
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("暂无播放歌曲", fontSize = 14.sp, color = Color(0xB3FFFFFF))
+                        Text(
+                            "暂无播放歌曲",
+                            fontSize = 14.sp,
+                            color = AppChrome.labelPrimary,
+                        )
                     }
                 } else {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -104,7 +111,8 @@ internal class MusicNowPlayingPage : BaseComposePager() {
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             MusicAlbumArt(current)
-                            Spacer(Modifier.height(20.dp))
+                            // Flutter：`Padding(all: 20)` 直接裹 `_PlayerControls`（其自身无 padding），
+                            // 专辑图→标题间隙即 20；不再叠 `Spacer(20)`（否则 40 双倍）。
                             PlayerControls(
                                 song = current,
                                 playing = playing,

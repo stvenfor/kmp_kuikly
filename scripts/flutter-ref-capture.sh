@@ -140,8 +140,12 @@ if want wave2; then
   adb -s "$SERIAL" shell input tap "$CHAT_X" "$TAB_Y"
   sleep 3
   shot "07-flutter-login"
-  # Optional deeplinks (require logged-in + linking listener after Main):
-  # ensure_main_then_deeplink "04-flutter-community" "community" 5
+
+  # Search / UsedCar — custom-scheme after Main settle (guest-safe in Flutter).
+  ensure_main_then_deeplink "10-flutter-search" "home/search" 5
+  ensure_main_then_deeplink "04-flutter-usedcar-list" "home/used_car" 5
+  # Optional (logged-in): community / chat content
+  # ensure_main_then_deeplink "13-flutter-community" "community" 5
 fi
 
 if [[ "$UPDATE" -eq 1 ]]; then
