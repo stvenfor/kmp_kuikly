@@ -20,10 +20,24 @@ data class UsedCarItem(
 /** `TransactionListItem.formatAmount` 镜像：≥1 万按「¥ x.xx 万」展示。 */
 fun formatAmount(amount: Double): String =
     if (kotlin.math.abs(amount) >= 10000) {
-        "¥ ${"%.2f".format(amount / 10000)} 万"
+        "¥ ${formatTwoDecimals(amount / 10000)} 万"
     } else {
-        "¥ ${"%.2f".format(amount)}"
+        "¥ ${formatTwoDecimals(amount)}"
     }
+
+/**
+ * 把 Double 格式化为带 2 位小数的字符串，替代 `"%.2f".format(...)`：
+ * `"%.2f"` 是 JVM/JS stdlib 扩展，Native 上不可用，所以放到 commonMain 用 Long 手算。
+ * 行为镜像 `%.2f` 的 HALF_UP：9999.99 → "9999.99"；-0.5 → "-0.50"。
+ */
+private fun formatTwoDecimals(value: Double): String {
+    val negative = value < 0
+    val cents = kotlin.math.round(kotlin.math.abs(value) * 100).toLong()
+    val intPart = cents / 100
+    val fracPart = (cents % 100).toInt()
+    val sign = if (negative) "-" else ""
+    return "$sign$intPart.${fracPart.toString().padStart(2, '0')}"
+}
 
 data class UsedCarPage(
     val items: List<UsedCarItem>,

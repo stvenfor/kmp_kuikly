@@ -47,6 +47,7 @@ import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
+import kotlin.math.roundToInt
 
 /**
  * 配音视频详情 — Flutter `DubbingVideoDetailPage` 复刻（Phase-2 / P2-W2c，P2-V5d 视觉对齐）。
@@ -568,6 +569,19 @@ private fun BottomAction(icon: String, label: String, onClick: () -> Unit) {
     }
 }
 
-/** Flutter `likeCount >= 10000 ? '${(n / 10000).toStringAsFixed(1)}万' : '$n'`。 */
-private fun formatLikeCount(count: Int): String =
-    if (count >= 10000) "${(count / 1000) / 10f}万" else "$count"
+/**
+ * Flutter `(entry.likeCount / 10000).toStringAsFixed(1)` —— Dart `/` 为 double 除法，1 位小数。
+ * Kotlin 无 `toStringAsFixed`，沿 P2-W2c [formatMoney]（`PayListPage.kt:290`）口径：
+ * `count * 10 / 10000` 转为 tenths-of-万 后 `roundToInt` 再拆"整数.小数"。
+ *
+ * 旧式 `(count / 1000) / 10f` 在 `count / 1000` 走 Int/Int → 整数除法，对非整千数（如 10500→1.0 而非 1.1）
+ * 与 [90000,99999] 区间失真（如 99999→9.9 而非 10.0），与 Flutter 漂移。修复后：
+ * - 11000 → "1.1万"（旧式已对，mock 唯一 ≥10000 值无可见变化）
+ * - 10500 → "1.1万"（旧式误为 "1.0万"）
+ * - 99999 → "10.0万"（旧式误为 "9.9万"）
+ */
+private fun formatLikeCount(count: Int): String {
+    if (count < 10000) return "$count"
+    val tenths = (count.toFloat() * 10f / 10000f).roundToInt()
+    return "${tenths / 10}.${tenths % 10}万"
+}

@@ -6,6 +6,7 @@ import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.community.CommunityStore
 import com.tencent.kuikly.compose.foundation.Canvas
+import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
@@ -14,6 +15,7 @@ import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Row
 import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.aspectRatio
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
@@ -22,15 +24,20 @@ import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
+import com.tencent.kuikly.compose.resources.DrawableResource
+import com.tencent.kuikly.compose.resources.InternalResourceApi
+import com.tencent.kuikly.compose.resources.painterResource
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.geometry.Rect
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.graphics.Path
 import com.tencent.kuikly.compose.ui.graphics.StrokeCap
 import com.tencent.kuikly.compose.ui.graphics.StrokeJoin
 import com.tencent.kuikly.compose.ui.graphics.drawscope.Stroke
+import com.tencent.kuikly.compose.ui.layout.ContentScale
 import com.tencent.kuikly.compose.ui.text.SpanStyle
 import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
@@ -39,6 +46,7 @@ import com.tencent.kuikly.compose.ui.text.withStyle
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
+import com.tencent.kuikly.core.base.attr.ImageUri
 
 /**
  * 帖子详情 — Phase-2 / P2-V4d 视觉加厚。
@@ -143,6 +151,9 @@ internal class PostDetailPage : BaseComposePager() {
                             // （16 / height 1.45 / labelPrimary，`#话题`·`@用户` 走 richLink + w500，
                             // 链接加下划线）——详情页没有独立的加粗标题层级（同 `CommunityTab` V2c 结论）。
                             PostContent(content = post.title + "\n" + post.body)
+                            // Flutter `post.hasImages ? ImageGridWidget` / `post.hasVideo ? VideoCardWidget`：
+                            // `Post` 缺 images / videoUrl，按 id seed 展示 1–2 张 assets 照片。
+                            PostDetailMedia(postId = post.id)
                             // LikeBarWidget 形制的互动行（20 图标 + 13 文案，间隔 24）。
                             Spacer(Modifier.height(16.dp))
                             Row {
@@ -256,6 +267,93 @@ private fun PostContent(content: String) {
         lineHeight = 23.2.sp,
         color = CommunityPalette.labelPrimary,
     )
+}
+
+// ───────────────────────────── P3-E2a 媒体 assets ─────────────────────────────
+
+/**
+ * P3-E2a：PostDetail 照片密度补齐。
+ *
+ * 资源随 `app-shared/src/commonMain/assets/common/post_detail/` 打包
+ * （Android `assets.srcDirs` 与 iOS CocoaPods `resources` 已在 app-shared 配置），
+ * 故走 `ImageUri.commonAssets`。
+ */
+@OptIn(InternalResourceApi::class)
+private fun postDetailAsset(name: String): DrawableResource =
+    DrawableResource(ImageUri.commonAssets("post_detail/$name").toUrl(""))
+
+private val POST_MEDIA_1 by lazy(LazyThreadSafetyMode.NONE) { postDetailAsset("media_1.png") }
+private val POST_MEDIA_2 by lazy(LazyThreadSafetyMode.NONE) { postDetailAsset("media_2.png") }
+
+/**
+ * Flutter `post.hasImages ? ImageGridWidget` / `post.hasVideo ? VideoCardWidget` 的 assets 近似。
+ * `Post` 缺 images / videoUrl，按 `postId` 派生：id % 3 == 0 单图、1 双图、2 无图。
+ */
+@Composable
+private fun PostDetailMedia(postId: String) {
+    val seed = postId.toIntOrNull() ?: 0
+    when (seed % 3) {
+        0 -> PostDetailSingleImage(res = POST_MEDIA_1)
+        1 -> PostDetailImageRow(res1 = POST_MEDIA_1, res2 = POST_MEDIA_2)
+        else -> Unit
+    }
+}
+
+/** Flutter `_SingleImage`：`maxWidth 62% / r6`，`BoxFit.cover` 近似。 */
+@Composable
+private fun PostDetailSingleImage(res: DrawableResource) {
+    Spacer(Modifier.height(12.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.62f)
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(6.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(res),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+    }
+}
+
+/** Flutter `_RowImages`：等宽 `Expanded AspectRatio(1)`，间隔 4，r4。 */
+@Composable
+private fun PostDetailImageRow(res1: DrawableResource, res2: DrawableResource) {
+    Spacer(Modifier.height(12.dp))
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(4.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(res1),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        Spacer(Modifier.width(4.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(4.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(res2),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+    }
 }
 
 /**

@@ -30,11 +30,14 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.SpanStyle
 import com.tencent.kuikly.compose.ui.text.TextStyle
 import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.text.input.PasswordVisualTransformation
+import com.tencent.kuikly.compose.ui.text.input.VisualTransformation
 import com.tencent.kuikly.compose.ui.text.withStyle
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
@@ -265,18 +268,24 @@ private fun EmailForm(
     password: String, onPasswordChange: (String) -> Unit,
     confirm: String, onConfirmChange: (String) -> Unit,
 ) {
+    // `AuthGroupedFormCard` 用 `ClipRRect(radiusMd)` 包住 Column，让 1 高的
+    // FieldDivider 不越过卡圆角。Kuikly 侧 `.background(RoundedCornerShape)`
+    // 只裁背景，不裁子节点，需显式 `.clip()`。
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(RegisterPalette.surface, RoundedCornerShape(12.dp)),
+            .clip(RoundedCornerShape(RegisterPalette.fieldRadius))
+            .background(RegisterPalette.surface, RoundedCornerShape(RegisterPalette.fieldRadius)),
     ) {
         RegisterField(value = email, onValueChange = onEmailChange, hint = "邮箱")
         FieldDivider()
         RegisterField(value = displayName, onValueChange = onDisplayNameChange, hint = "昵称（可选）")
         FieldDivider()
-        RegisterField(value = password, onValueChange = onPasswordChange, hint = "密码（至少 6 位）")
+        // Flutter `obscureText: !_passwordVisible` 默认即为掩码；Kuikly 侧
+        // 无切换 toggle 但仍默认掩码，跟 LoginPage 的 `LoginField(obscure=true)` 同型。
+        RegisterField(value = password, onValueChange = onPasswordChange, hint = "密码（至少 6 位）", obscure = true)
         FieldDivider()
-        RegisterField(value = confirm, onValueChange = onConfirmChange, hint = "确认密码")
+        RegisterField(value = confirm, onValueChange = onConfirmChange, hint = "确认密码", obscure = true)
     }
 }
 
@@ -355,9 +364,9 @@ private fun PhoneForm(
     )
 }
 
-/** `AuthGroupedTextField` 简化版：52 高的白底单行输入 + hint + 占位提示色。 */
+/** `AuthGroupedTextField` 简化版：52 高的白底单行输入 + hint + 占位提示色 + 可选掩码。 */
 @Composable
-private fun RegisterField(value: String, onValueChange: (String) -> Unit, hint: String) {
+private fun RegisterField(value: String, onValueChange: (String) -> Unit, hint: String, obscure: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -370,6 +379,11 @@ private fun RegisterField(value: String, onValueChange: (String) -> Unit, hint: 
                 value = value,
                 onValueChange = onValueChange,
                 textStyle = TextStyle(fontSize = 17.sp, color = RegisterPalette.labelPrimary),
+                visualTransformation = if (obscure) {
+                    PasswordVisualTransformation()
+                } else {
+                    VisualTransformation.None
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             if (value.isEmpty()) {

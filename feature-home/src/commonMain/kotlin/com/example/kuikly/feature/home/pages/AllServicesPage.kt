@@ -400,6 +400,7 @@ private fun ServiceGridCell(
             if (showRemove) {
                 ActionBadge(
                     glyph = "✕",
+                    glyphSize = 10f,
                     background = Color.White,
                     border = AllServicesPalette.badgeBorder,
                     glyphColor = AllServicesPalette.labelGray,
@@ -410,6 +411,7 @@ private fun ServiceGridCell(
             if (showAdd) {
                 ActionBadge(
                     glyph = "＋",
+                    glyphSize = 12f,
                     background = AllServicesPalette.editBorderBlue,
                     border = AllServicesPalette.editBorderBlue,
                     glyphColor = Color.White,
@@ -423,6 +425,8 @@ private fun ServiceGridCell(
             item.label,
             modifier = Modifier.fillMaxWidth(),
             fontSize = 11.susp,
+            // Flutter `TextStyle(height: 1.2)` → 11sp × 1.2 = 13.2sp 行高。
+            lineHeight = 13.2.susp,
             color = AllServicesPalette.labelGray.copy(alpha = alpha),
             textAlign = TextAlign.Center,
             maxLines = 1,
@@ -433,6 +437,7 @@ private fun ServiceGridCell(
 
 /**
  * Flutter `_ActionBadge`：16×16 圆 + 1 边框，`Positioned(top: -4, right: -4)` 叠在 48 图标右上角外溢。
+ * 图标字号与 Flutter 一致分档：移除角标 `Icons.close` 10.sp、添加角标 `Icons.add` 12.sp。
  *
  * Kuikly 侧内贴角（差 4dp×4dp）：`Modifier.offset` 本身接受负值
  * （`foundation/layout/Offset.kt` — "The offsets can be positive as well as non-positive"），
@@ -442,6 +447,7 @@ private fun ServiceGridCell(
 @Composable
 private fun ActionBadge(
     glyph: String,
+    glyphSize: Float,
     background: Color,
     border: Color,
     glyphColor: Color,
@@ -456,6 +462,6 @@ private fun ActionBadge(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, fontSize = 10.susp, color = glyphColor)
+        Text(glyph, fontSize = glyphSize.susp, color = glyphColor)
     }
 }

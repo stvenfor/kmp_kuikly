@@ -166,7 +166,11 @@ internal class LiveListPage : BaseComposePager() {
     }
 }
 
-/** Flutter `FilledButton`（AppTheme accent / 白字 / r12 / 44 高）等价物。 */
+/**
+ * Flutter `FilledButton`（AppTheme accent / 白字 / r12 / 44 高）等价物。
+ * 内容内距对齐 M3 默认 `padding1x = 24`（flutter/.../filled_button.dart:485，
+ * P3-E4b 结构对齐；LiveDetailPage 复用本组件同步受益）。
+ */
 @Composable
 internal fun PrimaryAction(label: String, onClick: () -> Unit) {
     Box(
@@ -174,7 +178,7 @@ internal fun PrimaryAction(label: String, onClick: () -> Unit) {
             .height(44.dp)
             .background(AppChrome.accent, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)

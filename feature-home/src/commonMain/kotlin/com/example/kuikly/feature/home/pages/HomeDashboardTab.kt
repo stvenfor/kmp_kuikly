@@ -14,6 +14,7 @@ import com.example.kuikly.data.auth.AuthSession
 import com.example.kuikly.data.mock.MockBackend
 import com.example.kuikly.navigation.LoginRedirect
 import com.example.kuikly.navigation.PageNames
+import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
@@ -32,17 +33,23 @@ import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.shape.CircleShape
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
+import com.tencent.kuikly.compose.resources.DrawableResource
+import com.tencent.kuikly.compose.resources.InternalResourceApi
+import com.tencent.kuikly.compose.resources.painterResource
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Brush
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.layout.ContentScale
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextAlign
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.Dp
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
+import com.tencent.kuikly.core.base.attr.ImageUri
 
 /**
  * Flutter「首页」dashboard 的 Kuikly Compose 复刻（Phase-2 / P2-01）。
@@ -115,6 +122,29 @@ private val HOME_TILE_TONES = listOf(
     Color(0xFFDDDEDD), // 营销活动
     Color(0xFF4F5D65), // 更多
 )
+
+// ─────────────────────── P3-E1b 照片密度 assets ───────────────────────
+
+/**
+ * 02b 槽位的 assets 位图（P3-E1b）：照片密度天花板补齐。
+ *
+ * 资源随 `app-shared/src/commonMain/assets/common/home/` 打包（Android `assets.srcDirs`
+ * 与 iOS CocoaPods `resources` 已在 app-shared 配置），故走 `ImageUri.commonAssets`。
+ * PNG 为按 HOME_TILE_TONES 色相合成的风景/渐变位图（每张 <6KB）。
+ */
+@OptIn(InternalResourceApi::class)
+private fun homeCommonAsset(name: String): DrawableResource =
+    DrawableResource(ImageUri.commonAssets("home/$name").toUrl(""))
+
+private val HOME_BANNER_RES by lazy(LazyThreadSafetyMode.NONE) { homeCommonAsset("banner.png") }
+
+private val HOME_FEATURE_TILE_RES: List<DrawableResource> by lazy(LazyThreadSafetyMode.NONE) {
+    (1..HOME_FEATURES.size).map { homeCommonAsset("tile_feature_$it.png") }
+}
+
+private val HOME_SERVICE_TILE_RES: List<DrawableResource> by lazy(LazyThreadSafetyMode.NONE) {
+    (1..HOME_SERVICES.size).map { homeCommonAsset("tile_service_$it.png") }
+}
 
 private data class HomeQuickAction(val title: String, val subtitle: String, val actionLabel: String)
 private data class HomeMetric(val value: String, val label: String)
@@ -297,14 +327,35 @@ private fun AvatarPlaceholder(size: Dp, ring: Dp) {
     }
 }
 
-/** 等宽多列网格（按行排列，最后一行用空权重补齐）。 */
+/**
+ * 已加载 photo tile（P3-E1b）：assets 位图 + 圆角裁剪，替代格栅的 `ImagePlaceholder` 色块。
+ * 位图加载前/失败时回落 fillSecondary 底色，保持原占位视觉。
+ */
+@Composable
+private fun HomePhotoTile(res: DrawableResource, size: Dp, corner: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(corner))
+            .background(HomePalette.fillSecondary),
+    ) {
+        Image(
+            painter = painterResource(res),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+    }
+}
+
+/** 等宽多列网格（按行排列，最后一行用空权重补齐）。cell 附带全局 index（asset 取位用）。 */
 @Composable
 private fun <T> HomeGrid(
     items: List<T>,
     columns: Int,
     horizontalSpacing: Dp,
     verticalSpacing: Dp,
-    cell: @Composable (T) -> Unit,
+    cell: @Composable (index: Int, T) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         items.chunked(columns).forEachIndexed { rowIndex, rowItems ->
@@ -313,8 +364,8 @@ private fun <T> HomeGrid(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
             ) {
-                rowItems.forEach { item ->
-                    Box(modifier = Modifier.weight(1f)) { cell(item) }
+                rowItems.forEachIndexed { colIndex, item ->
+                    Box(modifier = Modifier.weight(1f)) { cell(rowIndex * columns + colIndex, item) }
                 }
                 repeat(columns - rowItems.size) {
                     Spacer(Modifier.weight(1f))
@@ -471,7 +522,12 @@ private fun HomeDashboardSections() {
     }
 }
 
-/** Flutter `HomeBannerSection`：暗色风景近似底 + 竖向下沉暗带 + 16/4 阴影。 */
+/**
+ * Flutter `HomeBannerSection`：暗色风景位图（P3-E1b assets）+ 竖向下沉暗带 + 16/4 阴影。
+ *
+ * P2-S2f 的渐变近似保留为位图加载前/失败时的回落底色；位图走
+ * `assets://common/home/banner.png`（等比 Crop，与 Flutter `picsum` 风景同构）。
+ */
 @Composable
 private fun HomeBanner() {
     val bannerShape = RoundedCornerShape(HomePalette.radiusMdDesign.su)
@@ -482,9 +538,16 @@ private fun HomeBanner() {
             .padding(start = 16.su, end = 16.su, top = 16.su)
             .height(132.su)
             .shadow(8.dp, bannerShape, ambientColor = shadowColor, spotColor = shadowColor)
+            .clip(bannerShape)
             .background(Brush.horizontalGradient(HOME_BANNER_SCENE), bannerShape)
             .clickable { toast("「朋友圈营销」即将接入") },
     ) {
+        Image(
+            painter = painterResource(HOME_BANNER_RES),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -535,7 +598,7 @@ private fun HomeFeatureGrid() {
             columns = 5,
             horizontalSpacing = 0.su,
             verticalSpacing = 12.su,
-        ) { label ->
+        ) { index, label ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -543,7 +606,11 @@ private fun HomeFeatureGrid() {
                     .clickable { onFeatureTap(label) },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                ImagePlaceholder(size = 48.su, corner = 12.su, ring = 20.su)
+                HomePhotoTile(
+                    res = HOME_FEATURE_TILE_RES[index % HOME_FEATURE_TILE_RES.size],
+                    size = 48.su,
+                    corner = 12.su,
+                )
                 Spacer(Modifier.height(6.su))
                 Text(
                     label,
@@ -591,7 +658,7 @@ private fun HomeQuickActionGrid() {
             columns = 2,
             horizontalSpacing = 12.su,
             verticalSpacing = 12.su,
-        ) { action ->
+        ) { _, action ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -711,7 +778,7 @@ private fun HomeStoreMetricsCard() {
             columns = 2,
             horizontalSpacing = 12.su,
             verticalSpacing = 16.su,
-        ) { metric ->
+        ) { _, metric ->
             Column(modifier = Modifier.fillMaxWidth().height(62.su)) {
                 Text(
                     metric.value,
@@ -812,7 +879,7 @@ private fun HomeServiceGrid() {
             columns = 4,
             horizontalSpacing = 0.su,
             verticalSpacing = 16.su,
-        ) { service ->
+        ) { index, service ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -821,7 +888,11 @@ private fun HomeServiceGrid() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(contentAlignment = Alignment.TopEnd) {
-                    ImagePlaceholder(size = 48.su, corner = 14.su, ring = 20.su)
+                    HomePhotoTile(
+                        res = HOME_SERVICE_TILE_RES[index % HOME_SERVICE_TILE_RES.size],
+                        size = 48.su,
+                        corner = 14.su,
+                    )
                     if (service.badge != null) {
                         Box(
                             modifier = Modifier

@@ -17,6 +17,7 @@ import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.foundation.layout.Row
 import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.aspectRatio
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
@@ -183,7 +184,9 @@ private fun AssetGridCard(period: Int, onPeriod: (Int) -> Unit) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .height(68.dp)
+                            // Flutter `SliverGridDelegateWithFixedCrossAxisCount(childAspectRatio: 1.35)`
+                            // → 高 = 宽 / 1.35，随卡片宽自适应；原固定 68.dp 只对 375 宽成立。
+                            .aspectRatio(1.35f)
                             .background(
                                 if (cell.positive) Color(0x14FF3B30) else Color(0x1434C759),
                                 RoundedCornerShape(8.dp),
@@ -358,7 +361,15 @@ private fun StrategyCard() {
 @Composable
 private fun Gauge() {
     Box(modifier = Modifier.size(88.dp, 56.dp)) {
-        Canvas(modifier = Modifier.width(88.dp).height(44.dp)) {
+        Canvas(
+            modifier = Modifier
+                .width(88.dp)
+                .height(44.dp)
+                // Flutter `_buildGauge` 用 `Stack(alignment: Alignment.bottomCenter)`
+                // 把 88×44 弧放到 88×56 容器**底部**（顶部留 12dp 空隙，让出给居底文字）。
+                // Kuikly `Box` 默认 `TopStart` → 弧会顶到 y=0，弧底比真源高 12dp。
+                .align(Alignment.BottomCenter),
+        ) {
             val stroke = Stroke(width = 8f, cap = StrokeCap.Round)
             val topLeft = Offset(size.width / 2f - 36f, size.height - 36f)
             val arcSize = Size(72f, 72f)

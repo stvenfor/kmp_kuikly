@@ -23,6 +23,7 @@ import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
+import com.tencent.kuikly.compose.foundation.layout.heightIn
 import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
@@ -226,13 +227,18 @@ internal class MusicListPage : BaseComposePager() {
 
 /**
  * Flutter `_SongListTile` = `ListTile(leading: CircleAvatar(radius 24), title: 16·w500,
- * subtitle: 14·white60)`，两行 ListTile 高 72、水平内距 16、leading 间隙 16。
+ * subtitle: 14·white60 'By artist')`。
+ *
+ * 源核验（P3-E3e，SDK list_tile.dart）：两行 ListTile `_targetTileHeight = 72` 且内容垂直居中
+ * （`max(72, content + 2×minVerticalPadding4)`）→ `heightIn(min = 72.dp)`。**无** trailing/duration
+ * （duration 只在 NowPlaying 渲染）、**无** 分隔线（`ListView.builder` 裸 ListTile）。
  */
 @Composable
 private fun SongRow(song: Song, onTap: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 72.dp)
             .clickable(onClick = onTap)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

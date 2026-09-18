@@ -70,7 +70,11 @@ internal class HotRankDetailPage : BaseComposePager() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(DubbingPalette.background),
+                        .background(DubbingPalette.background)
+                        // Flutter `GestureDetector(onTap: closeAgeFilterMenu,
+                        // HitTestBehavior.translucent)` 让点空白处也能关掉 age 下拉；
+                        // 原 Kuikly 只能再点 pill 来关，与 Flutter UX 不齐。
+                        .clickable { if (menuOpen) menuOpen = false },
                 ) {
                     HotRankHeader(topInset = top)
                     Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -186,7 +190,10 @@ private fun HotRankHeader(topInset: Float) {
                     endY = 1200f,
                 ),
             )
-            .padding(start = 8.su, top = (topInset + 4f).su, end = 8.su, bottom = 16.su),
+            // `statusBarInset()` 已是设备逻辑像素（见 `BaseComposePager.statusBarInset`
+            // + `DesignScale.kt:26` 「状态栏...不要 `.su()`」）；原 `(topInset + 4f).su` 让状态
+            // 栏区域被设计稿系数再乘一次（×~1.46 on Pixel_7_Pro），title 整体被多推 ~24dp。
+            .padding(start = 8.su, top = (topInset + 4f).dp, end = 8.su, bottom = 16.su),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(

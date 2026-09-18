@@ -111,7 +111,7 @@ internal class VideoListPage : BaseComposePager() {
                     background = VideoPalette.background,
                     foreground = VideoPalette.titleBlack,
                 )
-                Spacer(Modifier.height(8.dp))
+                // Flutter `ListView.separated(padding: EdgeInsets.all(16))` —— top 16 直接落在 nav 下方。
                 when {
                     error != null -> Box(Modifier.weight(1f).fillMaxWidth()) {
                         DomainEmptyState(
@@ -132,10 +132,10 @@ internal class VideoListPage : BaseComposePager() {
                         )
                     }
                     else -> LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentPadding = PaddingValues(
                             start = 16.dp,
-                            top = 8.dp,
+                            top = 16.dp,
                             end = 16.dp,
                             bottom = (bottom + 16f).dp,
                         ),

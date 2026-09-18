@@ -53,8 +53,8 @@ import com.tencent.kuikly.core.annotations.Page
  * ponytail 天花板（不弹回）：礼品卡资源图 → 用真实蓝渐变 + Unicode 字形近似；信纸落款日期
  * 为静态文案；领取动作为本地 toast「领取成功，可在背包中查看」+ closePage。
  *
- * **P2-V9a 抛光**：外白卡补 `BoxShadow(black 4% / blur 16)`（offset 受 Kuikly `.shadow` 限制
- * 无法表达）；内白卡补 `BoxShadow(black 4% / blur 8)`；message 加 `lineHeight = 22.4.sp`
+ * **P2-V9a 抛光**：外白卡补 `BoxShadow(black 8% / blur 16)`（offset 受 Kuikly `.shadow` 限制
+ * 无法表达）；内白卡补 `BoxShadow(black 6% / blur 8)`；message 加 `lineHeight = 22.4.sp`
  * （14sp × 1.6）；回形针图标改 `Modifier.offset(24.dp, -8.dp).rotate(-17.188f)`（-0.3 rad）。
  */
 @Page(name = "ClassroomGiftClaim", moduleId = "feature_home")
@@ -123,21 +123,26 @@ internal class ClassroomGiftClaimPage : BaseComposePager() {
  * `GiftClaim` 私有调色板：复用 `ClassroomPalette` 通用项（primaryGreen / titleBlack /
  * textGray / BUTTON_RADIUS），礼品卡专属色另起一份以免污染主 `ClassroomPalette`。
  *
- * `cardShadow` 对齐 Flutter `_GiftCardVisual` 外白卡 `BoxShadow(black 4% / blur 16 /
- * offset(0,4))` 与 `_NotePaper` 内白卡 `BoxShadow(black 4% / blur 8 / offset(0,2))`。
- * Kuikly `.shadow` 无 offset 参数，故统一用 `0x0A000000`（black 4%），elevation
- * 16 / 8 区分两卡（PayListPage / ClassroomListPage 已知同款约束）。
+ * `giftCardShadow` / `noteShadow` 对齐 Flutter 真源：`_GiftCardVisual` 外白卡
+ * `BoxShadow(black 8% / blur 16 / offset(0,4))` 与 `_NotePaper` 内白卡
+ * `BoxShadow(black 6% / blur 8 / offset(0,2))`。Kuikly `.shadow` 无 offset 参数，
+ * elevation 16 / 8 区分两卡（PayListPage / ClassroomListPage 已知同款约束）。
+ * 文案对齐 `ClassroomMockData.giftCard`（乌克丽丽 / 老坛酸菜 / 2026-05-20 /
+ * 班级会员卡 / 1天 AI SVIP）。
  */
 private object GiftPalette {
-    val noteBackground = Color(0xFFFBFBF7)
+    val noteBackground = Color(0xFFF0F7FF)
     val noteAccent = Color(0xFF999999)
     val giftCardStart = Color(0xFF1677FF)
     val giftCardEnd = Color(0xFF0958D9)
-    val cardShadow = Color(0x0A000000)
+    // Flutter `_GiftCardVisual` 外白卡 black 8%（0.08）。
+    val giftCardShadow = Color(0x14000000)
+    // Flutter `_NotePaper` 内白卡 black 6%（0.06）。
+    val noteShadow = Color(0x0F000000)
 }
 
 /**
- * Flutter `_GiftCardVisual`：白卡 r16（black 4% / blur 16 / offset(0,4) 阴影）+ 16 padding +
+ * Flutter `_GiftCardVisual`：白卡 r16（black 8% / blur 16 / offset(0,4) 阴影）+ 16 padding +
  * 内部蓝渐变卡 r12 + 28 白圆 logo + 「英语趣配音」13 + 「Way to go ✨」28·bold·italic +
  * 时长 14 + chip 10 + 🧑‍🎓 48 emoji。
  */
@@ -147,9 +152,9 @@ private fun GiftCardVisual() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // Flutter `_GiftCardVisual` 外白卡：black 4% / blur 16 / offset(0, 4)。
+            // Flutter `_GiftCardVisual` 外白卡：black 8% / blur 16 / offset(0, 4)。
             // Kuikly `.shadow` 无 offset → 仅可近似的四向投影（天花板见 `PayListPage`）。
-            .shadow(16.dp, cardShape, ambientColor = GiftPalette.cardShadow, spotColor = GiftPalette.cardShadow)
+            .shadow(16.dp, cardShape, ambientColor = GiftPalette.giftCardShadow, spotColor = GiftPalette.giftCardShadow)
             .background(Color.White, cardShape)
             .padding(16.dp),
     ) {
@@ -194,14 +199,14 @@ private fun GiftCardVisual() {
             Spacer(Modifier.weight(1f))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("3 个月有效期", fontSize = 14.sp, color = Color.White)
+                    Text("1天 AI SVIP", fontSize = 14.sp, color = Color.White)
                     Spacer(Modifier.height(4.dp))
                     Box(
                         modifier = Modifier
                             .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                     ) {
-                        Text("SVIP 体验卡", fontSize = 10.sp, color = Color.White)
+                        Text("班级会员卡", fontSize = 10.sp, color = Color.White)
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -212,7 +217,7 @@ private fun GiftCardVisual() {
 }
 
 /**
- * Flutter `_NotePaper`：白卡 r4（black 4% / blur 8 / offset(0,2) 阴影）+ 左上 `Positioned(
+ * Flutter `_NotePaper`：白卡 r4（black 6% / blur 8 / offset(0,2) 阴影）+ 左上 `Positioned(
  * top: -8, left: 24, rotate(-0.3 rad))` 的回形针图标 + 称呼 15·w500 + message 14·h1.6 +
  * 落款（teacher + date 右对齐）。回形针图标为资源 → 留位「📎」字形近似。
  */
@@ -233,13 +238,13 @@ private fun NotePaper() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                // Flutter `_NotePaper` 内白卡：black 4% / blur 8 / offset(0, 2)。
-                .shadow(8.dp, noteShape, ambientColor = GiftPalette.cardShadow, spotColor = GiftPalette.cardShadow)
+                // Flutter `_NotePaper` 内白卡：black 6% / blur 8 / offset(0, 2)。
+                .shadow(8.dp, noteShape, ambientColor = GiftPalette.noteShadow, spotColor = GiftPalette.noteShadow)
                 .background(Color.White, noteShape)
                 .padding(start = 20.dp, top = 24.dp, end = 20.dp, bottom = 20.dp),
         ) {
             Text(
-                "小明 同学：",
+                "乌克丽丽 同学：",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = ClassroomPalette.titleBlack,
@@ -247,9 +252,7 @@ private fun NotePaper() {
             Spacer(Modifier.height(12.dp))
             // Flutter `TextStyle(height: 1.6)` → 14sp × 1.6 = 22.4sp lineHeight。
             Text(
-                "本学期表现非常棒！连续 21 天完成配音作业，" +
-                    "发音清晰度提升显著。希望继续努力，" +
-                    "期待你下个月的精彩表现。",
+                "本次作业完成的很棒！老师送你一张体验卡，以资鼓励",
                 fontSize = 14.sp,
                 lineHeight = 22.4.sp,
                 color = ClassroomPalette.titleBlack,
@@ -258,13 +261,13 @@ private fun NotePaper() {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.align(Alignment.CenterEnd)) {
                     Text(
-                        "王老师",
+                        "老坛酸菜",
                         fontSize = 14.sp,
                         color = ClassroomPalette.titleBlack,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "2024-12-15",
+                        "2026-05-20",
                         fontSize = 13.sp,
                         color = ClassroomPalette.textGray,
                     )

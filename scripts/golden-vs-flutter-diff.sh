@@ -22,6 +22,7 @@ fail=0
 # Kuikly actual stem = Flutter-ref baseline stem
 MAP=(
   "02-main-home=02-flutter-main-home"
+  "02b-main-home-logged-in=02b-flutter-main-home-logged-in"
   "06-main-me-guest=03-flutter-main-me-guest"
   "07-main-me-logged-in=08-flutter-main-me-logged-in"
   "03-login=07-flutter-login"
@@ -31,9 +32,23 @@ MAP=(
   "13-main-community=13-flutter-main-community"
   "12-chat-detail=12-flutter-chat-detail"
 )
-# 02b home logged-in deferred: Flutter-ref is photo-dense (~973KB) vs Kuikly glyph/solid
-# placeholders (~208KB) → RMSE≈0.25 under no-image-SDK ceiling. Re-add when assets land.
+# Phase-3 Wave3 expand: unlock pairs as Flutter-ref baselines pass size-gate (≥100KB).
+MAP[${#MAP[@]}]="05-usedcar-detail=05-flutter-usedcar-detail"
+MAP[${#MAP[@]}]="08-settings=08-flutter-settings"
+MAP[${#MAP[@]}]="09-login-password=09-flutter-login-password"
+# pending photo-density (RMSE≈0.34 after E2a): MAP[${#MAP[@]}]="14-post-detail=14-flutter-post-detail"
+MAP[${#MAP[@]}]="15-music-list=15-flutter-music-list"
+# pending harden+recapture: MAP[${#MAP[@]}]="19-friend-list=19-flutter-friend-list"
+MAP[${#MAP[@]}]="25-pay-list=25-flutter-pay-list"
+# pending wave4 video-list polish (RMSE≈0.259): MAP[${#MAP[@]}]="17-video-list=17-flutter-video-list"
+MAP[${#MAP[@]}]="18-video-detail=18-flutter-video-detail"
+MAP[${#MAP[@]}]="21-classroom-list=21-flutter-classroom-list"
+# pending wave4: MAP[${#MAP[@]}]="23-live-list=23-flutter-live-list"
+# pending wave4: MAP[${#MAP[@]}]="26-pay-confirm=26-flutter-pay-confirm"
+# Wave4 unlock: E7a Flutter-ref + size-gate + RMSE_rel ≤0.22 (evidence 148).
+# Wave4 unlock gated on E7a Flutter-ref capture + size-gate + RMSE_rel ≤0.22 (evidence stub: .scratch/my-ai-migration/parity/wb-logs/E7a-*.log).
 # Soft Gate S1: chat-detail Flutter-ref via UI-tap harden (P2-S1a).
+# Phase-3: 02b promoted after home assets (E1b) dropped RMSE_rel to ~0.192.
 
 
 MAGICK_BIN=""

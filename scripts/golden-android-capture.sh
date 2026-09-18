@@ -88,15 +88,15 @@ capture_page "Main" "02-main-home" 8
 capture_page "Main" "02b-main-home-logged-in" 8 '{"mockLogin":"1"}'
 capture_page "Login" "03-login" 3
 capture_page "UsedCarList" "04-usedcar-list" 4
-capture_page "UsedCarDetail" "05-usedcar-detail" 3 '{"id":"1"}'
+capture_page "UsedCarDetail" "05-usedcar-detail" 5 '{"id":"1"}'
 # Me tab + Settings (Slice-02). Guest vs logged-in primed via pageData
 # (MainPage reads tab=Me / mockLogin=1); each capture force-stops first,
 # so 06 is always guest (fresh process) and 07 always logged-in.
 capture_page "Main" "06-main-me-guest" 6 '{"tab":"Me"}'
 capture_page "Main" "07-main-me-logged-in" 5 '{"tab":"Me","mockLogin":"1"}'
-capture_page "Settings" "08-settings" 3
+capture_page "Settings" "08-settings" 5
 # Password-mode Login (Slice-03). LoginPage reads pageData mode=password.
-capture_page "Login" "09-login-password" 3 '{"mode":"password"}'
+capture_page "Login" "09-login-password" 5 '{"mode":"password"}'
 # SearchPage (Slice-04). Deep-linked by pageName; reads no pageData.
 # 02-main-home now includes the search chrome (Home SearchBar) — re-lock on device gates.
 capture_page "Search" "10-search" 8
@@ -106,25 +106,25 @@ capture_page "Search" "10-search" 8
 capture_page "Main" "11-main-chat" 8 '{"tab":"Chat","mockLogin":"1"}'
 capture_page "ChatDetail" "12-chat-detail" 5 '{"id":"1"}'
 capture_page "Main" "13-main-community" 4 '{"tab":"Community","mockLogin":"1"}'
-capture_page "PostDetail" "14-post-detail" 3 '{"id":"1"}'
+capture_page "PostDetail" "14-post-detail" 5 '{"id":"1"}'
 
 # Slice-07 Music + Slice-08 Video
-capture_page "MusicList" "15-music-list" 4
+capture_page "MusicList" "15-music-list" 5
 capture_page "Main" "16-main-home-music" 4 '{"mockPlay":"1"}'
 capture_page "VideoList" "17-video-list" 4
 capture_page "VideoDetail" "18-video-detail" 4 '{"id":"1"}'
 
 # Slice-09 Friend + Slice-10 Classroom
-capture_page "FriendList" "19-friend-list" 4
-capture_page "FriendDetail" "20-friend-detail" 4 '{"id":"1"}'
+capture_page "FriendList" "19-friend-list" 5
+capture_page "FriendDetail" "20-friend-detail" 5 '{"id":"1"}'
 capture_page "ClassroomList" "21-classroom-list" 4
 capture_page "ClassroomDetail" "22-classroom-detail" 4 '{"id":"1"}'
 
 # Slice-11 Live + Slice-12 Pay
 capture_page "LiveList" "23-live-list" 4
 capture_page "LiveDetail" "24-live-detail" 4 '{"id":"1"}'
-capture_page "PayList" "25-pay-list" 4
-capture_page "PayConfirm" "26-pay-confirm" 4 '{"id":"1"}'
+capture_page "PayList" "25-pay-list" 5
+capture_page "PayConfirm" "26-pay-confirm" 5 '{"id":"1"}'
 
 if [[ "$UPDATE" -eq 1 ]]; then
   mkdir -p "$BASE_DIR"

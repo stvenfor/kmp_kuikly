@@ -105,7 +105,7 @@ internal class ClassroomDetailPage : BaseComposePager() {
                                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Text("邀请码：${course.inviteCode}", fontSize = 13.sp, color = ClassroomPalette.textGray)
                                     Spacer(Modifier.weight(1f))
-                                    Text("班级成员：${course.memberCount} 人", fontSize = 13.sp, color = ClassroomPalette.textGray)
+                                    Text("班级成员：${course.memberCount}", fontSize = 13.sp, color = ClassroomPalette.textGray)
                                 }
                                 Spacer(Modifier.height(12.dp))
                                 // 授课老师行（头像 36·浅绿底 + 绿字，同 Flutter 上传者行形制）

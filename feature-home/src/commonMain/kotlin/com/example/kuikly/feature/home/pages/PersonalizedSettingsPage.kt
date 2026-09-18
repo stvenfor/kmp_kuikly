@@ -17,12 +17,14 @@ import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
+import com.tencent.kuikly.compose.foundation.layout.heightIn
 import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.foundation.layout.size
 import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Switch
+import com.tencent.kuikly.compose.material3.SwitchDefaults
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
@@ -224,7 +226,7 @@ private fun NavTile(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onTap)
-            .height(52.dp)
+            .heightIn(min = 52.dp)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -254,8 +256,8 @@ private fun SwitchTile(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
-            .padding(start = 16.dp, end = 12.dp),
+            .heightIn(min = 52.dp)
+            .padding(start = 16.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TitleRow(title = title, showHelp = showHelp, onHelpTap = onHelpTap)
@@ -263,6 +265,10 @@ private fun SwitchTile(
         Switch(
             checked = value,
             onCheckedChange = onChanged,
+            // Flutter `CupertinoSwitch(activeTrackColor: AppTheme.seedColor)`。
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = PersonalizedPalette.switchTrack,
+            ),
         )
     }
 }

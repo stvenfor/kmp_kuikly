@@ -393,37 +393,38 @@ private fun InfoSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Flutter `DealInvoiceInfoRow` 5-star 版本：`trailing: DealInvoiceStarRating(...)`；
-                // label 同其他 InfoRow（15sp 黑 + 88dp 固定宽），星占右侧。
+                // Flutter `DealInvoiceInfoRow` trailing 版本：label 15sp 黑 + 88dp 固定宽，
+                // `DealInvoiceStarRating` 在 Expanded 内左对齐（非右侧）。
                 Text(
                     "客户评价",
                     fontSize = 15.sp,
                     color = InvoicePalette.titleBlack,
                     modifier = Modifier.width(88.dp),
                 )
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                    StarRow(rating)
-                }
+                StarRow(rating)
             }
         }
     }
 }
 
+/** Flutter `DealInvoiceInfoRow`：label 15sp 黑 `#1A1A1A` 固定宽 88 + value 15sp 左对齐。 */
 @Composable
 private fun InfoRow(label: String, value: String, valueColor: Color = InvoicePalette.valueColor) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, fontSize = 14.sp, color = InvoicePalette.valueColor)
-        Spacer(Modifier.weight(1f))
+        Text(
+            label,
+            fontSize = 15.sp,
+            color = InvoicePalette.titleBlack,
+            modifier = Modifier.width(88.dp),
+        )
         Text(
             value,
-            fontSize = 14.sp,
+            fontSize = 15.sp,
             color = valueColor,
         )
     }
