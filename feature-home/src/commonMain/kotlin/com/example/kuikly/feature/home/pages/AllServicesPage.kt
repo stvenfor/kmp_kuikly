@@ -161,9 +161,9 @@ private val CATALOG: Map<String, ServiceItem> = listOf(
     ServiceItem("new_car_in_store.png", "跑步数据", "🏃"),
     ServiceItem("v_store.png", "训练视图", "🏋"),
     ServiceItem("small_video.png", "地中海饮食", "🎬"),
-    ServiceItem("dubbing_home.png", "配音首页", "🎙"),
+    ServiceItem("dubbing_home.png", "配音首页", "🎙", PageNames.DubbingHome),
     ServiceItem("dubbing_video_list.png", "视频列表", "🎬", PageNames.VideoList),
-    ServiceItem("dubbing_work_list.png", "作品列表", "🏆", PageNames.VideoList),
+    ServiceItem("dubbing_work_list.png", "作品列表", "🏆", PageNames.DubbingWorkList),
     ServiceItem("classroom_my_class.png", "班级教学", "🎓", PageNames.ClassroomMyClass),
     ServiceItem("pay_membership.png", "会员续费", "💳", PageNames.PayList),
 ).associateBy { it.id }
@@ -247,6 +247,8 @@ private fun AllServicesNavBar(topInset: Float) {
                     fontSize = 17.susp,
                     fontWeight = FontWeight.SemiBold,
                     color = AllServicesPalette.titleBlack,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

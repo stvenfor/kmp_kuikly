@@ -271,7 +271,9 @@ private fun StrategyCard() {
             }
             Text(
                 "如何跟投",
-                fontSize = 15.sp,
+                // Flutter 真源 `TextStyle(color: accent, fontWeight: w500)` **未指定 fontSize**，
+                // 继承 Material `DefaultTextStyle`（bodyMedium，14sp）。原 15.sp 多 1sp。
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 color = HomeDashboardPalette.accent,
                 modifier = Modifier.clickable {

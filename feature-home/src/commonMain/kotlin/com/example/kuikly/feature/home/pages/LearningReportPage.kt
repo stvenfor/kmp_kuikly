@@ -6,6 +6,7 @@ import com.example.kuikly.base.ProvideDesignScale
 import com.example.kuikly.base.Utils
 import com.example.kuikly.base.su
 import com.example.kuikly.base.susp
+import com.tencent.kuikly.compose.foundation.Canvas
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
@@ -28,8 +29,10 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.geometry.Offset
 import com.tencent.kuikly.compose.ui.graphics.Brush
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.graphics.Path
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.core.annotations.Page
@@ -43,9 +46,8 @@ import com.tencent.kuikly.core.annotations.Page
  *
  * **刻度**：Flutter 本页命中 `.w/.h/.sp`（72 处，含 `.r`）→ `ProvideDesignScale` + `.su` / `.susp`。
  *
- * ponytail 天花板：`_EmojiIconBox(gradient: true)` 的 **topLeft→bottomRight 对角渐变**用
- * `Brush.horizontalGradient` 近似（Kuikly `Brush` 无对角/`sweepGradient` 构造）；图标本身是 emoji，
- * 无矢量资源问题。底部「家长助手」胶囊按 Flutter `Positioned(bottom+88)` 叠在会员卡上方。
+ * ponytail 天花板：图标位本身是 emoji，无矢量资源；「家长助手」用 👪 替
+ * `Icons.family_restroom_rounded`；底部「家长助手」胶囊按 Flutter `Positioned(bottom+88)` 叠在会员卡上方。
  */
 @Page(name = "LearningReport", moduleId = "feature_home")
 internal class LearningReportPage : BaseComposePager() {
@@ -74,7 +76,7 @@ internal class LearningReportPage : BaseComposePager() {
                                 start = 16.su,
                                 top = 12.su,
                                 end = 16.su,
-                                bottom = (bottom + 120f).su,
+                                bottom = 120f.su,
                             ),
                         ) {
                             item { SectionHeader(HomeReportPalette.dotYellow, "今日高光") }
@@ -245,7 +247,18 @@ private fun HighlightTrailing(spec: String) {
                 .background(HomeReportPalette.playBox, RoundedCornerShape(8.su)),
             contentAlignment = Alignment.Center,
         ) {
-            Text("▶", fontSize = 20.susp, color = HomeReportPalette.dotBlue)
+            // Flutter `Icons.play_arrow_rounded` 20.sp / dotBlue；`▶` 在 Android 可能走 emoji → 自绘。
+            Canvas(modifier = Modifier.width(10.su).height(13.su)) {
+                drawPath(
+                    Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(0f, size.height)
+                        lineTo(size.width, size.height / 2f)
+                        close()
+                    },
+                    HomeReportPalette.dotBlue,
+                )
+            }
         }
     }
 }
@@ -305,29 +318,26 @@ private fun LearningRecordCard() {
     }
 }
 
-/** Flutter `_EmojiIconBox`：44×44 r12；`gradient` 走 teal 渐变，否则记录条底 + 1 边框。 */
+/** Flutter `_EmojiIconBox`：44×44 r12；`gradient` 走 teal 对角渐变，否则记录条底 + 1 边框。 */
 @Composable
 private fun EmojiIconBox(emoji: String, gradient: Boolean) {
     Box(
         modifier = Modifier
             .size(44.su)
-            .background(
-                brush = if (gradient) {
-                    Brush.horizontalGradient(
-                        listOf(HomeReportPalette.iconTealLight, HomeReportPalette.iconTeal),
-                    )
-                } else {
-                    Brush.horizontalGradient(
-                        listOf(HomeReportPalette.recordItem, HomeReportPalette.recordItem),
-                    )
-                },
-                shape = RoundedCornerShape(12.su),
-            )
             .then(
                 if (gradient) {
-                    Modifier
+                    Modifier.background(
+                        Brush.linearGradient(
+                            listOf(HomeReportPalette.iconTealLight, HomeReportPalette.iconTeal),
+                            start = Offset.Zero,
+                            end = Offset.Infinite,
+                        ),
+                        RoundedCornerShape(12.su),
+                    )
                 } else {
-                    Modifier.border(1.su, HomeReportPalette.divider, RoundedCornerShape(12.su))
+                    Modifier
+                        .background(HomeReportPalette.recordItem, RoundedCornerShape(12.su))
+                        .border(1.su, HomeReportPalette.divider, RoundedCornerShape(12.su))
                 },
             ),
         contentAlignment = Alignment.Center,

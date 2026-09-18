@@ -44,7 +44,25 @@ MAP[${#MAP[@]}]="17-video-list=17-flutter-video-list"  # unlocked E8b true Flutt
 MAP[${#MAP[@]}]="18-video-detail=18-flutter-video-detail"
 MAP[${#MAP[@]}]="21-classroom-list=21-flutter-classroom-list"
 MAP[${#MAP[@]}]="23-live-list=23-flutter-live-list"  # unlocked E9g stub flatten RMSE≈0.032
+MAP[${#MAP[@]}]="24-live-detail=24-flutter-live-detail"  # unlocked P7-E1 stub flatten RMSE≈0.097
 # retired E9e PASS-out: MAP[${#MAP[@]}]="26-pay-confirm=26-flutter-pay-confirm"
+# Phase-6 Wave5 unlock: E2-CAP Flutter-ref + RMSE_rel ≤0.22 (evidence 177).
+MAP[${#MAP[@]}]="27-all-services=27-flutter-all-services"  # ≈0.147
+MAP[${#MAP[@]}]="28-register=28-flutter-register"  # ≈0.068
+MAP[${#MAP[@]}]="29-music-now-playing=29-flutter-music-now-playing"  # ≈0.039
+MAP[${#MAP[@]}]="30-strategy=30-flutter-strategy"  # ≈0.144
+MAP[${#MAP[@]}]="31-hot-rank-detail=31-flutter-hot-rank-detail"  # ≈0.150
+MAP[${#MAP[@]}]="32-personalized-settings=32-flutter-personalized-settings"  # ≈0.089
+MAP[${#MAP[@]}]="33-learning-report=33-flutter-learning-report"  # ≈0.163
+MAP[${#MAP[@]}]="34-check-in-mall=34-flutter-check-in-mall"  # ≈0.161
+MAP[${#MAP[@]}]="35-deal-invoice-upload=35-flutter-deal-invoice-upload"  # ≈0.043 (demo→upload UI tap)
+MAP[${#MAP[@]}]="36-classroom-gift-claim=36-flutter-classroom-gift-claim"  # ≈0.106
+MAP[${#MAP[@]}]="37-classroom-video-detail=37-flutter-classroom-video-detail"  # ≈0.127
+MAP[${#MAP[@]}]="38-community-publish=38-flutter-community-publish"  # ≈0.035
+# Phase-8 Wave6: works + dubbing-home unlocked (39 polish RMSE≈0.214)
+MAP[${#MAP[@]}]="39-dubbing-home=39-flutter-dubbing-home"  # ≈0.214 (structure polish after soft-close)
+MAP[${#MAP[@]}]="40-dubbing-work-list=40-flutter-dubbing-work-list"  # ≈0.168
+MAP[${#MAP[@]}]="41-dubbing-work-detail=41-flutter-dubbing-work-detail"  # ≈0.202
 # Wave4 unlock: E7a Flutter-ref + size-gate + RMSE_rel ≤0.22 (evidence 148).
 # Wave4 unlock gated on E7a Flutter-ref capture + size-gate + RMSE_rel ≤0.22 (evidence stub: .scratch/my-ai-migration/parity/wb-logs/E7a-*.log).
 # Soft Gate S1: chat-detail Flutter-ref via UI-tap harden (P2-S1a).

@@ -174,12 +174,13 @@ private object PersonalizedPalette {
     val switchTrack = Color(0xFF34C759) // AppTheme.seedColor 近似
 }
 
-/** Flutter `_SectionHeader`：`Padding(fromLTRB(4, 20, 4, 8))` + 13 灰。 */
+/** Flutter `_SectionHeader`：`Padding(fromLTRB(4, 20, 4, 8))` + 13 灰 + `height: 1.3`。 */
 @Composable
 private fun SectionHeader(label: String) {
     Text(
         label,
         fontSize = 13.sp,
+        lineHeight = 16.9.sp,
         color = PersonalizedPalette.sectionColor,
         modifier = Modifier.padding(start = 4.dp, top = 20.dp, end = 4.dp, bottom = 8.dp),
     )
@@ -231,8 +232,10 @@ private fun NavTile(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TitleRow(title = title, showHelp = showHelp, onHelpTap = onHelpTap)
+        // Flutter 把 `_TitleRow` 包在 `Expanded` 里 → chevron 始终贴右；
+        // 把 Spacer 提到条件外，让「装扮中心」无 trailingText 时也能贴右。
+        Spacer(Modifier.weight(1f))
         if (trailingText != null) {
-            Spacer(Modifier.weight(1f))
             Text(
                 trailingText,
                 fontSize = 15.sp,
@@ -279,6 +282,7 @@ private fun TitleRow(title: String, showHelp: Boolean, onHelpTap: (() -> Unit)?)
         Text(
             title,
             fontSize = 16.sp,
+            lineHeight = 21.6.sp,
             color = PersonalizedPalette.titleColor,
             maxLines = 2,
         )

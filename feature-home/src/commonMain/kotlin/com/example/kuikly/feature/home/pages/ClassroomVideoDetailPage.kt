@@ -48,16 +48,15 @@ import com.tencent.kuikly.core.annotations.Page
  * （`features/classroom/lib/view/video_detail_page.dart`）复刻（P2-W4a 接入路由
  * `classroomVideoDetail`）。
  *
- * **真源**：黑色 220 头（返回箭头 + 「It's said…」字幕三行）+ `TabBar(简介/评论 22)` +
- * 简介页（👍 3983 + 👎 + 5 个 tag chip + 头像+「上传者 小趣友宁Sir」+「打赏」粉胶囊 +
- * 「视频专辑 (20)」+ `+ 添加学习计划` 绿字 + 100 高水平 part 列表 + 点赞榜🥇）+ 评论页 +
- * 底部（收藏/分享/48·r24 「开启配音」绿 CTA）。
+ * **真源**：黑色 220 头（返回 + 播放图标 + `ClassroomMockData.videoTitle` 字幕三行）+
+ * `TabBar(简介/评论 22)` + 简介页（👍 3983 + 👎 + 5 tag + 上传者/打赏 + 专辑 part 横滑 +
+ * 点赞榜🥇）+ 评论页 + 底部（收藏/分享/r24 「开启配音」绿 CTA）。
  *
  * **刻度**：Flutter classroom 模块 view/theme **全用裸逻辑 px**，故一律裸 `dp`/`sp`，
  * 不加 `ProvideDesignScale`。
  *
  * ponytail 天花板（不弹回）：
- * - **不接视频播放 SDK**（按 handoff）；顶部 220 黑区用居中「▶」字形 + 「加载中」近似。
+ * - **不接视频播放 SDK**（按 handoff）；顶部 220 黑区用居中「▶」字形近似 `Icons.play_circle_fill`。
  * - `TabBar` 用 Kuikly `TabRow`/`Tab` 组件稳定性未知 → 用 `remember` + 手动 Column Row 切换。
  * - 头像 / part 缩略图无图 → 用 `placeholder_color` 占位 + Unicode 字形。
  */
@@ -101,15 +100,16 @@ internal class ClassroomVideoDetailPage : BaseComposePager() {
     }
 }
 
-private data class VideoPart(val title: String, val badge: String?, val selected: Boolean = false)
+private data class VideoPart(val title: String, val badge: String?)
+
+/** Flutter `ClassroomMockData.videoTitle` / `videoAlbumParts`。 */
+private const val VIDEO_TITLE =
+    "恐龙科幻电影回归：《侏罗纪世界2：失落王国》电影预告"
 
 private val VIDEO_PARTS = listOf(
-    VideoPart("Black Panther 黑豹", "试听", true),
-    VideoPart("Avengers 复仇者联盟", null, false),
-    VideoPart("Spider-Man 蜘蛛侠", "新课", false),
-    VideoPart("Iron Man 钢铁侠", null, false),
-    VideoPart("Thor 雷神", null, false),
-    VideoPart("Captain America", null, false),
+    VideoPart("Part 1 制服牛油果小怪兽", "试听"),
+    VideoPart("Part 2 想到制服牛油果...", "付费"),
+    VideoPart("Part 3 顺利制服...", null),
 )
 
 /** 黑色 220 头（`Container(height: 220, color: Colors.black87)`）+ 返回箭头 + 三行字幕。 */
@@ -134,15 +134,7 @@ private fun VideoHeader(topInset: Float, onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("▶", fontSize = 64.sp, color = Color.White.copy(alpha = 0.5f))
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "加载中…",
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.5f),
-                )
-            }
+            Text("▶", fontSize = 64.sp, color = Color.White.copy(alpha = 0.54f))
         }
         Column(
             modifier = Modifier
@@ -151,7 +143,7 @@ private fun VideoHeader(topInset: Float, onBack: () -> Unit) {
                 .padding(start = 16.dp, end = 16.dp, bottom = 40.dp),
         ) {
             Text(
-                "Black Panther 黑豹片段",
+                VIDEO_TITLE,
                 fontSize = 13.sp,
                 color = Color.White,
             )
@@ -162,9 +154,9 @@ private fun VideoHeader(topInset: Float, onBack: () -> Unit) {
                 color = Color.White.copy(alpha = 0.7f),
             )
             Text(
-                "据说他们能比法拉利更快地加速。",
+                "据说他们能比法拉利更快地加速",
                 fontSize = 11.sp,
-                color = Color.White.copy(alpha = 0.5f),
+                color = Color.White.copy(alpha = 0.54f),
             )
         }
     }
@@ -376,7 +368,7 @@ private fun VideoPartCard(part: VideoPart, selected: Boolean, onClick: () -> Uni
         val badge = part.badge
         if (badge != null) {
             val bg = if (badge == "试听") ClassroomPalette.primaryGreenLight else Color(0xFFFFF3E0)
-            val fg = if (badge == "试听") ClassroomPalette.primaryGreen else Color(0xFFFF9500)
+            val fg = if (badge == "试听") ClassroomPalette.primaryGreen else Color(0xFFFF8A34)
             Box(
                 modifier = Modifier
                     .background(bg, RoundedCornerShape(4.dp))
@@ -497,7 +489,7 @@ private fun BottomBar(bottomInset: Float, onStartDubbing: () -> Unit) {
                     .height(44.dp)
                     .background(
                         ClassroomPalette.primaryGreen,
-                        RoundedCornerShape(22.dp),
+                        RoundedCornerShape(ClassroomPalette.BUTTON_RADIUS.dp),
                     )
                     .clickable(onClick = onStartDubbing),
                 contentAlignment = Alignment.Center,

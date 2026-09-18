@@ -28,6 +28,7 @@ import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.geometry.Offset
 import com.tencent.kuikly.compose.ui.draw.rotate
 import com.tencent.kuikly.compose.ui.draw.shadow
 import com.tencent.kuikly.compose.ui.graphics.Brush
@@ -163,8 +164,11 @@ private fun GiftCardVisual() {
                 .fillMaxWidth()
                 .height(180.dp)
                 .background(
+                    // Flutter `LinearGradient(begin: topLeft, end: bottomRight)`。
                     Brush.linearGradient(
                         listOf(GiftPalette.giftCardStart, GiftPalette.giftCardEnd),
+                        start = Offset.Zero,
+                        end = Offset.Infinite,
                     ),
                     RoundedCornerShape(12.dp),
                 )
@@ -224,7 +228,9 @@ private fun GiftCardVisual() {
 @Composable
 private fun NotePaper() {
     val noteShape = RoundedCornerShape(4.dp)
-    Box {
+    // Flutter `Stack(clipBehavior: Clip.none)` 允许回形针 top:-8 溢出；
+    // LazyColumn 会裁切负 offset → 用 top padding 8 等效占位，回形针 y 改 0。
+    Box(modifier = Modifier.padding(top = 8.dp)) {
         // Flutter `Positioned(top: -8, left: 24, rotate(-0.3 rad))` 的回形针图标位：
         // -0.3 rad ≈ -17.188°；Kuikly `.offset` 不参与布局，仅位移渲染位置。
         Text(
@@ -232,7 +238,7 @@ private fun NotePaper() {
             fontSize = 28.sp,
             color = GiftPalette.noteAccent,
             modifier = Modifier
-                .offset(x = 24.dp, y = (-8).dp)
+                .offset(x = 24.dp, y = 0.dp)
                 .rotate(-17.188f),
         )
         Column(

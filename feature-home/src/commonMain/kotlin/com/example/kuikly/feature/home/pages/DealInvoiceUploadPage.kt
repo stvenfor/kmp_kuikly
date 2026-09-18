@@ -10,12 +10,12 @@ import com.example.kuikly.base.Utils
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
-import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.foundation.layout.Row
 import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.aspectRatio
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
 import com.tencent.kuikly.compose.foundation.layout.height
@@ -25,6 +25,7 @@ import com.tencent.kuikly.compose.foundation.layout.width
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.shape.CircleShape
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
+import com.tencent.kuikly.compose.material3.CircularProgressIndicator
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
@@ -62,12 +63,16 @@ internal class DealInvoiceUploadPage : BaseComposePager() {
         val bottom = bottomSafeInset()
         setContent {
             var hasImage by remember { mutableStateOf(false) }
-            var uploading by remember { mutableStateOf(false) }
             var customer by remember { mutableStateOf<InvoiceCustomer?>(null) }
             var phase by remember { mutableStateOf(UploadPhase.Editing) }
-            // 假详情状态：审核通过 + 评分 5 星。
-            var auditStatus by remember { mutableStateOf(AuditStatus.ApprovedPendingRating) }
-            var rating by remember { mutableStateOf(4) }
+            var auditStatus by remember { mutableStateOf(AuditStatus.PendingReview) }
+            var rating by remember { mutableStateOf(5) }
+
+            val isEditing = phase == UploadPhase.Editing
+            val isUploading = phase == UploadPhase.Uploading
+            val isDetail = phase == UploadPhase.Detail
+            val showCustomerPicker = isEditing && !isUploading
+            val showSubmitButton = !isDetail || auditStatus == AuditStatus.Rejected
 
             Column(
                 modifier = Modifier
@@ -90,40 +95,48 @@ internal class DealInvoiceUploadPage : BaseComposePager() {
                         ),
                     ) {
                         item {
-                            CustomerRow(
-                                customer = customer,
-                                onTap = {
-                                    customer = INVOICE_CUSTOMERS.firstOrNull()
-                                    Utils.currentBridgeModule().toast("已选择 ${customer?.display}")
-                                },
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                "新车发票",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = InvoicePalette.titleBlack,
-                            )
-                            Spacer(Modifier.height(10.dp))
+                            if (showCustomerPicker) {
+                                CustomerRow(
+                                    customer = customer,
+                                    onTap = {
+                                        customer = INVOICE_CUSTOMERS.firstOrNull()
+                                        Utils.currentBridgeModule().toast("已选择 ${customer?.display}")
+                                    },
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "新车发票",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = InvoicePalette.titleBlack,
+                                )
+                                Spacer(Modifier.height(10.dp))
+                            }
                             UploadImageArea(
                                 hasImage = hasImage,
-                                uploading = uploading,
-                                showStamp = phase == UploadPhase.Detail &&
-                                    auditStatus == AuditStatus.Rated,
-                                showReupload = phase == UploadPhase.Detail &&
+                                isEditing = isEditing,
+                                isUploading = isUploading,
+                                showPending = isDetail &&
+                                    auditStatus == AuditStatus.PendingReview,
+                                showStamp = isDetail && (
+                                    auditStatus == AuditStatus.ApprovedPendingRating ||
+                                        auditStatus == AuditStatus.Rated
+                                    ),
+                                showReupload = isDetail &&
                                     auditStatus == AuditStatus.Rejected,
                                 onPick = {
-                                    Utils.currentBridgeModule().toast("「选择发票」开发中")
-                                    hasImage = true
-                                    uploading = true
+                                    if (!isUploading) {
+                                        Utils.currentBridgeModule().toast("「选择发票」开发中")
+                                        hasImage = true
+                                    }
                                 },
                                 onClear = { hasImage = false },
                             )
-                            if (customer != null) {
+                            if (isDetail || customer != null) {
                                 Spacer(Modifier.height(16.dp))
                                 InfoSection(
-                                    customer = customer!!,
-                                    phase = phase,
+                                    customer = customer,
+                                    isDetail = isDetail,
                                     auditStatus = auditStatus,
                                     rating = rating,
                                     rejectReason = "发票日期与合同日期相差超过 7 天",
@@ -132,12 +145,22 @@ internal class DealInvoiceUploadPage : BaseComposePager() {
                         }
                     }
                 }
-                if (phase == UploadPhase.Editing) {
+                if (showSubmitButton) {
+                    val canSubmit = when {
+                        isUploading -> false
+                        isDetail && auditStatus == AuditStatus.Rejected -> hasImage
+                        isEditing -> customer != null && hasImage
+                        else -> false
+                    }
                     SubmitBar(
-                        enabled = customer != null && hasImage && !uploading,
+                        enabled = canSubmit,
+                        uploading = isUploading,
                         bottomInset = bottom,
                         onSubmit = {
-                            if (!uploading) {
+                            if (canSubmit && !isUploading) {
+                                phase = UploadPhase.Uploading
+                                phase = UploadPhase.Detail
+                                auditStatus = AuditStatus.PendingReview
                                 Utils.currentBridgeModule().toast("已提交审核（mock）")
                             }
                         },
@@ -214,53 +237,68 @@ private fun CustomerRow(customer: InvoiceCustomer?, onTap: () -> Unit) {
 }
 
 /**
- * Flutter `_DashedUploadBox` 等价物：宽撑满 + 虚线边框（Kuikly `BorderStroke` 无 dashed）→
- * 浅蓝细边 + 「上传发票」中央字样；上传中显示「上传中…」；有图时切到预览；详情 stamp /
- * reupload 按 prop 显隐。
+ * Flutter `DealInvoiceUploadImageArea`：新建虚线框 / 待审核占位 / 预览 Stack（1.45 宽高比）+
+ * stamp / reupload 蒙层。
  */
 @Composable
 private fun UploadImageArea(
     hasImage: Boolean,
-    uploading: Boolean,
+    isEditing: Boolean,
+    isUploading: Boolean,
+    showPending: Boolean,
     showStamp: Boolean,
     showReupload: Boolean,
     onPick: () -> Unit,
     onClear: () -> Unit,
 ) {
+    when {
+        !hasImage && isEditing -> DashedUploadBox(
+            uploading = isUploading,
+            onTap = onPick,
+        )
+        showPending -> Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.45f)
+                .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Flutter `Icons.file_upload_outlined` size 56。
+            Text("⬆", fontSize = 56.sp, color = InvoicePalette.hintColor)
+        }
+        else -> InvoiceImageStack(
+            hasImage = hasImage,
+            isEditing = isEditing,
+            isUploading = isUploading,
+            showStamp = showStamp,
+            showReupload = showReupload,
+            onPick = onPick,
+            onClear = onClear,
+        )
+    }
+}
+
+/** Flutter `_DashedUploadBox`：虚线边框（Kuikly 无 dashed → 浅蓝实线）+ 渐变圆 + 文案。 */
+@Composable
+private fun DashedUploadBox(uploading: Boolean, onTap: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(190.dp)
-            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
             .border(1.5.dp, InvoicePalette.dashedBorder, RoundedCornerShape(8.dp))
-            .clickable(onClick = onPick),
+            .clickable(enabled = !uploading, onClick = onTap),
         contentAlignment = Alignment.Center,
     ) {
-        when {
-            uploading -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("⏳", fontSize = 32.sp, color = InvoicePalette.hintColor)
-                Spacer(Modifier.height(8.dp))
-                Text("上传中…", fontSize = 13.sp, color = InvoicePalette.hintColor)
-            }
-            hasImage -> {
-                // 预览占位（无图）+ 中央文件图标 + 角部 X（编辑态）。
-                Text("🧾", fontSize = 56.sp, color = InvoicePalette.hintColor)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color(0xCC000000), CircleShape)
-                        .clickable(onClick = onClear)
-                        .size(28.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("✕", fontSize = 14.sp, color = Color.White)
-                }
-            }
-            else -> Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(vertical = 36.dp),
-            ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 36.dp),
+        ) {
+            if (uploading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = InvoicePalette.ctaBlue,
+                )
+            } else {
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -272,7 +310,7 @@ private fun UploadImageArea(
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("+", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text("+", fontSize = 32.sp, color = Color.White)
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
@@ -291,7 +329,48 @@ private fun UploadImageArea(
                 )
             }
         }
-        // 审核通过红圆戳。
+    }
+}
+
+/** Flutter 预览 Stack：`AspectRatio(1.45)` + 网络图占位 + 上传遮罩 / stamp / reupload / 删除。 */
+@Composable
+private fun InvoiceImageStack(
+    hasImage: Boolean,
+    isEditing: Boolean,
+    isUploading: Boolean,
+    showStamp: Boolean,
+    showReupload: Boolean,
+    onPick: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1.45f)
+            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+            .clickable(
+                enabled = showReupload || (isEditing && !isUploading),
+                onClick = onPick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (hasImage) {
+            Text("🧾", fontSize = 56.sp, color = InvoicePalette.hintColor)
+        }
+        if (isUploading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x61000000)),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = Color.White,
+                )
+            }
+        }
         if (showStamp) {
             Box(
                 modifier = Modifier
@@ -310,7 +389,6 @@ private fun UploadImageArea(
                 )
             }
         }
-        // 重新上传蒙层。
         if (showReupload) {
             Box(
                 modifier = Modifier
@@ -322,7 +400,6 @@ private fun UploadImageArea(
                 contentAlignment = Alignment.Center,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Flutter `Icons.refresh_rounded` size: 20。
                     Text("↻", fontSize = 20.sp, color = Color.White)
                     Spacer(Modifier.width(6.dp))
                     Text(
@@ -334,6 +411,19 @@ private fun UploadImageArea(
                 }
             }
         }
+        if (isEditing && hasImage && !isUploading) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .background(Color(0x8A000000), RoundedCornerShape(16.dp))
+                    .clickable(onClick = onClear)
+                    .padding(6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("✕", fontSize = 18.sp, color = Color.White)
+            }
+        }
     }
 }
 
@@ -343,8 +433,8 @@ private fun UploadImageArea(
  */
 @Composable
 private fun InfoSection(
-    customer: InvoiceCustomer,
-    phase: UploadPhase,
+    customer: InvoiceCustomer?,
+    isDetail: Boolean,
     auditStatus: AuditStatus,
     rating: Int,
     rejectReason: String?,
@@ -354,98 +444,101 @@ private fun InfoSection(
             .fillMaxWidth()
             .background(Color.White, RoundedCornerShape(8.dp)),
     ) {
-        InfoRow("购车客户", customer.display)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp)
-                .height(1.dp)
-                .background(InvoicePalette.divider),
-        )
-        if (phase == UploadPhase.Detail) {
-            InfoRow("提交时间", "2024-12-10 14:32")
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp)
-                    .height(1.dp)
-                    .background(InvoicePalette.divider),
-            )
+        if (customer != null) {
+            InfoRow("购车客户", customer.display)
+        }
+        if (isDetail) {
+            InfoRow("提交时间", "2024-12-10 14:32:00")
             InfoRow("审核状态", auditStatus.label, valueColor = auditStatus.color)
             if (auditStatus == AuditStatus.Rejected && rejectReason != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp)
-                        .height(1.dp)
-                        .background(InvoicePalette.divider),
-                )
                 InfoRow("未通过原因", rejectReason, valueColor = InvoicePalette.stampRed)
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp)
-                    .height(1.dp)
-                    .background(InvoicePalette.divider),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-            ) {
-                // Flutter `DealInvoiceInfoRow` trailing 版本：label 15sp 黑 + 88dp 固定宽，
-                // `DealInvoiceStarRating` 在 Expanded 内左对齐（非右侧）。
-                Text(
-                    "客户评价",
-                    fontSize = 15.sp,
-                    color = InvoicePalette.titleBlack,
-                    modifier = Modifier.width(88.dp),
-                )
-                StarRow(rating)
+            if (auditStatus == AuditStatus.Rated) {
+                InfoRowWithTrailing("客户评价") {
+                    StarRow(rating)
+                }
             }
         }
     }
 }
 
-/** Flutter `DealInvoiceInfoRow`：label 15sp 黑 `#1A1A1A` 固定宽 88 + value 15sp 左对齐。 */
+/** Flutter `DealInvoiceInfoRow`：label 88dp + value + 底部分割线。 */
 @Composable
 private fun InfoRow(label: String, value: String, valueColor: Color = InvoicePalette.valueColor) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-    ) {
-        Text(
-            label,
-            fontSize = 15.sp,
-            color = InvoicePalette.titleBlack,
-            modifier = Modifier.width(88.dp),
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Text(
+                label,
+                fontSize = 15.sp,
+                color = InvoicePalette.titleBlack,
+                modifier = Modifier.width(88.dp),
+            )
+            Text(
+                value,
+                fontSize = 15.sp,
+                color = valueColor,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(InvoicePalette.divider),
         )
-        Text(
-            value,
-            fontSize = 15.sp,
-            color = valueColor,
+    }
+}
+
+@Composable
+private fun InfoRowWithTrailing(label: String, trailing: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Text(
+                label,
+                fontSize = 15.sp,
+                color = InvoicePalette.titleBlack,
+                modifier = Modifier.width(88.dp),
+            )
+            trailing()
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(InvoicePalette.divider),
         )
     }
 }
 
 @Composable
 private fun StarRow(stars: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    Row {
         repeat(5) { idx ->
             Text(
                 if (idx < stars) "★" else "☆",
-                fontSize = 18.sp,
-                color = if (idx < stars) InvoicePalette.ratingStar else InvoicePalette.hintColor,
+                fontSize = 22.sp,
+                color = if (idx < stars) InvoicePalette.ratingStar else Color(0xFFE0E0E0),
             )
         }
     }
 }
 
-/** Flutter `_SubmitBar`：白底 + `48·r8` 「提交审核」CTA（`#3B8CFF` 蓝 / `#E0E0E0` 禁用）。 */
+/** Flutter `_SubmitBar`：白底 + `48·r8` 「提交审核」CTA（上传中 spinner / 禁用灰）。 */
 @Composable
-private fun SubmitBar(enabled: Boolean, bottomInset: Float, onSubmit: () -> Unit) {
+private fun SubmitBar(
+    enabled: Boolean,
+    uploading: Boolean,
+    bottomInset: Float,
+    onSubmit: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -463,12 +556,20 @@ private fun SubmitBar(enabled: Boolean, bottomInset: Float, onSubmit: () -> Unit
                 .clickable(enabled = enabled, onClick = onSubmit),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                "提交审核",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-            )
+            if (uploading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                    color = Color.White,
+                )
+            } else {
+                Text(
+                    "提交审核",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                )
+            }
         }
     }
 }

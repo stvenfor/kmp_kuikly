@@ -77,7 +77,7 @@ iOS / Ohos are **self-lock only** — no cross-source pairs. Re-lock + verify af
 
 ## Phase-3 — Cross-Source MAP expansion
 
-**Destination status.** Phase-2 hard gate + S1/S2 Soft Gates **PASS** (`86` + `91`); Cross-Source MAP is **20/20** locked (Phase-3 MAP 18/18, then Phase-4 E9g promoted `19-friend-list` and `23-live-list` after stub flatten — [172](../evidence/my-ai-migration/parity/172-p3-e9g-friend-live-unlock.md)). Phase-3 widens coverage beyond the initial 9 pairs — Kuikly pages that have a settled Flutter reference and stay under the RMSE gate move from "self-lock only" to "cross-source gated".
+**Destination status.** Phase-2 hard gate + S1/S2 Soft Gates **PASS** (`86` + `91`); Cross-Source MAP is **33/33** locked (Phase-6 Wave5 → 32/32 [177](../evidence/my-ai-migration/parity/177-p6-e2-gate-map32.md); Phase-7 `24-live-detail` stub flatten [179](../evidence/my-ai-migration/parity/179-p7-e1-live-detail-unlock.md)). Splash PASS-out. Phase-3 widens coverage beyond the initial 9 pairs — Kuikly pages that have a settled Flutter reference and stay under the RMSE gate move from "self-lock only" to "cross-source gated".
 
 ### MAP20 — current hard Cross-Source pairs
 
@@ -169,6 +169,48 @@ If a future Flutter-ref or Kuikly capture regresses back above 0.22, **drop the 
 - [156 — P3-E8b acceptance (video-list true Flutter-ref)](../evidence/my-ai-migration/parity/156-p3-e8b-acceptance.md) — recaptured `17-flutter-video-list` after the E7-era Home mis-lock, unblocking the pair for promotion
 - [158 — P3-E8g gate (MAP 18)](../evidence/my-ai-migration/parity/158-p3-e8-gate-map18.md) — Phase-3 hard MAP gate: `17-video-list` promoted (RMSE_rel **0.154**) after E8a content gate + E8b true Flutter-ref; all 18 pairs under `GOLDEN_RMSE_MAX=0.22`; `14-post-detail` (photo density), `19-friend-list` (Flutter stub), `23-live-list` / `26-pay-confirm` (Flutter-ref UNRELIABLE) remain deferred
 - [172 — P3-E9g unlock (MAP 20)](../evidence/my-ai-migration/parity/172-p3-e9g-friend-live-unlock.md) — `19-friend-list` / `23-live-list` promoted (RMSE_rel **0.032** / **0.032**) after stub flatten + true Flutter stub refs; `14` / `26` PASS-out; deferred blocking list empty
+- [175 — P5 Soft Close](../evidence/my-ai-migration/parity/175-p5-soft-close.md) — structure source-diff queue drained; hard MAP still **20/20**
+- [176 — P6-E2b docs](../evidence/my-ai-migration/parity/176-p6-e2b-docs.md) — INVENTORY + runbook Phase-6 stem table; MAP unlock pending
+- [177 — P6-E2-GATE MAP 32](../evidence/my-ai-migration/parity/177-p6-e2-gate-map32.md) — Wave5 stems 27–38 unlocked; hard MAP **32/32**
+- [178 — P6 Soft Close](../evidence/my-ai-migration/parity/178-p6-soft-close.md) — Phase-6 queue drained; out-of-scope unchanged
+- [179 — P7-E1 live-detail unlock](../evidence/my-ai-migration/parity/179-p7-e1-live-detail-unlock.md) — `24-live-detail` MAP; splash PASS-out; hard MAP **33/33**
+- [182 — P8-E2-GATE MAP 35](../evidence/my-ai-migration/parity/182-p8-e2-gate-map35.md) — works 40/41 unlocked; stem 39 deferred
+- [183 — P8 Soft Close](../evidence/my-ai-migration/parity/183-p8-soft-close.md) — missing/self-lock drained; hard MAP **35/35** (superseded by 184)
+- [184 — P8-E3 MAP 36](../evidence/my-ai-migration/parity/184-p8-e3-gate-map36.md) — `39-dubbing-home` unlocked (RMSE_rel **0.214**)
+
+## Phase-8 — Missing drain
+
+**Status:** **PASS**. Implemented `DubbingHome` / `DubbingWorkList` / `DubbingWorkDetail`. Hard MAP **36/36** ([184](../evidence/my-ai-migration/parity/184-p8-e3-gate-map36.md)). Inventory missing **0**.
+
+## Phase-6 — Structure pages → Flutter-ref + MAP
+
+**Status:** **PASS** — hard Cross-Source MAP **32/32** ([177](../evidence/my-ai-migration/parity/177-p6-e2-gate-map32.md)). All Wave5 stems **27–38** unlocked (RMSE_rel ≤ 0.22).
+
+| Kuikly stem | Flutter ref | Route | RMSE_rel |
+|---|---|---|---|
+| `27-all-services` | `27-flutter-all-services` | `/home/all_services` | ≈0.147 |
+| `28-register` | `28-flutter-register` | `/register` | ≈0.068 |
+| `29-music-now-playing` | `29-flutter-music-now-playing` | `/music/now_playing` | ≈0.039 |
+| `30-strategy` | `30-flutter-strategy` | `/home/strategy` | ≈0.144 |
+| `31-hot-rank-detail` | `31-flutter-hot-rank-detail` | `/home/hot_rank_detail` | ≈0.150 |
+| `32-personalized-settings` | `32-flutter-personalized-settings` | `/mine/personalized_settings` | ≈0.089 |
+| `33-learning-report` | `33-flutter-learning-report` | `/home/learning_report` | ≈0.163 |
+| `34-check-in-mall` | `34-flutter-check-in-mall` | `/home/check_in_mall` | ≈0.161 |
+| `35-deal-invoice-upload` | `35-flutter-deal-invoice-upload` | demo→FAB (`/settings/deal_invoice_demo`) | ≈0.043 |
+| `36-classroom-gift-claim` | `36-flutter-classroom-gift-claim` | `/classroom/gift/claim` | ≈0.106 |
+| `37-classroom-video-detail` | `37-flutter-classroom-video-detail` | `/classroom/video/detail` | ≈0.127 |
+| `38-community-publish` | `38-flutter-community-publish` | `/community/publish` | ≈0.035 |
+
+```bash
+# Recapture / re-gate
+CAPTURE_SET=wave5 ./scripts/flutter-ref-capture.sh --update   # 35: prefer demo→FAB if upload deeplink sticks on Home
+./scripts/golden-android-capture.sh
+GOLDEN_RMSE_MAX=0.22 ./scripts/golden-vs-flutter-diff.sh
+```
+
+**Note:** Direct `xiaomao://app/settings/deal_invoice/upload` may leave Home; lock `35` via `settings/deal_invoice_demo` then tap「上传成交发票」.
+
+Out of scope unchanged: bfui / short-video SDK / homework missing routes / web / H5.
 
 ## Masks
 

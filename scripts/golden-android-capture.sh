@@ -127,10 +127,34 @@ capture_page "ClassroomDetail" "22-classroom-detail" 4 '{"id":"1"}'
 # Slice-11 Live + Slice-12 Pay
 ANDROID_CAPTURE_MIN_BYTES="${STUB_MIN_BYTES:-30000}"
 capture_page "LiveList" "23-live-list" 4
+# P7-E1: LiveDetail stub-flattened to Flutter LiveRoomPage (id default mock_room).
+capture_page "LiveDetail" "24-live-detail" 4 '{"id":"mock_room"}'
 ANDROID_CAPTURE_MIN_BYTES="$_stub_prev"
-capture_page "LiveDetail" "24-live-detail" 4 '{"id":"1"}'
 capture_page "PayList" "25-pay-list" 5
 capture_page "PayConfirm" "26-pay-confirm" 5 '{"id":"1"}'
+
+# Phase-6 Wave5 structure stems (27–38)
+capture_page "AllServices" "27-all-services" 5
+capture_page "Register" "28-register" 5
+capture_page "MusicNowPlaying" "29-music-now-playing" 5
+capture_page "Strategy" "30-strategy" 5
+capture_page "HotRankDetail" "31-hot-rank-detail" 5
+capture_page "PersonalizedSettings" "32-personalized-settings" 5
+capture_page "LearningReport" "33-learning-report" 6
+capture_page "CheckInMall" "34-check-in-mall" 5
+capture_page "DealInvoiceUpload" "35-deal-invoice-upload" 5
+capture_page "ClassroomGiftClaim" "36-classroom-gift-claim" 5
+capture_page "ClassroomVideoDetail" "37-classroom-video-detail" 5
+# P6-E2a: CommunityPublish is a Flutter-mirrored stub — lower size gate.
+_stub_w5="${ANDROID_CAPTURE_MIN_BYTES}"
+ANDROID_CAPTURE_MIN_BYTES="${STUB_MIN_BYTES:-30000}"
+capture_page "CommunityPublish" "38-community-publish" 5
+ANDROID_CAPTURE_MIN_BYTES="$_stub_w5"
+
+# Phase-8 Wave6 dubbing stems (39–41)
+capture_page "DubbingHome" "39-dubbing-home" 6
+capture_page "DubbingWorkList" "40-dubbing-work-list" 5
+capture_page "DubbingWorkDetail" "41-dubbing-work-detail" 5 '{"id":"work_1"}'
 
 if [[ "$UPDATE" -eq 1 ]]; then
   mkdir -p "$BASE_DIR"

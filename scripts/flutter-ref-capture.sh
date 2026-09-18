@@ -5,7 +5,7 @@
 # Usage:
 #   ./scripts/flutter-ref-capture.sh           # write goldens/flutter-ref/actual/
 #   ./scripts/flutter-ref-capture.sh --update  # also lock → baseline/
-#   CAPTURE_SET=wave1|wave2|wave3|wave4|all ./scripts/flutter-ref-capture.sh
+#   CAPTURE_SET=wave1|wave2|wave3|wave4|wave5|all ./scripts/flutter-ref-capture.sh
 #
 # Requires: flutter on PATH, adb, running emulator. First install may take minutes.
 set -euo pipefail
@@ -38,6 +38,19 @@ WAVE4_OK_18=0
 WAVE4_OK_21=0
 WAVE4_OK_23=0
 WAVE4_OK_26=0
+# P6-E2a: Wave5 (Phase-6 structure stems 27–38) mirrors Wave3 reliability flags.
+WAVE5_OK_27=0
+WAVE5_OK_28=0
+WAVE5_OK_29=0
+WAVE5_OK_30=0
+WAVE5_OK_31=0
+WAVE5_OK_32=0
+WAVE5_OK_33=0
+WAVE5_OK_34=0
+WAVE5_OK_35=0
+WAVE5_OK_36=0
+WAVE5_OK_37=0
+WAVE5_OK_38=0
 # Test OTP account (USAGE_GUIDE): works with Mock or Go dev bypass.
 FLUTTER_TEST_PHONE="${FLUTTER_TEST_PHONE:-13400000000}"
 FLUTTER_TEST_OTP="${FLUTTER_TEST_OTP:-123456}"
@@ -49,6 +62,8 @@ STUB_MIN_BYTES="${STUB_MIN_BYTES:-40000}"
 # P3-E7a: Wave4 size gate. Same default as WAVE3 — parity with Wave3 chat-detail
 # Soft Gate behavior; raise via env if a Wave4 page reliably lands smaller.
 WAVE4_MIN_BYTES="${WAVE4_MIN_BYTES:-100000}"
+# P6-E2a: Wave5 size gate — same default as Wave3 unless overridden.
+WAVE5_MIN_BYTES="${WAVE5_MIN_BYTES:-$WAVE3_MIN_BYTES}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -110,16 +125,24 @@ deeplink_and_shot() {
   shot "$name"
 }
 
-# Cold-start app, settle to Main, then custom-scheme deeplink into feature.
+# Cold-start app, settle to Main (poll past splash ~60KB), then custom-scheme deeplink.
+# P8-E2a: prior fixed sleep 5 often shot splash; match ui_cold_main ≥120KB + privacy dismiss.
 ensure_main_then_deeplink() {
   local name="$1"
   local path="$2" # e.g. community or chat/detail?peerName=MockUser
   local settle="${3:-5}"
   local url="${SCHEME}://app/${path}"
+  local i sz
   adb -s "$SERIAL" shell am force-stop "$BUNDLE" >/dev/null 2>&1 || true
   sleep 0.4
   adb -s "$SERIAL" shell am start -n "$BUNDLE/$ACTIVITY" >/dev/null
-  sleep 5
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    sleep 2
+    adb -s "$SERIAL" exec-out screencap -p > "$OUT/_probe-main.png"
+    sz=$(wc -c < "$OUT/_probe-main.png" | tr -d " ")
+    [[ "$sz" -gt 120000 ]] && break
+  done
+  dismiss_privacy_if_present || true
   deeplink_and_shot "$name" "$url" "$settle"
 }
 
@@ -196,6 +219,8 @@ want() {
     loggedin) [[ "$1" == loggedin ]] && return 0; return 1 ;;
     wave3) [[ "$1" == wave3 ]] && return 0; return 1 ;;
     wave4) [[ "$1" == wave4 ]] && return 0; return 1 ;;
+    wave5) [[ "$1" == wave5 ]] && return 0; return 1 ;;
+    wave6) [[ "$1" == wave6 ]] && return 0; return 1 ;;
     *) return 0 ;;
   esac
 }
@@ -303,6 +328,18 @@ video_list_content_ok() {
   fi
   log "17-video-list content gate: 视频 signal present, no Home needle — OK"
   return 0
+}
+
+# P6-E2a: light content gate — Home greeting needles (早上好/下午好/晚上好).
+# Returns 0 when Home greeting is present (reject); 1 when absent or dump fails.
+home_greeting_present() {
+  local dump="/tmp/flutter-home-greeting.xml"
+  adb -s "$SERIAL" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
+  adb -s "$SERIAL" pull /sdcard/ui.xml "$dump" >/dev/null 2>&1 || return 1
+  if grep -q -e '早上好' -e '下午好' -e '晚上好' "$dump"; then
+    return 0
+  fi
+  return 1
 }
 
 # P3-E9d: content gate for 19-flutter-friend-list. The Wave3 size gate alone
@@ -508,6 +545,40 @@ wave3_capture() {
   log "wave3 $name: retry size=$sz < gate — UNRELIABLE (skip baseline lock)"
   eval "$ok_var=0"
   return 1
+}
+
+# P6-E2a: Wave5 deeplink capture — reuses wave3_capture with WAVE5_MIN_BYTES.
+wave5_capture() {
+  local _prev="$WAVE3_MIN_BYTES"
+  WAVE3_MIN_BYTES="$WAVE5_MIN_BYTES"
+  wave3_capture "$@"
+  WAVE3_MIN_BYTES="$_prev"
+}
+
+# P6-E2a: reject Wave5 stem when size gate passed but Home greeting is on screen.
+wave5_reject_home_if_ambiguous() {
+  local ok_var="$1"
+  local name="$2"
+  if [[ "$(eval "echo \${$ok_var:-0}")" -eq 1 ]] && home_greeting_present; then
+    log "wave5 $name: size OK but Home greeting present — reject"
+    eval "$ok_var=0"
+  fi
+}
+
+# P6-E2a: stub override for sparse Wave5 stems (e.g. 38 community/publish).
+wave5_stub_override() {
+  local ok_var="$1"
+  local name="$2"
+  local png="$OUT/${name}.png"
+  local sz
+  if [[ "$(eval "echo \${$ok_var:-0}")" -eq 1 ]]; then
+    return 0
+  fi
+  sz=$(wc -c < "$png" 2>/dev/null | tr -d " " || echo 0)
+  if [[ "${sz:-0}" -ge "$STUB_MIN_BYTES" ]] && ! home_greeting_present; then
+    log "wave5 $name: stub size override size=$sz ≥ STUB_MIN=$STUB_MIN_BYTES"
+    eval "$ok_var=1"
+  fi
 }
 
 # P3-E7a: Wave4 size-gated deeplink capture. Identical structure to
@@ -1384,6 +1455,75 @@ if want wave4; then
   fi
 fi
 
+if want wave5; then
+  # P6-E2a: Phase-6 structure stems 27–38. Cold start once, deeplink each route
+  # (xiaomao://app/<path>, no leading slash). Size gate via wave5_capture; Home
+  # greeting reject when the size gate alone is ambiguous; stub override for 38.
+  log "capture wave5 set (all-services, register, music-now-playing, strategy, hot-rank-detail, personalized-settings, learning-report, check-in-mall, deal-invoice-upload, classroom-gift-claim, classroom-video-detail, community-publish)"
+  adb -s "$SERIAL" shell am force-stop "$BUNDLE" >/dev/null 2>&1 || true
+  sleep 0.4
+  adb -s "$SERIAL" shell am start -n "$BUNDLE/$ACTIVITY" >/dev/null
+  for _i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    sleep 2
+    adb -s "$SERIAL" exec-out screencap -p > "$OUT/_probe-main.png"
+    sz=$(wc -c < "$OUT/_probe-main.png" | tr -d " ")
+    [[ "$sz" -gt 120000 ]] && break
+  done
+  dismiss_privacy_if_present || true
+
+  # 28: register — guest-safe; capture before SMS login.
+  wave5_capture WAVE5_OK_28 "28-flutter-register" "register" 5 || true
+
+  if [[ ! -f "$OUT/11-flutter-main-chat.png" ]]; then
+    read -r W H < <(wm_size)
+    CHAT_X=$(( W * 3 / 8 ))
+    TAB_Y=$(( H - 120 ))
+    adb -s "$SERIAL" shell input tap "$CHAT_X" "$TAB_Y"
+    sleep 3
+    flutter_sms_login
+    dismiss_paywall_if_present || true
+    sleep 2
+  fi
+
+  wave5_capture WAVE5_OK_27 "27-flutter-all-services" "home/all_services" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_27 "27-flutter-all-services"
+  wave5_capture WAVE5_OK_29 "29-flutter-music-now-playing" "music/now_playing" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_29 "29-flutter-music-now-playing"
+  wave5_capture WAVE5_OK_30 "30-flutter-strategy" "home/strategy" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_30 "30-flutter-strategy"
+  wave5_capture WAVE5_OK_31 "31-flutter-hot-rank-detail" "home/hot_rank_detail" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_31 "31-flutter-hot-rank-detail"
+  wave5_capture WAVE5_OK_32 "32-flutter-personalized-settings" "mine/personalized_settings" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_32 "32-flutter-personalized-settings"
+  wave5_capture WAVE5_OK_33 "33-flutter-learning-report" "home/learning_report" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_33 "33-flutter-learning-report"
+  wave5_capture WAVE5_OK_34 "34-flutter-check-in-mall" "home/check_in_mall" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_34 "34-flutter-check-in-mall"
+  wave5_capture WAVE5_OK_35 "35-flutter-deal-invoice-upload" "settings/deal_invoice/upload" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_35 "35-flutter-deal-invoice-upload"
+  # Direct upload deeplink often sticks on Home; fall back: demo list → FAB「上传成交发票」.
+  if [[ "${WAVE5_OK_35:-0}" -ne 1 ]]; then
+    log "35: UI fallback via settings/deal_invoice_demo → 上传成交发票"
+    if wave5_capture WAVE5_OK_35_DEMO "35-flutter-deal-invoice-upload" "settings/deal_invoice_demo" 6 \
+      && tap_text "上传成交发票"; then
+      sleep 5
+      sz=$(shot_size "35-flutter-deal-invoice-upload")
+      if [[ "${sz:-0}" -ge "${WAVE5_MIN_BYTES:-40000}" ]] && ! home_greeting_present; then
+        WAVE5_OK_35=1
+        log "35: demo→FAB lock size=$sz"
+      else
+        log "35: demo→FAB rejected size=$sz"
+      fi
+    fi
+  fi
+  wave5_capture WAVE5_OK_36 "36-flutter-classroom-gift-claim" "classroom/gift/claim" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_36 "36-flutter-classroom-gift-claim"
+  wave5_capture WAVE5_OK_37 "37-flutter-classroom-video-detail" "classroom/video/detail" 6 || true
+  wave5_reject_home_if_ambiguous WAVE5_OK_37 "37-flutter-classroom-video-detail"
+  wave5_capture WAVE5_OK_38 "38-flutter-community-publish" "community/publish" 5 || true
+  wave5_stub_override WAVE5_OK_38 "38-flutter-community-publish"
+fi
+
 if [[ "$UPDATE" -eq 1 ]]; then
   # Copy actual→baseline, but do not clobber a prior good 12 with a missing/unreliable shot.
   # P3-E1a2: same skip-lock pattern for Wave3 stems whose size gate failed —
@@ -1424,6 +1564,30 @@ if [[ "$UPDATE" -eq 1 ]]; then
         [[ "${WAVE4_OK_23:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave4 gate)"; continue; } ;;
       26-flutter-pay-confirm.png)
         [[ "${WAVE4_OK_26:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave4 gate)"; continue; } ;;
+      27-flutter-all-services.png)
+        [[ "${WAVE5_OK_27:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      28-flutter-register.png)
+        [[ "${WAVE5_OK_28:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      29-flutter-music-now-playing.png)
+        [[ "${WAVE5_OK_29:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      30-flutter-strategy.png)
+        [[ "${WAVE5_OK_30:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      31-flutter-hot-rank-detail.png)
+        [[ "${WAVE5_OK_31:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      32-flutter-personalized-settings.png)
+        [[ "${WAVE5_OK_32:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      33-flutter-learning-report.png)
+        [[ "${WAVE5_OK_33:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      34-flutter-check-in-mall.png)
+        [[ "${WAVE5_OK_34:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      35-flutter-deal-invoice-upload.png)
+        [[ "${WAVE5_OK_35:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      36-flutter-classroom-gift-claim.png)
+        [[ "${WAVE5_OK_36:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      37-flutter-classroom-video-detail.png)
+        [[ "${WAVE5_OK_37:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
+      38-flutter-community-publish.png)
+        [[ "${WAVE5_OK_38:-0}" -ne 1 ]] && { log "skip locking unreliable $bn (wave5 gate)"; continue; } ;;
     esac
     cp -f "$f" "$BASE/$bn"
   done

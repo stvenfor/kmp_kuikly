@@ -39,6 +39,7 @@ import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.input.PasswordVisualTransformation
 import com.tencent.kuikly.compose.ui.text.input.VisualTransformation
 import com.tencent.kuikly.compose.ui.text.withStyle
+import com.tencent.kuikly.compose.ui.unit.TextUnit
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
@@ -224,6 +225,7 @@ private fun SectionLabel(text: String) {
         text,
         fontSize = 13.sp,
         color = RegisterPalette.labelSecondary,
+        letterSpacing = (-0.08).sp,
     )
 }
 
@@ -325,30 +327,47 @@ private fun PhoneForm(
         }
         Spacer(Modifier.width(12.dp))
         Box(modifier = Modifier.weight(1f)) {
-            RegisterField(value = phone, onValueChange = onPhoneChange, hint = "手机号")
+            // Flutter prefixIcon: smartphone_rounded → glyph 占位（与 LoginPage 同）。
+            RegisterField(
+                value = phone,
+                onValueChange = onPhoneChange,
+                hint = "手机号",
+                glyph = "✆",
+            )
         }
     }
     Spacer(Modifier.height(16.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.weight(1f)) {
-            RegisterField(value = otp, onValueChange = onOtpChange, hint = "验证码")
+            // Flutter OTP: letterSpacing 6 + tabularFigures（视觉拉开数字间距）+ sms_outlined
+            // prefix glyph。Kuikly 无 FontFeature.tabularFigures；letterSpacing 仍生效。
+            RegisterField(
+                value = otp,
+                onValueChange = onOtpChange,
+                hint = "验证码",
+                glyph = "✉",
+                letterSpacing = 6.sp,
+            )
         }
         Spacer(Modifier.width(12.dp))
+        // Flutter `_SendOtpButton`（minimumSize 96×52 / 白底描边 / accent 文案）+ 发送中切
+        // labelTertiary 禁态。Kuikly 无 coroutine 倒计时（`AuthRepository` 未提供 cooldown
+        // 状态），用 `已发送` 作为禁态文案。
         Box(
             modifier = Modifier
                 .height(RegisterPalette.fieldHeight)
                 .width(96.dp)
                 .background(RegisterPalette.surface, RoundedCornerShape(RegisterPalette.fieldRadius))
                 .border(0.5.dp, RegisterPalette.separator, RoundedCornerShape(RegisterPalette.fieldRadius))
-                .clickable(onClick = onSendOtp)
+                .clickable(enabled = !otpSent, onClick = onSendOtp)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "获取验证码",
+                if (otpSent) "已发送" else "获取验证码",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = RegisterPalette.accent,
+                color = if (otpSent) RegisterPalette.labelTertiary else RegisterPalette.accent,
             )
         }
     }
@@ -364,9 +383,16 @@ private fun PhoneForm(
     )
 }
 
-/** `AuthGroupedTextField` 简化版：52 高的白底单行输入 + hint + 占位提示色 + 可选掩码。 */
+/** `AuthGroupedTextField` 简化版：52 高的白底单行输入 + hint + 占位提示色 + 可选掩码 + 可选前缀 glyph。 */
 @Composable
-private fun RegisterField(value: String, onValueChange: (String) -> Unit, hint: String, obscure: Boolean = false) {
+private fun RegisterField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    hint: String,
+    glyph: String = "",
+    obscure: Boolean = false,
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -374,11 +400,23 @@ private fun RegisterField(value: String, onValueChange: (String) -> Unit, hint: 
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (glyph.isNotEmpty()) {
+            // Flutter `prefixIcon`（phone: smartphone_rounded / otp: sms_outlined）→ Kuikly
+            // 无矢量 icon；与 LoginPage 一致用 Unicode glyph 占位。
+            Text(glyph, fontSize = 16.sp, color = RegisterPalette.labelSecondary)
+            Spacer(Modifier.width(12.dp))
+        }
         Box(modifier = Modifier.weight(1f)) {
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                textStyle = TextStyle(fontSize = 17.sp, color = RegisterPalette.labelPrimary),
+                // Flutter OTP：`letterSpacing: 6` + `FontFeature.tabularFigures` 让验证码数字
+                // 拉开等宽，更易读；其它字段保持 Unspecified（继承 0）。
+                textStyle = TextStyle(
+                    fontSize = 17.sp,
+                    color = RegisterPalette.labelPrimary,
+                    letterSpacing = letterSpacing,
+                ),
                 visualTransformation = if (obscure) {
                     PasswordVisualTransformation()
                 } else {
@@ -387,7 +425,12 @@ private fun RegisterField(value: String, onValueChange: (String) -> Unit, hint: 
                 modifier = Modifier.fillMaxWidth(),
             )
             if (value.isEmpty()) {
-                Text(hint, fontSize = 17.sp, color = RegisterPalette.labelTertiary)
+                Text(
+                    hint,
+                    fontSize = 17.sp,
+                    color = RegisterPalette.labelTertiary,
+                    letterSpacing = letterSpacing,
+                )
             }
         }
     }

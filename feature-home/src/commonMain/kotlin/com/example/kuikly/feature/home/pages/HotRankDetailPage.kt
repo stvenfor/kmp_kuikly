@@ -184,10 +184,17 @@ private fun HotRankHeader(topInset: Float) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
+                // Flutter 真源 `LinearGradient(begin: topCenter, end: bottomCenter,
+                // colors: [pink, white], stops: [0.0, 1.0])`：渐变占满 header 整高，
+                // 底部 = 100% white。原 `endY = 1200f` 是绝对像素端点，对 ~144.su 的
+                // 短 header 渐变只跑到 12% (`y/H = 144/1200`)，底部色 = 88% 粉 + 12%
+                // 白 ≈ #FFF2F6（Flutter 端是 #FFFFFF）。改用默认 `endY = Float
+                // .POSITIVE_INFINITY`（= bottom of drawing area），让 `Brush.vertical
+                // Gradient` 与 Flutter `LinearGradient(topCenter→bottomCenter)`
+                // 形制对齐。其他页面（DealInvoice / PayList / MusicNowPlaying）
+                // 全部走默认，无 `endY` 显式值 — 本页系漏改。
                 Brush.verticalGradient(
                     listOf(DubbingPalette.hotRankHeaderPink, Color.White),
-                    startY = 0f,
-                    endY = 1200f,
                 ),
             )
             // `statusBarInset()` 已是设备逻辑像素（见 `BaseComposePager.statusBarInset`
@@ -424,6 +431,13 @@ private fun HotRankListItem(index: Int) {
                 rank.toString(),
                 fontSize = 11.susp,
                 fontWeight = FontWeight.Bold,
+                // Flutter 真源 `TextStyle(height: 1)` 把 lineHeight 收紧到
+                // fontSize（=11.susp），让数字在 18×18 box 中竖直居中（line
+                // 高度 ≈11sp → glyph 距 box 上下各 ≈3.5sp）。原 Kuikly 不设
+                // `lineHeight`，Compose 默认 lineHeight ≈ 1.2–1.4× fontSize
+                // (13–14sp)，导致 glyph 在 18.su box 内上下偏移 ~1sp（Pixel_7
+                // _Pro dpr 2.625 上 ≈ 2.6dp 视觉差）。
+                lineHeight = 11.susp,
                 color = if (rank <= 3) Color.White else DubbingPalette.textGray,
                 maxLines = 1,
             )

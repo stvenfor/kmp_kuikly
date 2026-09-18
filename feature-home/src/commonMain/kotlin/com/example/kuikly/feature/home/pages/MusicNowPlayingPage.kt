@@ -49,6 +49,11 @@ import com.tencent.kuikly.core.annotations.Page
  *   专辑图上叠的迷你进度条同理停在「全白」。
  * - 无图片/模糊滤镜加载器 → `MusicBlurBackground`（封面 cover + black@0.54 + blur10）
  *   用**占位色 → 黑**竖向渐变近似；250 方封面用占位色块 + ♪ 字形（同 W2c 列表口径）。
+ *
+ * **顶栏**：本页 Flutter 用的是 Material `AppBar`（非宿主 `AppNavBar`）→ 标题走
+ * `textTheme.titleLarge` = 22/w400，`elevation: 0` + 无 `surfaceTint` → **无底边发丝线**；
+ * 故不套固定 17/w600 + hairline 的 `AppNavBarBar`，改在锁内自绘 [NowPlayingNavBar]
+ * （形制先例 `AllServicesPage.AllServicesNavBar`，`AppChrome.kt` 不在本锁内）。
  */
 @Page(name = "MusicNowPlaying", moduleId = "feature_home")
 internal class MusicNowPlayingPage : BaseComposePager() {
@@ -83,7 +88,7 @@ internal class MusicNowPlayingPage : BaseComposePager() {
                     .fillMaxSize()
                     .background(if (empty) AppChrome.background else Color.Black),
             ) {
-                AppNavBarBar(
+                NowPlayingNavBar(
                     title = "Now Playing",
                     topInset = top,
                     onBack = { Utils.currentBridgeModule().closePage() },
@@ -138,6 +143,58 @@ internal class MusicNowPlayingPage : BaseComposePager() {
                     }
                 }
                 Spacer(Modifier.height(bottom.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Flutter Material `AppBar`（`now_playing_page.dart`：`title: 'Now Playing'` / `centerTitle: true` /
+ * `backgroundColor: Colors.black` / `foregroundColor: Colors.white`）的等价物。
+ *
+ * 两条与宿主 `AppNavBarBar` **不同**的实测口径（均来自 Flutter `_AppBarDefaultsM3`）：
+ * 1. 标题 = `textTheme.titleLarge` → **22 / w400**（`AppNavBarBar` 是 AppNavBar 的 17 / w600）；
+ * 2. `elevation: 0` + `surfaceTintColor: Colors.transparent`（空态分支宿主 `app_theme.dart`
+ *    的 `appBarTheme` 亦显式置 0）→ **无底边发丝线**，故此处不补 `AppChrome.hairline`。
+ *
+ * ponytail: 无 icon font → Material `BackButton`（`arrow_back` 24，56 宽 leading）用 `‹` 24sp 近似。
+ */
+@Composable
+private fun NowPlayingNavBar(
+    title: String,
+    topInset: Float,
+    onBack: () -> Unit,
+    background: Color,
+    foreground: Color,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(background),
+    ) {
+        Spacer(Modifier.height(topInset.dp))
+        Box(Modifier.fillMaxWidth().height(AppChrome.NAV_BAR_HEIGHT.dp)) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "‹",
+                    fontSize = 24.sp,
+                    color = foreground,
+                    modifier = Modifier
+                        .clickable(onClick = onBack)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+                Spacer(Modifier.weight(1f))
+            }
+            Box(Modifier.align(Alignment.Center)) {
+                Text(
+                    title,
+                    fontSize = 22.sp,
+                    color = foreground,
+                    maxLines = 1,
+                )
             }
         }
     }

@@ -34,6 +34,8 @@ import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
+import com.tencent.kuikly.compose.ui.unit.dp
+import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 
 /**
@@ -133,16 +135,60 @@ private const val GROWTH_VALUE = 780
 
 // ───────────────────────── header ─────────────────────────
 
+/**
+ * Flutter `AppNavBar(style: transparent, foregroundColor: white)` 的等价物。
+ *
+ * 与共享 [AppNavBarBar] 的唯一差分：`AppNavBarStyle.transparent` **无** solid 底边
+ * （`app_nav_bar.dart:55-64` 仅 solid 才画 `dividerColor@8%`）→ 蓝头内不补 [AppChrome.hairline]。
+ */
+@Composable
+private fun CheckInNavBar(
+    title: String,
+    topInset: Float,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(CheckInPalette.primaryBlue),
+    ) {
+        Spacer(Modifier.height(topInset.dp))
+        Box(Modifier.fillMaxWidth().height(AppChrome.NAV_BAR_HEIGHT.dp)) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "‹",
+                    fontSize = AppChrome.BACK_SIZE.sp,
+                    color = Color.White,
+                    modifier = Modifier
+                        .clickable(onClick = onBack)
+                        .padding(AppChrome.ICON_TAP_PADDING.dp),
+                )
+                Spacer(Modifier.weight(1f))
+            }
+            Box(Modifier.align(Alignment.Center)) {
+                Text(
+                    title,
+                    fontSize = AppChrome.TITLE_SIZE.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
 /** Flutter `_buildHeader`：蓝底（透明 navBar）→ 公告条 → 双指标 → 16 收尾。 */
 @Composable
 private fun CheckInHeader(topInset: Float) {
     Column(modifier = Modifier.fillMaxWidth().background(CheckInPalette.primaryBlue)) {
-        AppNavBarBar(
+        CheckInNavBar(
             title = "签到商城",
             topInset = topInset,
             onBack = { Utils.currentBridgeModule().closePage() },
-            background = CheckInPalette.primaryBlue,
-            foreground = Color.White,
         )
         Row(
             modifier = Modifier
@@ -424,10 +470,12 @@ private fun GiftSection() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Flutter `_buildGiftSection` 只有一个 80.sp 的 `card_giftcard_outlined`
-            // （color: textHint@30%，无任何底色/圆形底板）→ 去掉原自造的 80 圆底。
-            Box(modifier = Modifier.size(80.su), contentAlignment = Alignment.Center) {
-                Text("🎁", fontSize = 40.susp)
-            }
+            // （color: textHint@30%，无任何底色/圆形底板）→ 无矢量资源时用可着色字形 @ 80·30%。
+            Text(
+                "▢",
+                fontSize = 80.susp,
+                color = CheckInPalette.textHint.copy(alpha = 0.3f),
+            )
             Spacer(Modifier.height(16.su))
             Text("商城筹备中，礼品马上就到", fontSize = 14.susp, color = CheckInPalette.textHint)
         }
