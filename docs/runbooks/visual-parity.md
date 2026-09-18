@@ -77,11 +77,11 @@ iOS / Ohos are **self-lock only** — no cross-source pairs. Re-lock + verify af
 
 ## Phase-3 — Cross-Source MAP expansion
 
-**Destination status.** Phase-2 hard gate + S1/S2 Soft Gates **PASS** (`86` + `91`); Cross-Source MAP is **17/17** locked (Phase-2 9 + Wave3 adds `05-usedcar-detail` / `09-login-password` + `02b-main-home-logged-in` promoted after E1b + `25-pay-list` promoted after E2e/E2f + `15-music-list` promoted after E3 + `08-settings` promoted after E4 — true Flutter Settings ref; prior baseline was a Home mis-lock — + Wave4 adds `18-video-detail` / `21-classroom-list` promoted after E7, see [148](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md)). Phase-3 widens coverage beyond the initial 9 pairs — Kuikly pages that have a settled Flutter reference and stay under the RMSE gate move from "self-lock only" to "cross-source gated".
+**Destination status.** Phase-2 hard gate + S1/S2 Soft Gates **PASS** (`86` + `91`); Cross-Source MAP is **20/20** locked (Phase-3 MAP 18/18, then Phase-4 E9g promoted `19-friend-list` and `23-live-list` after stub flatten — [172](../evidence/my-ai-migration/parity/172-p3-e9g-friend-live-unlock.md)). Phase-3 widens coverage beyond the initial 9 pairs — Kuikly pages that have a settled Flutter reference and stay under the RMSE gate move from "self-lock only" to "cross-source gated".
 
-### MAP17 — current hard Cross-Source pairs
+### MAP20 — current hard Cross-Source pairs
 
-Added/promoted in the MAP14 pass (see [125 — P3-E3 gate MAP14](../evidence/my-ai-migration/parity/125-p3-e3-gate-map14.md)):
+Added/promoted across the MAP14+ passes (see [125 — P3-E3 gate MAP14](../evidence/my-ai-migration/parity/125-p3-e3-gate-map14.md) onward):
 
 | Pair | RMSE_rel | Source |
 |------|----------|--------|
@@ -93,16 +93,15 @@ Added/promoted in the MAP14 pass (see [125 — P3-E3 gate MAP14](../evidence/my-
 | `08-settings=08-flutter-settings` | **≈0.103** | promoted after E4 ([140](../evidence/my-ai-migration/parity/140-p3-e4-gate-map15.md)): prior Flutter baseline was a **Home** frame mis-lock (459KB Home vs Settings), reinstall + privacy dismiss + guest Mine UI-tap to「设置」yielded real Settings ref (230426B); combined with E3a/E4e2 flatten RMSE_rel dropped from ≈0.237 to 0.103 |
 | `18-video-detail=18-flutter-video-detail` | **≈0.211** | promoted after E7 Wave4 ([148](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md)): Flutter-ref Wave4 locked + Kuikly actuals recaptured 2026-09-18 |
 | `21-classroom-list=21-flutter-classroom-list` | **≈0.141** | promoted after E7 Wave4 ([148](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md)): Flutter-ref Wave4 locked + Kuikly actuals recaptured 2026-09-18 |
+| `17-video-list=17-flutter-video-list` | **≈0.154** | promoted after E8 ([156](../evidence/my-ai-migration/parity/156-p3-e8b-acceptance.md) / [158](../evidence/my-ai-migration/parity/158-p3-e8-gate-map18.md)): E8a content gate + E8b true Flutter-ref (prior baseline was a Home mis-lock, ≈0.259 — [149](../evidence/my-ai-migration/parity/149-p3-e7f-acceptance.md)); MAP 18/18 gate 2026-09-18 |
+| `19-friend-list=19-flutter-friend-list` | **≈0.032** | promoted after E9g ([172](../evidence/my-ai-migration/parity/172-p3-e9g-friend-live-unlock.md)): Kuikly `FriendListPage` flattened to Flutter `Friend 模块` stub; Flutter-ref true stub (55KB), not Home |
+| `23-live-list=23-flutter-live-list` | **≈0.032** | promoted after E9g ([172](../evidence/my-ai-migration/parity/172-p3-e9g-friend-live-unlock.md)): Kuikly `LiveListPage` flattened to Flutter `进入 Mock 直播房` stub; Flutter-ref true stub (57KB) |
 
-**Deferred** (RMSE / Flutter-ref reasons — pairs stay commented in `scripts/golden-vs-flutter-diff.sh` `MAP` until their ceiling is fixed):
+**Deferred:** none. `14-post-detail` and `26-pay-confirm` are PASS-out (no Flutter surface), not deferred.
 
-| Pair | RMSE_rel | Deferral reason |
-|------|----------|------------------|
-| `14-post-detail=14-flutter-post-detail` | ≈0.34 | photo-density vs Flutter ref (E2a assets insufficient; ceiling note [117](../evidence/my-ai-migration/parity/117-p3-e3-deferred-ceilings.md)) |
-| `19-friend-list=19-flutter-friend-list` | — | Flutter `FriendPage` is a **stub** — no real list to gate against |
-| `17-video-list=17-flutter-video-list` | ≈0.259 | video-list polish needed ([148](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md)) |
-| `23-live-list=23-flutter-live-list` | — | Flutter-ref **UNRELIABLE** ([148](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md)) |
-| `26-pay-confirm=26-flutter-pay-confirm` | — | Flutter-ref **UNRELIABLE** ([148](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md)) |
+`26-pay-confirm` retired (PASS-out) per [164](../evidence/my-ai-migration/parity/164-p3-e9-retire-payconfirm.md) — Kuikly-only mock (`PayConfirmPage.kt:38-47`); Flutter `features/pay/lib/pay/view/pay_page.dart` is a placeholder stub with no confirm-step surface, so no Cross-Source pair exists.
+
+`14-post-detail` retired (PASS-out) per [169](../evidence/my-ai-migration/parity/169-p3-e9-retire-postdetail.md) — Kuikly-only route (`PostDetailPage.kt:52-66` KDoc explicitly states Flutter Community has no post-detail page; the Flutter surface is the in-card `PostCardWidget` + `ImageGridWidget` on the community tab, not a separate route); Flutter-ref `14` was a Home mis-lock ([165](../evidence/my-ai-migration/parity/165-p3-e9a-acceptance.md)), so no Cross-Source pair can be locked. Predecessor evidence: [103](../evidence/my-ai-migration/parity/103-p3-e2a-acceptance.md) (E2a media block, ceiling persisted), [117](../evidence/my-ai-migration/parity/117-p3-e3-deferred-ceilings.md) + [159](../evidence/my-ai-migration/parity/159-p3-e8-deferred-ceilings.md) (registration).
 
 ### Capture Wave-3 Flutter-refs
 
@@ -166,7 +165,10 @@ If a future Flutter-ref or Kuikly capture regresses back above 0.22, **drop the 
 - [112 — P3-E2 gate (MAP 13)](../evidence/my-ai-migration/parity/112-p3-e2-gate-map13.md) — Phase-3 hard MAP gate: `25-pay-list` promoted (RMSE_rel 0.159 via AllServices→会员续费 UI tap); 08/14/15/19 deferral notes refreshed
 - [125 — P3-E3 gate (MAP 14)](../evidence/my-ai-migration/parity/125-p3-e3-gate-map14.md) — Phase-3 hard MAP gate: `15-music-list` promoted (RMSE_rel 0.145, Flutter-ref AllServices→音频列表 multi-scroll E3b2 + Kuikly E3e 72dp row); 08 (0.237) / 14 / 19 deferral notes refreshed
 - [140 — P3-E4 gate (MAP 15)](../evidence/my-ai-migration/parity/140-p3-e4-gate-map15.md) — Phase-3 hard MAP gate: `08-settings` promoted (RMSE_rel **0.103**); prior Flutter `08-flutter-settings.png` baseline was a **Home** mis-lock (459KB Home frame), reinstall + privacy dismiss + guest Mine UI-tap to「设置」yielded true Settings ref (230426B) — combined with E3a/E4e2 flatten crossed the 0.22 gate; `14-post-detail` (photo density) and `19-friend-list` (Flutter stub) remain deferred
-- [148 — P3-E7 gate (MAP 17)](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md) — Phase-3 hard MAP gate: `18-video-detail` promoted (RMSE_rel **0.211**) + `21-classroom-list` promoted (RMSE_rel **0.141**) after Wave4 Flutter-ref lock + 2026-09-18 Kuikly recapture; `17-video-list` deferred (0.259 polish needed), `23-live-list` / `26-pay-confirm` deferred (Flutter-ref UNRELIABLE); `14-post-detail` (photo density) and `19-friend-list` (Flutter stub) remain deferred
+- [148 — P3-E7 gate (MAP 17)](../evidence/my-ai-migration/parity/148-p3-e7-gate-map17.md) — Phase-3 hard MAP gate: `18-video-detail` promoted (RMSE_rel **0.211**) + `21-classroom-list` promoted (RMSE_rel **0.141**) after Wave4 Flutter-ref lock + 2026-09-18 Kuikly recapture; `17-video-list` deferred (Flutter-ref Home mis-lock — [149](../evidence/my-ai-migration/parity/149-p3-e7f-acceptance.md); recapture after E8a content gate), `23-live-list` / `26-pay-confirm` deferred (Flutter-ref UNRELIABLE); `14-post-detail` (photo density) and `19-friend-list` (Flutter stub) remain deferred
+- [156 — P3-E8b acceptance (video-list true Flutter-ref)](../evidence/my-ai-migration/parity/156-p3-e8b-acceptance.md) — recaptured `17-flutter-video-list` after the E7-era Home mis-lock, unblocking the pair for promotion
+- [158 — P3-E8g gate (MAP 18)](../evidence/my-ai-migration/parity/158-p3-e8-gate-map18.md) — Phase-3 hard MAP gate: `17-video-list` promoted (RMSE_rel **0.154**) after E8a content gate + E8b true Flutter-ref; all 18 pairs under `GOLDEN_RMSE_MAX=0.22`; `14-post-detail` (photo density), `19-friend-list` (Flutter stub), `23-live-list` / `26-pay-confirm` (Flutter-ref UNRELIABLE) remain deferred
+- [172 — P3-E9g unlock (MAP 20)](../evidence/my-ai-migration/parity/172-p3-e9g-friend-live-unlock.md) — `19-friend-list` / `23-live-list` promoted (RMSE_rel **0.032** / **0.032**) after stub flatten + true Flutter stub refs; `14` / `26` PASS-out; deferred blocking list empty
 
 ## Masks
 

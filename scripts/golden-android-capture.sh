@@ -115,13 +115,19 @@ capture_page "VideoList" "17-video-list" 4
 capture_page "VideoDetail" "18-video-detail" 4 '{"id":"1"}'
 
 # Slice-09 Friend + Slice-10 Classroom
+# P3-E9g: Friend/Live stubs compress to ~32–60KB (uniform gray) — lower size gate.
+_stub_prev="${ANDROID_CAPTURE_MIN_BYTES}"
+ANDROID_CAPTURE_MIN_BYTES="${STUB_MIN_BYTES:-30000}"
 capture_page "FriendList" "19-friend-list" 5
+ANDROID_CAPTURE_MIN_BYTES="$_stub_prev"
 capture_page "FriendDetail" "20-friend-detail" 5 '{"id":"1"}'
 capture_page "ClassroomList" "21-classroom-list" 4
 capture_page "ClassroomDetail" "22-classroom-detail" 4 '{"id":"1"}'
 
 # Slice-11 Live + Slice-12 Pay
+ANDROID_CAPTURE_MIN_BYTES="${STUB_MIN_BYTES:-30000}"
 capture_page "LiveList" "23-live-list" 4
+ANDROID_CAPTURE_MIN_BYTES="$_stub_prev"
 capture_page "LiveDetail" "24-live-detail" 4 '{"id":"1"}'
 capture_page "PayList" "25-pay-list" 5
 capture_page "PayConfirm" "26-pay-confirm" 5 '{"id":"1"}'

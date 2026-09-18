@@ -14,6 +14,7 @@ import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Row
+import com.tencent.kuikly.compose.foundation.layout.RowScope
 import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.aspectRatio
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
@@ -269,7 +270,7 @@ private fun PostContent(content: String) {
     )
 }
 
-// ───────────────────────────── P3-E2a 媒体 assets ─────────────────────────────
+// ────────────────────── P3-E2a / P3-E9a 媒体 assets ──────────────────────
 
 /**
  * P3-E2a：PostDetail 照片密度补齐。
@@ -282,20 +283,34 @@ private fun PostContent(content: String) {
 private fun postDetailAsset(name: String): DrawableResource =
     DrawableResource(ImageUri.commonAssets("post_detail/$name").toUrl(""))
 
-private val POST_MEDIA_1 by lazy(LazyThreadSafetyMode.NONE) { postDetailAsset("media_1.png") }
-private val POST_MEDIA_2 by lazy(LazyThreadSafetyMode.NONE) { postDetailAsset("media_2.png") }
+private val POST_DETAIL_MEDIA: List<DrawableResource> by lazy(LazyThreadSafetyMode.NONE) {
+    (1..8).map { postDetailAsset("media_$it.png") }
+}
 
 /**
- * Flutter `post.hasImages ? ImageGridWidget` / `post.hasVideo ? VideoCardWidget` 的 assets 近似。
- * `Post` 缺 images / videoUrl，按 `postId` 派生：id % 3 == 0 单图、1 双图、2 无图。
+ * 图片张数派生（P3-E9a）。Flutter `image_grid_widget.dart` 只有三种密度分支：
+ * 2–3 张 → `_RowImages`（等宽一行）、4 张 → `_GridImages(crossAxisCount: 2)`、
+ * 5–9 张 → `_GridImages(crossAxisCount: 3)`；单张 → `_SingleImage`。
+ *
+ * Kuikly `Post` 没有 `images` 字段（`FakeCommunityRepository` 只 seed 3 条），故按 `postId`
+ * 派生代表密度 8 / 4 / 3 —— 三种分支各覆盖一次，且详情页取最密的 3 列网格
+ * （Flutter mock 的图片数是 `(i % 9) + 1`，1–9 张轮转，故 8 张仍在同一分支内）。
+ */
+private val POST_DETAIL_MEDIA_COUNT = intArrayOf(8, 4, 3)
+
+/**
+ * Flutter `post.hasImages ? ImageGridWidget : (post.hasVideo ? VideoCardWidget : none)` 的 assets 近似。
  */
 @Composable
 private fun PostDetailMedia(postId: String) {
-    val seed = postId.toIntOrNull() ?: 0
-    when (seed % 3) {
-        0 -> PostDetailSingleImage(res = POST_MEDIA_1)
-        1 -> PostDetailImageRow(res1 = POST_MEDIA_1, res2 = POST_MEDIA_2)
-        else -> Unit
+    val seed = postId.toIntOrNull() ?: 1
+    val count = POST_DETAIL_MEDIA_COUNT[(seed - 1).coerceAtLeast(0) % POST_DETAIL_MEDIA_COUNT.size]
+    val images = POST_DETAIL_MEDIA.take(count)
+    when {
+        count == 1 -> PostDetailSingleImage(res = images.first())
+        count <= 3 -> PostDetailImageRow(images)
+        count == 4 -> PostDetailImageGrid(images, columns = 2)
+        else -> PostDetailImageGrid(images, columns = 3)
     }
 }
 
@@ -319,40 +334,60 @@ private fun PostDetailSingleImage(res: DrawableResource) {
     }
 }
 
-/** Flutter `_RowImages`：等宽 `Expanded AspectRatio(1)`，间隔 4，r4。 */
+/** Flutter `_RowImages`：等宽 `Expanded AspectRatio(1)`，间隔 4，r4（2–3 张）。 */
 @Composable
-private fun PostDetailImageRow(res1: DrawableResource, res2: DrawableResource) {
+private fun PostDetailImageRow(images: List<DrawableResource>) {
     Spacer(Modifier.height(12.dp))
     Row(modifier = Modifier.fillMaxWidth()) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(4.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(res1),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
+        images.forEachIndexed { index, res ->
+            if (index > 0) Spacer(Modifier.width(4.dp))
+            PostDetailThumb(res = res, radius = 4)
         }
-        Spacer(Modifier.width(4.dp))
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(4.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(res2),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
+    }
+}
+
+/**
+ * Flutter `_GridImages(crossAxisCount)`（`GridView.builder` + `NeverScrollableScrollPhysics`，
+ * `crossAxisSpacing` / `mainAxisSpacing` 均 4，r4）：4 张走 2 列，≥5 张走 3 列。
+ *
+ * Kuikly 侧用 `Column` + `Row` 分块手排（不引入 LazyVerticalGrid，页面本身不可滚动）。
+ */
+@Composable
+private fun PostDetailImageGrid(images: List<DrawableResource>, columns: Int) {
+    Spacer(Modifier.height(12.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        images.chunked(columns).forEach { rowImages ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                rowImages.forEachIndexed { index, res ->
+                    if (index > 0) Spacer(Modifier.width(4.dp))
+                    PostDetailThumb(res = res, radius = 4)
+                }
+                // Flutter GridView 的末行不足列数时保留空位；此处补等宽占位，避免最后一格被拉宽。
+                repeat(columns - rowImages.size) {
+                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.weight(1f))
+                }
+            }
         }
+    }
+}
+
+/** 单格缩略图：`Expanded AspectRatio(1)` + `BoxFit.cover`（Flutter `_ImageThumb` 形制）。 */
+@Composable
+private fun RowScope.PostDetailThumb(res: DrawableResource, radius: Int) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(radius.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(res),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
     }
 }
 

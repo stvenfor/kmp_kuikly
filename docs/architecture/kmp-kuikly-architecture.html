@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 2.15.0">
-  <title>kmp_kuikly Demo Skeleton 架构 Diagram</title>
+  <title>kmp_kuikly 模块架构 Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4865,12 +4865,12 @@
     <div class="header">
       <div class="header-row">
         <div class="pulse-dot"></div>
-        <h1>kmp_kuikly Demo Skeleton 架构</h1>
+        <h1>kmp_kuikly 模块架构</h1>
       </div>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"embed-path","label":"可嵌入主路径","focus":["shells","app-shared","feature-auth","feature-feed","core-data"],"note":"Shell 挂载 app-shared，业务在 Feature，数据走 Mock。"},{"id":"platform-ext","label":"平台扩展","focus":["app-shared","platform-permission","platform-share"],"note":"权限与分享走 Platform Extension，expect/actual 按端实现。"},{"id":"core-layer","label":"核心层","focus":["core-pager","core-navigation","core-data","kuikly"],"note":"页面基类、路由名、Mock 仓库，以及 Kuikly Compose/Core。"}]</script>
-    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/stvenfor/kmp_kuikly","revision":"4465ba9c2daed8c144e2b0de845f7cb546f229b8","shortRevision":"4465ba9"},"referenceCount":9,"nodes":{"shells":[{"path":"settings.gradle.kts","label":"include","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/settings.gradle.kts"}],"kuikly":[{"path":"app-shared/build.gradle.kts","line":67,"label":"maven","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/app-shared/build.gradle.kts#L67"}],"app-shared":[{"path":"app-shared/build.gradle.kts","line":59,"label":"deps","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/app-shared/build.gradle.kts#L59"},{"path":"app-shared/src/commonMain/kotlin/com/example/kuikly/pages/HomePage.kt","label":"Home","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/app-shared/src/commonMain/kotlin/com/example/kuikly/pages/HomePage.kt"}],"feature-auth":[{"path":"feature-auth/src/commonMain/kotlin/com/example/kuikly/feature/auth/pages/LoginPage.kt","label":"Login","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/feature-auth/src/commonMain/kotlin/com/example/kuikly/feature/auth/pages/LoginPage.kt"}],"feature-feed":[{"path":"feature-feed/src/commonMain/kotlin/com/example/kuikly/feature/feed/pages/FeedListPage.kt","label":"Feed","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/feature-feed/src/commonMain/kotlin/com/example/kuikly/feature/feed/pages/FeedListPage.kt"}],"core-pager":[{"path":"core-pager/src/commonMain/kotlin/com/example/kuikly/base/BaseComposePager.kt","label":"base","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/core-pager/src/commonMain/kotlin/com/example/kuikly/base/BaseComposePager.kt"}],"core-navigation":[{"path":"core-navigation/src/commonMain/kotlin/com/example/kuikly/navigation/PageNames.kt","label":"routes","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/core-navigation/src/commonMain/kotlin/com/example/kuikly/navigation/PageNames.kt"}],"core-data":[{"path":"core-data/src/commonMain/kotlin/com/example/kuikly/data/mock/MockBackend.kt","label":"Mock","href":"https://github.com/stvenfor/kmp_kuikly/blob/4465ba9c2daed8c144e2b0de845f7cb546f229b8/core-data/src/commonMain/kotlin/com/example/kuikly/data/mock/MockBackend.kt"}]}}</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"runtime-path","label":"运行时主路径","focus":["shells","app_shared","feat_home","core_data","kuikly"],"note":"宿主挂载 app-shared，经 Kuikly Core/Bridge 落到各端 Render。"},{"id":"feature-slice","label":"业务 Feature","focus":["app_shared","feat_auth","feat_home","feat_feed","core_nav"],"note":"Feature 互不依赖；跳转只走 core-navigation。"},{"id":"mock-seam","label":"Mock 与平台缝","focus":["feat_home","core_data","platform","core_pager"],"note":"验收只认 Mock；platform-* 是原生扩展缝。"}]</script>
+    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/stvenfor/kmp_kuikly","revision":"2157fb4e926d404778543f15d990a4f5443e14ba","shortRevision":"2157fb4"},"referenceCount":3,"nodes":{"shells":[{"path":"settings.gradle.kts","line":30,"endLine":41,"label":"include modules","href":"https://github.com/stvenfor/kmp_kuikly/blob/2157fb4e926d404778543f15d990a4f5443e14ba/settings.gradle.kts#L30-L41"}],"app_shared":[{"path":"app-shared/build.gradle.kts","line":1,"label":"assembly","href":"https://github.com/stvenfor/kmp_kuikly/blob/2157fb4e926d404778543f15d990a4f5443e14ba/app-shared/build.gradle.kts#L1"}],"core_data":[{"path":"core-data/build.gradle.kts","line":1,"label":"Mock Backend","href":"https://github.com/stvenfor/kmp_kuikly/blob/2157fb4e926d404778543f15d990a4f5443e14ba/core-data/build.gradle.kts#L1"}]}}</script>
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
       <button id="guided-view-prev" type="button" aria-label="Previous guided view" title="Previous guided view ([)">&#8592;</button>
       <div class="guided-view-copy">
@@ -4912,8 +4912,8 @@
 
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read">
-      <svg viewBox="0 0 1360 760" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase">
-        <title id="archify-diagram-title">kmp_kuikly Demo Skeleton 架构</title>
+      <svg viewBox="0 0 1220 620" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase">
+        <title id="archify-diagram-title">kmp_kuikly 模块架构</title>
         <desc id="archify-diagram-description">A architecture diagram generated by Archify.</desc>
         <!-- Definitions -->
         <defs>
@@ -4938,216 +4938,228 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" x="18" y="270" width="220" height="114" rx="12" class="c-region" stroke-width="1"/>
-        <text x="26" y="288" class="t-cloud" font-size="9" font-weight="600">Shell（可替换）</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" x="230" y="80" width="668" height="416" rx="12" class="c-region" stroke-width="1"/>
+        <text x="238" y="98" class="t-cloud" font-size="9" font-weight="600">Embeddable Shared</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" x="270" y="150" width="820" height="456" rx="12" class="c-region" stroke-width="1"/>
-        <text x="278" y="168" class="t-cloud" font-size="9" font-weight="600">Embeddable Shared（KMP）</text>
-
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" x="570" y="150" width="212" height="226" rx="12" class="c-region" stroke-width="1"/>
-        <text x="578" y="168" class="t-cloud" font-size="9" font-weight="600">Feature Modules</text>
-
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="3" x="570" y="390" width="220" height="216" rx="12" class="c-region" stroke-width="1"/>
-        <text x="578" y="408" class="t-cloud" font-size="9" font-weight="600">Platform Extensions</text>
-
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="4" x="870" y="150" width="220" height="346" rx="12" class="c-region" stroke-width="1"/>
-        <text x="878" y="168" class="t-cloud" font-size="9" font-weight="600">core-*</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" x="10" y="80" width="208" height="254" rx="12" class="c-region" stroke-width="1"/>
+        <text x="18" y="98" class="t-cloud" font-size="9" font-weight="600">可替换宿主</text>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="shells" data-edge-to="app-shared" data-edge-label="挂载入口" data-edge-key="0" data-edge-id="shell-to-shared" data-composition-points="208,332;300,332" d="M 208 332 L 300 332" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="kuikly" data-edge-to="app-shared" data-edge-label="Compose / Core" data-edge-key="1" data-edge-id="kuikly-to-shared" data-composition-points="384,152;384,300" d="M 384 152 L 384 300" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="app-shared" data-edge-to="feature-auth" data-edge-label="组装" data-edge-key="2" data-edge-id="shared-to-auth" data-composition-points="468,318;534,318;534,208;600,208" d="M 468 318 L 526 318 Q 534 318 534 310 L 534 216 Q 534 208 542 208 L 600 208" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="app-shared" data-edge-to="feature-feed" data-edge-key="3" data-edge-id="shared-to-feed" data-composition-points="468,332;600,332" d="M 468 332 L 600 332" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="app-shared" data-edge-to="platform-permission" data-edge-label="权限扩展" data-edge-key="4" data-edge-id="shared-to-perm" data-composition-points="468,332;534,332;534,448;600,448" d="M 468 332 L 526 332 Q 534 332 534 340 L 534 440 Q 534 448 542 448 L 600 448" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="app-shared" data-edge-to="platform-share" data-edge-key="5" data-edge-id="shared-to-share" data-composition-points="468,346;534,346;534,558;600,558" d="M 468 346 L 526 346 Q 534 346 534 354 L 534 550 Q 534 558 542 558 L 600 558" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="feature-auth" data-edge-to="core-pager" data-edge-label="页面基类" data-edge-key="6" data-edge-id="auth-to-pager" data-composition-points="752,208;900,208" d="M 752 208 L 900 208" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="feature-feed" data-edge-to="core-navigation" data-edge-label="路由名" data-edge-key="7" data-edge-id="feed-to-nav" data-composition-points="752,328;900,328" d="M 752 328 L 900 328" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="feature-feed" data-edge-to="core-data" data-edge-label="Mock 仓库" data-edge-key="8" data-edge-id="feed-to-data" data-composition-points="676,356;676,380;876,380;876,448;900,448" d="M 676 356 L 676 372 Q 676 380 684 380 L 868 380 Q 876 380 876 388 L 876 440 Q 876 448 884 448 L 900 448" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="shells" data-edge-to="app_shared" data-edge-label="依赖入口" data-edge-key="0" data-edge-id="shell-mount" data-composition-points="188,282;260,282" d="M 188 282 L 260 282" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="shells" data-edge-to="kuikly" data-edge-label="挂载 Render" data-edge-key="1" data-edge-id="shell-render" data-composition-points="114,250;114,174" d="M 114 250 L 114 174" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="app_shared" data-edge-to="feat_auth" data-edge-key="2" data-edge-id="asm-auth" data-composition-points="334,250;334,226;466,226;466,138;490,138" d="M 334 250 L 334 234 Q 334 226 342 226 L 458 226 Q 466 226 466 218 L 466 146 Q 466 138 474 138 L 490 138" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="app_shared" data-edge-to="feat_home" data-edge-label="组装" data-edge-key="3" data-edge-id="asm-home" data-composition-points="408,282;490,282" d="M 408 282 L 490 282" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="app_shared" data-edge-to="feat_feed" data-edge-key="4" data-edge-id="asm-feed" data-composition-points="334,314;334,338;466,338;466,418;490,418" d="M 334 314 L 334 330 Q 334 338 342 338 L 458 338 Q 466 338 466 346 L 466 410 Q 466 418 474 418 L 490 418" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="app_shared" data-edge-to="platform" data-edge-label="绑定实现" data-edge-key="5" data-edge-id="asm-platform" data-composition-points="334,314;334,420" d="M 334 314 L 334 420" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="feat_auth" data-edge-to="core_nav" data-edge-label="路由契约" data-edge-key="6" data-edge-id="auth-nav" data-composition-points="630,138;720,138" d="M 630 138 L 720 138" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="feat_home" data-edge-to="core_data" data-edge-label="Repository" data-edge-key="7" data-edge-id="home-data" data-composition-points="630,278;720,278" d="M 630 278 L 720 278" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="feat_feed" data-edge-to="core_pager" data-edge-label="分页" data-edge-key="8" data-edge-id="feed-pager" data-composition-points="630,418;720,418" d="M 630 418 L 720 418" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="flutter_src" data-edge-to="feat_home" data-edge-label="跨源视觉对照" data-edge-key="9" data-edge-id="parity-ref" data-composition-points="1030,174;1030,198;654,198;654,278;630,278" d="M 1030 174 L 1030 190 Q 1030 198 1022 198 L 662 198 Q 654 198 654 206 L 654 270 Q 654 278 646 278 L 630 278" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
-        <g id="node-shells" data-node-id="shells" data-node-label="Shell Apps" tabindex="0" role="button" aria-label="Focus Shell Apps, android / ios / ohos / h5, Shell（可替换）" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="android / ios / ohos / h5" data-node-tag="可替换宿主" data-node-context="Shell（可替换）">
-          <title>Shell Apps · android / ios / ohos / h5 · Shell（可替换） · 可替换宿主</title>
-          <rect x="48" y="300" width="160" height="64" rx="6" class="c-mask"/>
-          <rect x="48" y="300" width="160" height="64" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(54 306) scale(0.6875)">
+        <g id="node-shells" data-node-id="shells" data-node-label="Shell Apps" tabindex="0" role="button" aria-label="Focus Shell Apps, android / ios / ohos / h5, 可替换宿主" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="android / ios / ohos / h5" data-node-tag="可替换宿主" data-node-context="可替换宿主">
+          <title>Shell Apps · android / ios / ohos / h5 · 可替换宿主 · 可替换宿主</title>
+          <rect x="40" y="250" width="148" height="64" rx="6" class="c-mask"/>
+          <rect x="40" y="250" width="148" height="64" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(46 256) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="128" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Shell Apps</text>
-        <text data-detail="context" x="128" y="346" class="t-muted" font-size="9" text-anchor="middle">android / ios / ohos / h5</text>
-        <text data-detail="fine" x="128" y="356" class="t-frontend" font-size="7" text-anchor="middle">可替换宿主</text>
+          <text data-detail-anchor x="114" y="280" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Shell Apps</text>
+        <text data-detail="context" x="114" y="296" class="t-muted" font-size="9" text-anchor="middle">android / ios / ohos / h5</text>
+        <text data-detail="fine" x="114" y="306" class="t-frontend" font-size="7" text-anchor="middle">可替换宿主</text>
         </g>
 
-        <g id="node-kuikly" data-node-id="kuikly" data-node-label="KuiklyUI" tabindex="0" role="button" aria-label="Focus KuiklyUI, Compose · Core · Render, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="Compose · Core · Render" data-node-context="Architecture component">
-          <title>KuiklyUI · Compose · Core · Render · Architecture component</title>
-          <rect x="300" y="96" width="168" height="56" rx="6" class="c-mask"/>
-          <rect x="300" y="96" width="168" height="56" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(306 102) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+        <g id="node-kuikly" data-node-id="kuikly" data-node-label="Kuikly Runtime" tabindex="0" role="button" aria-label="Focus Kuikly Runtime, Core · Bridge · Render, 可替换宿主" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Core · Bridge · Render" data-node-tag="Compose Track" data-node-context="可替换宿主">
+          <title>Kuikly Runtime · Core · Bridge · Render · 可替换宿主 · Compose Track</title>
+          <rect x="40" y="110" width="148" height="64" rx="6" class="c-mask"/>
+          <rect x="40" y="110" width="148" height="64" rx="6" class="c-cloud" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(46 116) scale(0.6875)">
+            <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
-          <text data-detail-anchor x="384" y="122" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">KuiklyUI</text>
-        <text data-detail="context" x="384" y="138" class="t-muted" font-size="9" text-anchor="middle">Compose · Core · Render</text>
+          <text data-detail-anchor x="114" y="140" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Kuikly Runtime</text>
+        <text data-detail="context" x="114" y="156" class="t-muted" font-size="9" text-anchor="middle">Core · Bridge · Render</text>
+        <text data-detail="fine" x="114" y="166" class="t-cloud" font-size="7" text-anchor="middle">Compose Track</text>
         </g>
 
-        <g id="node-app-shared" data-node-id="app-shared" data-node-label="app-shared" tabindex="0" role="button" aria-label="Focus app-shared, 薄组装 · Home Demo Map, Embeddable Shared（KMP）" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="薄组装 · Home Demo Map" data-node-tag="Embeddable" data-node-context="Embeddable Shared（KMP）">
-          <title>app-shared · 薄组装 · Home Demo Map · Embeddable Shared（KMP） · Embeddable</title>
-          <rect x="300" y="300" width="168" height="64" rx="6" class="c-mask"/>
-          <rect x="300" y="300" width="168" height="64" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(306 306) scale(0.6875)">
+        <g id="node-app_shared" data-node-id="app_shared" data-node-label="app-shared" tabindex="0" role="button" aria-label="Focus app-shared, 薄组装 · Page 入口, Embeddable Shared" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="薄组装 · Page 入口" data-node-tag="Embeddable" data-node-context="Embeddable Shared">
+          <title>app-shared · 薄组装 · Page 入口 · Embeddable Shared · Embeddable</title>
+          <rect x="260" y="250" width="148" height="64" rx="6" class="c-mask"/>
+          <rect x="260" y="250" width="148" height="64" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(266 256) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="384" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">app-shared</text>
-        <text data-detail="context" x="384" y="346" class="t-muted" font-size="9" text-anchor="middle">薄组装 · Home Demo Map</text>
-        <text data-detail="fine" x="384" y="356" class="t-frontend" font-size="7" text-anchor="middle">Embeddable</text>
+          <text data-detail-anchor x="334" y="280" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">app-shared</text>
+        <text data-detail="context" x="334" y="296" class="t-muted" font-size="9" text-anchor="middle">薄组装 · Page 入口</text>
+        <text data-detail="fine" x="334" y="306" class="t-frontend" font-size="7" text-anchor="middle">Embeddable</text>
         </g>
 
-        <g id="node-feature-auth" data-node-id="feature-auth" data-node-label="feature-auth" tabindex="0" role="button" aria-label="Focus feature-auth, Login · moduleId, Embeddable Shared（KMP） › Feature Modules" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Login · moduleId" data-node-context="Embeddable Shared（KMP） › Feature Modules">
-          <title>feature-auth · Login · moduleId · Embeddable Shared（KMP） › Feature Modules</title>
-          <rect x="600" y="180" width="152" height="56" rx="6" class="c-mask"/>
-          <rect x="600" y="180" width="152" height="56" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(606 186) scale(0.6875)">
+        <g id="node-feat_auth" data-node-id="feat_auth" data-node-label="feature-auth" tabindex="0" role="button" aria-label="Focus feature-auth, 登录 / 注册, Embeddable Shared" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="登录 / 注册" data-node-context="Embeddable Shared">
+          <title>feature-auth · 登录 / 注册 · Embeddable Shared</title>
+          <rect x="490" y="110" width="140" height="56" rx="6" class="c-mask"/>
+          <rect x="490" y="110" width="140" height="56" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(496 116) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="676" y="206" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">feature-auth</text>
-        <text data-detail="context" x="676" y="222" class="t-muted" font-size="9" text-anchor="middle">Login · moduleId</text>
+          <text data-detail-anchor x="560" y="136" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">feature-auth</text>
+        <text data-detail="context" x="560" y="152" class="t-muted" font-size="9" text-anchor="middle">登录 / 注册</text>
         </g>
 
-        <g id="node-feature-feed" data-node-id="feature-feed" data-node-label="feature-feed" tabindex="0" role="button" aria-label="Focus feature-feed, FeedList / Detail, Embeddable Shared（KMP） › Feature Modules" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="FeedList / Detail" data-node-context="Embeddable Shared（KMP） › Feature Modules">
-          <title>feature-feed · FeedList / Detail · Embeddable Shared（KMP） › Feature Modules</title>
-          <rect x="600" y="300" width="152" height="56" rx="6" class="c-mask"/>
-          <rect x="600" y="300" width="152" height="56" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(606 306) scale(0.6875)">
+        <g id="node-feat_home" data-node-id="feat_home" data-node-label="feature-home" tabindex="0" role="button" aria-label="Focus feature-home, 主壳 · 首页 · 我的, Embeddable Shared" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="主壳 · 首页 · 我的" data-node-tag="迁移主域" data-node-context="Embeddable Shared">
+          <title>feature-home · 主壳 · 首页 · 我的 · Embeddable Shared · 迁移主域</title>
+          <rect x="490" y="250" width="140" height="56" rx="6" class="c-mask"/>
+          <rect x="490" y="250" width="140" height="56" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(496 256) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="676" y="326" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">feature-feed</text>
-        <text data-detail="context" x="676" y="342" class="t-muted" font-size="9" text-anchor="middle">FeedList / Detail</text>
+          <text data-detail-anchor x="560" y="276" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">feature-home</text>
+        <text data-detail="context" x="560" y="292" class="t-muted" font-size="9" text-anchor="middle">主壳 · 首页 · 我的</text>
+        <text data-detail="fine" x="560" y="298" class="t-frontend" font-size="7" text-anchor="middle">迁移主域</text>
         </g>
 
-        <g id="node-platform-permission" data-node-id="platform-permission" data-node-label="platform-permission" tabindex="0" role="button" aria-label="Focus platform-permission, 权限 API, Embeddable Shared（KMP） › Platform Extensions" aria-pressed="false" data-node-kind="security" data-node-sublabel="权限 API" data-node-context="Embeddable Shared（KMP） › Platform Extensions">
-          <title>platform-permission · 权限 API · Embeddable Shared（KMP） › Platform Extensions</title>
-          <rect x="600" y="420" width="160" height="56" rx="6" class="c-mask"/>
-          <rect x="600" y="420" width="160" height="56" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(606 426) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
+        <g id="node-feat_feed" data-node-id="feat_feed" data-node-label="feature-feed" tabindex="0" role="button" aria-label="Focus feature-feed, 列表 / 详情示例, Embeddable Shared" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="列表 / 详情示例" data-node-context="Embeddable Shared">
+          <title>feature-feed · 列表 / 详情示例 · Embeddable Shared</title>
+          <rect x="490" y="390" width="140" height="56" rx="6" class="c-mask"/>
+          <rect x="490" y="390" width="140" height="56" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(496 396) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="680" y="446" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">platform-permission</text>
-        <text data-detail="context" x="680" y="462" class="t-muted" font-size="9" text-anchor="middle">权限 API</text>
+          <text data-detail-anchor x="560" y="416" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">feature-feed</text>
+        <text data-detail="context" x="560" y="432" class="t-muted" font-size="9" text-anchor="middle">列表 / 详情示例</text>
         </g>
 
-        <g id="node-platform-share" data-node-id="platform-share" data-node-label="platform-share" tabindex="0" role="button" aria-label="Focus platform-share, 系统分享, Embeddable Shared（KMP） › Platform Extensions" aria-pressed="false" data-node-kind="external" data-node-sublabel="系统分享" data-node-context="Embeddable Shared（KMP） › Platform Extensions">
-          <title>platform-share · 系统分享 · Embeddable Shared（KMP） › Platform Extensions</title>
-          <rect x="600" y="530" width="152" height="56" rx="6" class="c-mask"/>
-          <rect x="600" y="530" width="152" height="56" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(606 536) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-detail-anchor x="676" y="556" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">platform-share</text>
-        <text data-detail="context" x="676" y="572" class="t-muted" font-size="9" text-anchor="middle">系统分享</text>
-        </g>
-
-        <g id="node-core-pager" data-node-id="core-pager" data-node-label="core-pager" tabindex="0" role="button" aria-label="Focus core-pager, BaseComposePager, Embeddable Shared（KMP） › core-*" aria-pressed="false" data-node-kind="backend" data-node-sublabel="BaseComposePager" data-node-context="Embeddable Shared（KMP） › core-*">
-          <title>core-pager · BaseComposePager · Embeddable Shared（KMP） › core-*</title>
-          <rect x="900" y="180" width="160" height="56" rx="6" class="c-mask"/>
-          <rect x="900" y="180" width="160" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(906 186) scale(0.6875)">
+        <g id="node-platform" data-node-id="platform" data-node-label="platform-*" tabindex="0" role="button" aria-label="Focus platform-*, permission · share, Embeddable Shared" aria-pressed="false" data-node-kind="backend" data-node-sublabel="permission · share" data-node-tag="Platform Ext" data-node-context="Embeddable Shared">
+          <title>platform-* · permission · share · Embeddable Shared · Platform Ext</title>
+          <rect x="260" y="420" width="148" height="56" rx="6" class="c-mask"/>
+          <rect x="260" y="420" width="148" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(266 426) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="980" y="206" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">core-pager</text>
-        <text data-detail="context" x="980" y="222" class="t-muted" font-size="9" text-anchor="middle">BaseComposePager</text>
+          <text data-detail-anchor x="334" y="446" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">platform-*</text>
+        <text data-detail="context" x="334" y="462" class="t-muted" font-size="9" text-anchor="middle">permission · share</text>
+        <text data-detail="fine" x="334" y="468" class="t-backend" font-size="7" text-anchor="middle">Platform Ext</text>
         </g>
 
-        <g id="node-core-navigation" data-node-id="core-navigation" data-node-label="core-navigation" tabindex="0" role="button" aria-label="Focus core-navigation, PageNames, Embeddable Shared（KMP） › core-*" aria-pressed="false" data-node-kind="backend" data-node-sublabel="PageNames" data-node-context="Embeddable Shared（KMP） › core-*">
-          <title>core-navigation · PageNames · Embeddable Shared（KMP） › core-*</title>
-          <rect x="900" y="300" width="160" height="56" rx="6" class="c-mask"/>
-          <rect x="900" y="300" width="160" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(906 306) scale(0.6875)">
+        <g id="node-core_nav" data-node-id="core_nav" data-node-label="core-navigation" tabindex="0" role="button" aria-label="Focus core-navigation, 路由契约 · Page 名, Embeddable Shared" aria-pressed="false" data-node-kind="backend" data-node-sublabel="路由契约 · Page 名" data-node-context="Embeddable Shared">
+          <title>core-navigation · 路由契约 · Page 名 · Embeddable Shared</title>
+          <rect x="720" y="110" width="148" height="56" rx="6" class="c-mask"/>
+          <rect x="720" y="110" width="148" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(726 116) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="980" y="326" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">core-navigation</text>
-        <text data-detail="context" x="980" y="342" class="t-muted" font-size="9" text-anchor="middle">PageNames</text>
+          <text data-detail-anchor x="794" y="136" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">core-navigation</text>
+        <text data-detail="context" x="794" y="152" class="t-muted" font-size="9" text-anchor="middle">路由契约 · Page 名</text>
         </g>
 
-        <g id="node-core-data" data-node-id="core-data" data-node-label="core-data" tabindex="0" role="button" aria-label="Focus core-data, Mock Backend, Embeddable Shared（KMP） › core-*" aria-pressed="false" data-node-kind="database" data-node-sublabel="Mock Backend" data-node-tag="全 Mock" data-node-context="Embeddable Shared（KMP） › core-*">
-          <title>core-data · Mock Backend · Embeddable Shared（KMP） › core-* · 全 Mock</title>
-          <rect x="900" y="420" width="160" height="56" rx="6" class="c-mask"/>
-          <rect x="900" y="420" width="160" height="56" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(906 426) scale(0.6875)">
+        <g id="node-core_pager" data-node-id="core_pager" data-node-label="core-pager" tabindex="0" role="button" aria-label="Focus core-pager, 分页 / 列表基建, Embeddable Shared" aria-pressed="false" data-node-kind="backend" data-node-sublabel="分页 / 列表基建" data-node-context="Embeddable Shared">
+          <title>core-pager · 分页 / 列表基建 · Embeddable Shared</title>
+          <rect x="720" y="390" width="148" height="56" rx="6" class="c-mask"/>
+          <rect x="720" y="390" width="148" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(726 396) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-detail-anchor x="794" y="416" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">core-pager</text>
+        <text data-detail="context" x="794" y="432" class="t-muted" font-size="9" text-anchor="middle">分页 / 列表基建</text>
+        </g>
+
+        <g id="node-core_data" data-node-id="core_data" data-node-label="core-data" tabindex="0" role="button" aria-label="Focus core-data, Repository · Mock 引擎, Embeddable Shared" aria-pressed="false" data-node-kind="database" data-node-sublabel="Repository · Mock 引擎" data-node-tag="Success/Empty/Error" data-node-context="Embeddable Shared">
+          <title>core-data · Repository · Mock 引擎 · Embeddable Shared · Success/Empty/Error</title>
+          <rect x="720" y="250" width="148" height="64" rx="6" class="c-mask"/>
+          <rect x="720" y="250" width="148" height="64" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(726 256) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-detail-anchor x="980" y="446" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">core-data</text>
-        <text data-detail="context" x="980" y="462" class="t-muted" font-size="9" text-anchor="middle">Mock Backend</text>
-        <text data-detail="fine" x="980" y="468" class="t-database" font-size="7" text-anchor="middle">全 Mock</text>
+          <text data-detail-anchor x="794" y="280" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">core-data</text>
+        <text data-detail="context" x="794" y="296" class="t-muted" font-size="9" text-anchor="middle">Repository · Mock 引擎</text>
+        <text data-detail="fine" x="794" y="306" class="t-database" font-size="7" text-anchor="middle">Success/Empty/Error</text>
+        </g>
+
+        <g id="node-flutter_src" data-node-id="flutter_src" data-node-label="my_ai_project" tabindex="0" role="button" aria-label="Focus my_ai_project, Flutter 迁移源, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="Flutter 迁移源" data-node-tag="视觉真源" data-node-context="Architecture component">
+          <title>my_ai_project · Flutter 迁移源 · Architecture component · 视觉真源</title>
+          <rect x="960" y="110" width="140" height="64" rx="6" class="c-mask"/>
+          <rect x="960" y="110" width="140" height="64" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(966 116) scale(0.6875)">
+            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
+            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+          </g>
+          <text data-detail-anchor x="1030" y="140" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">my_ai_project</text>
+        <text data-detail="context" x="1030" y="156" class="t-muted" font-size="9" text-anchor="middle">Flutter 迁移源</text>
+        <text data-detail="fine" x="1030" y="166" class="t-external" font-size="7" text-anchor="middle">视觉真源</text>
         </g>
 
         <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="shells" data-edge-to="app-shared" data-edge-label="挂载入口" data-edge-key="0" data-edge-id="shell-to-shared">
-          <rect x="229.8" y="280" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="254" y="290" class="t-backend" font-size="8" text-anchor="middle">挂载入口</text>
+        <g data-detail="context" data-edge-from="shells" data-edge-to="app_shared" data-edge-label="依赖入口" data-edge-key="0" data-edge-id="shell-mount">
+          <rect x="199.8" y="262" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="224" y="272" class="t-backend" font-size="8" text-anchor="middle">依赖入口</text>
         </g>
-        <g data-detail="context" data-edge-from="kuikly" data-edge-to="app-shared" data-edge-label="Compose / Core" data-edge-key="1" data-edge-id="kuikly-to-shared">
-          <rect x="345.4" y="156" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="384" y="166" class="t-messagebus" font-size="8" text-anchor="middle">Compose / Core</text>
-        </g>
-        <g data-detail="context" data-edge-from="app-shared" data-edge-to="feature-auth" data-edge-label="组装" data-edge-key="2" data-edge-id="shared-to-auth">
-          <rect x="519" y="211" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="534" y="221" class="t-muted" font-size="8" text-anchor="middle">组装</text>
+        <g data-detail="context" data-edge-from="shells" data-edge-to="kuikly" data-edge-label="挂载 Render" data-edge-key="1" data-edge-id="shell-render">
+          <rect x="82.6" y="230" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="114" y="240" class="t-muted" font-size="8" text-anchor="middle">挂载 Render</text>
         </g>
 
-        <g data-detail="context" data-edge-from="app-shared" data-edge-to="platform-permission" data-edge-label="权限扩展" data-edge-key="4" data-edge-id="shared-to-perm">
-          <rect x="475.8" y="380" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="500" y="390" class="t-muted" font-size="8" text-anchor="middle">权限扩展</text>
+        <g data-detail="context" data-edge-from="app_shared" data-edge-to="feat_home" data-edge-label="组装" data-edge-key="3" data-edge-id="asm-home">
+          <rect x="434" y="262" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="449" y="272" class="t-backend" font-size="8" text-anchor="middle">组装</text>
         </g>
 
-        <g data-detail="context" data-edge-from="feature-auth" data-edge-to="core-pager" data-edge-label="页面基类" data-edge-key="6" data-edge-id="auth-to-pager">
-          <rect x="801.8" y="188" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="826" y="198" class="t-muted" font-size="8" text-anchor="middle">页面基类</text>
+        <g data-detail="context" data-edge-from="app_shared" data-edge-to="platform" data-edge-label="绑定实现" data-edge-key="5" data-edge-id="asm-platform">
+          <rect x="195.8" y="370" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="220" y="380" class="t-messagebus" font-size="8" text-anchor="middle">绑定实现</text>
         </g>
-        <g data-detail="context" data-edge-from="feature-feed" data-edge-to="core-navigation" data-edge-label="路由名" data-edge-key="7" data-edge-id="feed-to-nav">
-          <rect x="806.6" y="308" width="38.8" height="14" rx="3" class="c-mask"/>
-          <text x="826" y="318" class="t-muted" font-size="8" text-anchor="middle">路由名</text>
+        <g data-detail="context" data-edge-from="feat_auth" data-edge-to="core_nav" data-edge-label="路由契约" data-edge-key="6" data-edge-id="auth-nav">
+          <rect x="650.8" y="118" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="675" y="128" class="t-muted" font-size="8" text-anchor="middle">路由契约</text>
         </g>
-        <g data-detail="context" data-edge-from="feature-feed" data-edge-to="core-data" data-edge-label="Mock 仓库" data-edge-key="8" data-edge-id="feed-to-data">
-          <rect x="749.4" y="388" width="53.199999999999996" height="14" rx="3" class="c-mask"/>
-          <text x="776" y="398" class="t-muted" font-size="8" text-anchor="middle">Mock 仓库</text>
+        <g data-detail="context" data-edge-from="feat_home" data-edge-to="core_data" data-edge-label="Repository" data-edge-key="7" data-edge-id="home-data">
+          <rect x="646" y="294" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="675" y="304" class="t-backend" font-size="8" text-anchor="middle">Repository</text>
+        </g>
+        <g data-detail="context" data-edge-from="feat_feed" data-edge-to="core_pager" data-edge-label="分页" data-edge-key="8" data-edge-id="feed-pager">
+          <rect x="660" y="398" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="675" y="408" class="t-muted" font-size="8" text-anchor="middle">分页</text>
+        </g>
+        <g data-detail="context" data-edge-from="flutter_src" data-edge-to="feat_home" data-edge-label="跨源视觉对照" data-edge-key="9" data-edge-id="parity-ref">
+          <rect x="866.2" y="210" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="900" y="220" class="t-messagebus" font-size="8" text-anchor="middle">跨源视觉对照</text>
         </g>
 
         <!-- Legend -->
         <g data-legend data-legend-bridge>
-          <text x="40" y="724" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="744" data-legend-width="83">
-            <rect x="40" y="735" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
-            <text x="62" y="744" class="t-muted" font-size="10" font-weight="500">Frontend</text>
+          <text x="40" y="584" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="604" data-legend-width="83">
+            <rect x="40" y="595" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
+            <text x="62" y="604" class="t-muted" font-size="10" font-weight="500">Frontend</text>
           </g>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="744" data-legend-width="78">
-            <rect x="145" y="735" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="167" y="744" class="t-muted" font-size="10" font-weight="500">Backend</text>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="604" data-legend-width="78">
+            <rect x="145" y="595" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="167" y="604" class="t-muted" font-size="10" font-weight="500">Backend</text>
           </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="744" data-legend-width="83">
-            <rect x="245" y="735" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
-            <text x="267" y="744" class="t-muted" font-size="10" font-weight="500">Database</text>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="604" data-legend-width="83">
+            <rect x="245" y="595" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="267" y="604" class="t-muted" font-size="10" font-weight="500">Database</text>
           </g>
-          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="350" data-legend-baseline="744" data-legend-width="83">
-            <rect x="350" y="735" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
-            <text x="372" y="744" class="t-muted" font-size="10" font-weight="500">Security</text>
+          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="Cloud" data-legend-x="350" data-legend-baseline="604" data-legend-width="68">
+            <rect x="350" y="595" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
+            <text x="372" y="604" class="t-muted" font-size="10" font-weight="500">Cloud</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="455" data-legend-baseline="744" data-legend-width="83">
-            <rect x="455" y="735" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="477" y="744" class="t-muted" font-size="10" font-weight="500">External</text>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="440" data-legend-baseline="604" data-legend-width="83">
+            <rect x="440" y="595" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="462" y="604" class="t-muted" font-size="10" font-weight="500">External</text>
           </g>
         </g>
       </svg>
@@ -5337,30 +5349,21 @@
       <div class="card">
         <div class="card-header">
           <div class="card-dot cyan"></div>
-          <h3>分层</h3>
+          <h3>依赖方向</h3>
         </div>
         <ul>
-          <li>&bull; Shell 可替换；app-shared 是 Page 总出口（含 Home Demo Map）</li>
+          <li>&bull; Shell → app-shared → feature-* → core-*</li>
+          <li>&bull; Feature 不依赖 Shell，彼此默认不互依</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <div class="card-dot emerald"></div>
-          <h3>业务与能力</h3>
+          <div class="card-dot amber"></div>
+          <h3>迁移门禁</h3>
         </div>
         <ul>
-          <li>&bull; feature-* 多模块 Compose；platform-* 权限/分享扩展</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot violet"></div>
-          <h3>数据与框架</h3>
-        </div>
-        <ul>
-          <li>&bull; core-data 全 Mock；KuiklyUI 提供 Compose / Core / Render</li>
+          <li>&bull; Compose Track + Mock 验收；Android 对照 Flutter-ref</li>
         </ul>
       </div>
     </div>

@@ -2,31 +2,32 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "kmp_kuikly Demo Skeleton 架构",
+    "title": "kmp_kuikly 模块架构",
+    "output": "kmp-kuikly-architecture.html",
     "quality_profile": "showcase",
-    "viewBox": [1360, 760],
     "repository": {
-      "url": "https://github.com/stvenfor/kmp_kuikly",
-      "revision": "4465ba9c2daed8c144e2b0de845f7cb546f229b8"
+      "url": "https://github.com/stvenfor/kmp_kuikly.git",
+      "revision": "2157fb4e926d404778543f15d990a4f5443e14ba"
     },
+    "viewBox": [1220, 620],
     "views": [
       {
-        "id": "embed-path",
-        "label": "可嵌入主路径",
-        "focus": ["shells", "app-shared", "feature-auth", "feature-feed", "core-data"],
-        "note": "Shell 挂载 app-shared，业务在 Feature，数据走 Mock。"
+        "id": "runtime-path",
+        "label": "运行时主路径",
+        "focus": ["shells", "app_shared", "feat_home", "core_data", "kuikly"],
+        "note": "宿主挂载 app-shared，经 Kuikly Core/Bridge 落到各端 Render。"
       },
       {
-        "id": "platform-ext",
-        "label": "平台扩展",
-        "focus": ["app-shared", "platform-permission", "platform-share"],
-        "note": "权限与分享走 Platform Extension，expect/actual 按端实现。"
+        "id": "feature-slice",
+        "label": "业务 Feature",
+        "focus": ["app_shared", "feat_auth", "feat_home", "feat_feed", "core_nav"],
+        "note": "Feature 互不依赖；跳转只走 core-navigation。"
       },
       {
-        "id": "core-layer",
-        "label": "核心层",
-        "focus": ["core-pager", "core-navigation", "core-data", "kuikly"],
-        "note": "页面基类、路由名、Mock 仓库，以及 Kuikly Compose/Core。"
+        "id": "mock-seam",
+        "label": "Mock 与平台缝",
+        "focus": ["feat_home", "core_data", "platform", "core_pager"],
+        "note": "验收只认 Mock；platform-* 是原生扩展缝。"
       }
     ]
   },
@@ -37,211 +38,204 @@
       "label": "Shell Apps",
       "sublabel": "android / ios / ohos / h5",
       "tag": "可替换宿主",
-      "pos": [48, 300],
-      "size": [160, 64],
-      "sources": [{ "path": "settings.gradle.kts", "label": "include" }]
+      "pos": [40, 250],
+      "size": [148, 64],
+      "sources": [{ "path": "settings.gradle.kts", "line": 30, "end_line": 41, "label": "include modules" }]
     },
     {
       "id": "kuikly",
-      "type": "external",
-      "label": "KuiklyUI",
-      "sublabel": "Compose · Core · Render",
-      "pos": [300, 96],
-      "size": [168, 56],
-      "sources": [{ "path": "app-shared/build.gradle.kts", "line": 67, "label": "maven" }]
+      "type": "cloud",
+      "label": "Kuikly Runtime",
+      "sublabel": "Core · Bridge · Render",
+      "tag": "Compose Track",
+      "pos": [40, 110],
+      "size": [148, 64]
     },
     {
-      "id": "app-shared",
+      "id": "app_shared",
       "type": "frontend",
       "label": "app-shared",
-      "sublabel": "薄组装 · Home Demo Map",
+      "sublabel": "薄组装 · Page 入口",
       "tag": "Embeddable",
-      "pos": [300, 300],
-      "size": [168, 64],
-      "sources": [
-        { "path": "app-shared/build.gradle.kts", "line": 59, "label": "deps" },
-        { "path": "app-shared/src/commonMain/kotlin/com/example/kuikly/pages/HomePage.kt", "label": "Home" }
-      ]
+      "pos": [260, 250],
+      "size": [148, 64],
+      "sources": [{ "path": "app-shared/build.gradle.kts", "line": 1, "label": "assembly" }]
     },
     {
-      "id": "feature-auth",
+      "id": "feat_auth",
       "type": "frontend",
       "label": "feature-auth",
-      "sublabel": "Login · moduleId",
-      "pos": [600, 180],
-      "size": [152, 56],
-      "sources": [{ "path": "feature-auth/src/commonMain/kotlin/com/example/kuikly/feature/auth/pages/LoginPage.kt", "label": "Login" }]
+      "sublabel": "登录 / 注册",
+      "pos": [490, 110],
+      "size": [140, 56]
     },
     {
-      "id": "feature-feed",
+      "id": "feat_home",
+      "type": "frontend",
+      "label": "feature-home",
+      "sublabel": "主壳 · 首页 · 我的",
+      "tag": "迁移主域",
+      "pos": [490, 250],
+      "size": [140, 56]
+    },
+    {
+      "id": "feat_feed",
       "type": "frontend",
       "label": "feature-feed",
-      "sublabel": "FeedList / Detail",
-      "pos": [600, 300],
-      "size": [152, 56],
-      "sources": [{ "path": "feature-feed/src/commonMain/kotlin/com/example/kuikly/feature/feed/pages/FeedListPage.kt", "label": "Feed" }]
+      "sublabel": "列表 / 详情示例",
+      "pos": [490, 390],
+      "size": [140, 56]
     },
     {
-      "id": "platform-permission",
-      "type": "security",
-      "label": "platform-permission",
-      "sublabel": "权限 API",
-      "pos": [600, 420],
-      "size": [160, 56]
-    },
-    {
-      "id": "platform-share",
-      "type": "external",
-      "label": "platform-share",
-      "sublabel": "系统分享",
-      "pos": [600, 530],
-      "size": [152, 56]
-    },
-    {
-      "id": "core-pager",
+      "id": "platform",
       "type": "backend",
-      "label": "core-pager",
-      "sublabel": "BaseComposePager",
-      "pos": [900, 180],
-      "size": [160, 56],
-      "sources": [{ "path": "core-pager/src/commonMain/kotlin/com/example/kuikly/base/BaseComposePager.kt", "label": "base" }]
+      "label": "platform-*",
+      "sublabel": "permission · share",
+      "tag": "Platform Ext",
+      "pos": [260, 420],
+      "size": [148, 56]
     },
     {
-      "id": "core-navigation",
+      "id": "core_nav",
       "type": "backend",
       "label": "core-navigation",
-      "sublabel": "PageNames",
-      "pos": [900, 300],
-      "size": [160, 56],
-      "sources": [{ "path": "core-navigation/src/commonMain/kotlin/com/example/kuikly/navigation/PageNames.kt", "label": "routes" }]
+      "sublabel": "路由契约 · Page 名",
+      "pos": [720, 110],
+      "size": [148, 56]
     },
     {
-      "id": "core-data",
+      "id": "core_pager",
+      "type": "backend",
+      "label": "core-pager",
+      "sublabel": "分页 / 列表基建",
+      "pos": [720, 390],
+      "size": [148, 56]
+    },
+    {
+      "id": "core_data",
       "type": "database",
       "label": "core-data",
-      "sublabel": "Mock Backend",
-      "tag": "全 Mock",
-      "pos": [900, 420],
-      "size": [160, 56],
-      "sources": [{ "path": "core-data/src/commonMain/kotlin/com/example/kuikly/data/mock/MockBackend.kt", "label": "Mock" }]
+      "sublabel": "Repository · Mock 引擎",
+      "tag": "Success/Empty/Error",
+      "pos": [720, 250],
+      "size": [148, 64],
+      "sources": [{ "path": "core-data/build.gradle.kts", "line": 1, "label": "Mock Backend" }]
+    },
+    {
+      "id": "flutter_src",
+      "type": "external",
+      "label": "my_ai_project",
+      "sublabel": "Flutter 迁移源",
+      "tag": "视觉真源",
+      "pos": [960, 110],
+      "size": [140, 64]
     }
   ],
   "boundaries": [
     {
       "kind": "region",
-      "label": "Shell（可替换）",
-      "wraps": ["shells"]
+      "label": "Embeddable Shared",
+      "wraps": ["app_shared", "feat_auth", "feat_home", "feat_feed", "platform", "core_nav", "core_pager", "core_data"]
     },
     {
       "kind": "region",
-      "label": "Embeddable Shared（KMP）",
-      "wraps": ["app-shared", "feature-auth", "feature-feed", "platform-permission", "platform-share", "core-pager", "core-navigation", "core-data"]
-    },
-    {
-      "kind": "region",
-      "label": "Feature Modules",
-      "wraps": ["feature-auth", "feature-feed"]
-    },
-    {
-      "kind": "region",
-      "label": "Platform Extensions",
-      "wraps": ["platform-permission", "platform-share"]
-    },
-    {
-      "kind": "region",
-      "label": "core-*",
-      "wraps": ["core-pager", "core-navigation", "core-data"]
+      "label": "可替换宿主",
+      "wraps": ["shells", "kuikly"]
     }
   ],
   "connections": [
     {
-      "id": "shell-to-shared",
+      "id": "shell-mount",
       "from": "shells",
-      "to": "app-shared",
-      "label": "挂载入口",
-      "variant": "emphasis",
-      "labelDy": -32
+      "to": "app_shared",
+      "label": "依赖入口",
+      "variant": "emphasis"
     },
     {
-      "id": "kuikly-to-shared",
-      "from": "kuikly",
-      "to": "app-shared",
-      "label": "Compose / Core",
+      "id": "shell-render",
+      "from": "shells",
+      "to": "kuikly",
+      "label": "挂载 Render",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "asm-auth",
+      "from": "app_shared",
+      "to": "feat_auth",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "asm-home",
+      "from": "app_shared",
+      "to": "feat_home",
+      "label": "组装",
+      "variant": "emphasis"
+    },
+    {
+      "id": "asm-feed",
+      "from": "app_shared",
+      "to": "feat_feed",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "asm-platform",
+      "from": "app_shared",
+      "to": "platform",
+      "label": "绑定实现",
       "variant": "dashed",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelDy": 24
+      "labelAt": [220, 380]
     },
     {
-      "id": "shared-to-auth",
-      "from": "app-shared",
-      "to": "feature-auth",
-      "label": "组装",
-      "fromSide": "right",
-      "toSide": "left",
-      "labelDy": -32
+      "id": "auth-nav",
+      "from": "feat_auth",
+      "to": "core_nav",
+      "label": "路由契约"
     },
     {
-      "id": "shared-to-feed",
-      "from": "app-shared",
-      "to": "feature-feed",
-      "fromSide": "right",
-      "toSide": "left"
+      "id": "home-data",
+      "from": "feat_home",
+      "to": "core_data",
+      "label": "Repository",
+      "variant": "emphasis",
+      "labelDy": 36
     },
     {
-      "id": "shared-to-perm",
-      "from": "app-shared",
-      "to": "platform-permission",
-      "label": "权限扩展",
-      "fromSide": "right",
-      "toSide": "left",
-      "labelAt": [500, 390]
+      "id": "feed-pager",
+      "from": "feat_feed",
+      "to": "core_pager",
+      "label": "分页"
     },
     {
-      "id": "shared-to-share",
-      "from": "app-shared",
-      "to": "platform-share",
+      "id": "parity-ref",
+      "from": "flutter_src",
+      "to": "feat_home",
+      "label": "跨源视觉对照",
       "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left"
-    },
-    {
-      "id": "auth-to-pager",
-      "from": "feature-auth",
-      "to": "core-pager",
-      "label": "页面基类"
-    },
-    {
-      "id": "feed-to-nav",
-      "from": "feature-feed",
-      "to": "core-navigation",
-      "label": "路由名"
-    },
-    {
-      "id": "feed-to-data",
-      "from": "feature-feed",
-      "to": "core-data",
-      "label": "Mock 仓库",
       "fromSide": "bottom",
-      "toSide": "left",
-      "labelDy": 28
+      "toSide": "right",
+      "labelAt": [900, 220]
     }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "分层",
-      "items": ["Shell 可替换；app-shared 是 Page 总出口（含 Home Demo Map）"]
+      "title": "依赖方向",
+      "items": [
+        "Shell → app-shared → feature-* → core-*",
+        "Feature 不依赖 Shell，彼此默认不互依"
+      ]
     },
     {
-      "dot": "emerald",
-      "title": "业务与能力",
-      "items": ["feature-* 多模块 Compose；platform-* 权限/分享扩展"]
-    },
-    {
-      "dot": "violet",
-      "title": "数据与框架",
-      "items": ["core-data 全 Mock；KuiklyUI 提供 Compose / Core / Render"]
+      "dot": "amber",
+      "title": "迁移门禁",
+      "items": [
+        "Compose Track + Mock 验收；Android 对照 Flutter-ref"
+      ]
     }
   ]
 }

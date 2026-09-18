@@ -248,7 +248,10 @@ private fun IntroTab(
                 Text("👎", fontSize = 18.sp)
             }
         }
-        item { Spacer(Modifier.height(12.dp)) }
+        item {
+            // Flutter `SizedBox(height: 8)`（👍 Row → tag `Wrap` 间距，原 12.dp 偏大 4dp）。
+            Spacer(Modifier.height(8.dp))
+        }
         item {
             // Flutter `Wrap(spacing: 6, runSpacing: 6)` 形制 → FlowRow 自动换行（5 tags 在窄屏
             // 会换到第二行；Kuikly Compose `Row` 单行会越界被裁）。

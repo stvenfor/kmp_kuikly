@@ -43,6 +43,9 @@ FLUTTER_TEST_PHONE="${FLUTTER_TEST_PHONE:-13400000000}"
 FLUTTER_TEST_OTP="${FLUTTER_TEST_OTP:-123456}"
 # P3-E1a2: default 100000 mirrors chat-detail's gate; splash/blank frames landed ~60KB.
 WAVE3_MIN_BYTES="${WAVE3_MIN_BYTES:-100000}"
+# P3-E9g: FriendPage / LivePage are chrome-only stubs (~55KB). The Wave3/4
+# 100KB splash gate rejects them; accept when content_ok AND size ≥ STUB_MIN.
+STUB_MIN_BYTES="${STUB_MIN_BYTES:-40000}"
 # P3-E7a: Wave4 size gate. Same default as WAVE3 — parity with Wave3 chat-detail
 # Soft Gate behavior; raise via env if a Wave4 page reliably lands smaller.
 WAVE4_MIN_BYTES="${WAVE4_MIN_BYTES:-100000}"
@@ -275,6 +278,79 @@ for node in re.finditer(r"<node\b[^>]*>", xml):
         sys.exit(0)
 sys.exit(1)
 PY
+}
+
+# P3-E8a: content gate for 17-flutter-video-list. The Wave4 size gate alone
+# locked a settled Home frame as the baseline (evidence 149) because Home is
+# also ≥ WAVE4_MIN_BYTES. Dump the UI hierarchy (same uiautomator pull pattern
+# as has_bottom_text_field) and require BOTH:
+#   - a video-list signal: any text=/content-desc= containing 视频 (the
+#     AppNavBar title is '视频列表' — dubbing_video_list_page.dart line 21)
+#   - no strong Home needle: Home always renders the time-based greeting
+#     早上好/下午好/晚上好 (home_controller.dart), so any hit means Home.
+# Returns 0 when content OK; 1 on content reject or dump failure.
+video_list_content_ok() {
+  local dump="/tmp/flutter-video-list.xml"
+  adb -s "$SERIAL" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
+  adb -s "$SERIAL" pull /sdcard/ui.xml "$dump" >/dev/null 2>&1 || return 1
+  if ! grep -q '视频' "$dump"; then
+    log "17-video-list content gate: no 视频 signal in UI dump — reject"
+    return 1
+  fi
+  if grep -q -e '早上好' -e '下午好' -e '晚上好' "$dump"; then
+    log "17-video-list content gate: Home greeting needle present — reject"
+    return 1
+  fi
+  log "17-video-list content gate: 视频 signal present, no Home needle — OK"
+  return 0
+}
+
+# P3-E9d: content gate for 19-flutter-friend-list. The Wave3 size gate alone
+# cannot tell the friend stub from a settled Home frame (Home is also ≥
+# WAVE3_MIN_BYTES). FriendPage.dart renders AppNavBar(title: '好友') over
+# Center(Text('Friend 模块')) — those are the only reliable in-app signals.
+# Require one of them AND no Home greeting needle (home_controller.dart).
+# Returns 0 when content OK; 1 on content reject or dump failure.
+friend_list_content_ok() {
+  local dump="/tmp/flutter-friend-list.xml"
+  adb -s "$SERIAL" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
+  adb -s "$SERIAL" pull /sdcard/ui.xml "$dump" >/dev/null 2>&1 || return 1
+  if ! grep -q -e 'Friend 模块' -e '好友' "$dump"; then
+    log "19-friend-list content gate: no Friend 模块/好友 signal in UI dump — reject"
+    return 1
+  fi
+  if grep -q -e '早上好' -e '下午好' -e '晚上好' "$dump"; then
+    log "19-friend-list content gate: Home greeting needle present — reject"
+    return 1
+  fi
+  log "19-friend-list content gate: friend signal present, no Home needle — OK"
+  return 0
+}
+
+# P3-E9d: content gate for 23-flutter-live-list. Same rationale as 17/19 — Home
+# is also ≥ WAVE4_MIN_BYTES, so a size-OK shot can still be the Home frame.
+# LivePage.dart renders AppNavBar(title: '直播') plus a FilledButton
+# '进入 Mock 直播房'; Home carries a '直播' tile too, so require BOTH 直播 AND a
+# Mock needle to separate the page from Home, and reject Home greetings.
+# Returns 0 when content OK; 1 on content reject or dump failure.
+live_list_content_ok() {
+  local dump="/tmp/flutter-live-list.xml"
+  adb -s "$SERIAL" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
+  adb -s "$SERIAL" pull /sdcard/ui.xml "$dump" >/dev/null 2>&1 || return 1
+  if ! grep -q '直播' "$dump"; then
+    log "23-live-list content gate: no 直播 signal in UI dump — reject"
+    return 1
+  fi
+  if ! grep -q -e '进入 Mock' -e 'Mock 直播' "$dump"; then
+    log "23-live-list content gate: no 进入 Mock/Mock 直播 signal in UI dump — reject"
+    return 1
+  fi
+  if grep -q -e '早上好' -e '下午好' -e '晚上好' "$dump"; then
+    log "23-live-list content gate: Home greeting needle present — reject"
+    return 1
+  fi
+  log "23-live-list content gate: 直播 + Mock signal present, no Home needle — OK"
+  return 0
 }
 
 # Type digits via keyevents — `adb input text` drops a leading '1' on this emulator/IME.
@@ -804,8 +880,16 @@ ui_capture_video_list() {
     sz=$(shot_size "$name")
   fi
   log "$name: UI tap shot size=$sz (gate $min_bytes)"
-  [[ "$sz" -ge "$min_bytes" ]] && return 0
-  return 1
+  if [[ "$sz" -lt "$min_bytes" ]]; then
+    return 1
+  fi
+  # P3-E8a: same content reject as the deeplink path — size alone cannot tell
+  # a settled Home frame from the video list.
+  if ! video_list_content_ok; then
+    log "$name: content reject — shot is not the video list"
+    return 1
+  fi
+  return 0
 }
 
 # P3-E7a: UI-tap fallback for 21-flutter-classroom-list.
@@ -1121,6 +1205,34 @@ if want wave3; then
   # a fake UI path.
   WAVE3_OK_19=0
   wave3_capture WAVE3_OK_19 "19-flutter-friend-list" "friend" 5 || true
+  # P3-E9g: true Friend stub is ~55KB — WAVE3_MIN_BYTES rejects it. Accept via
+  # STUB_MIN_BYTES + friend_list_content_ok (rejects splash/Home).
+  if [[ "${WAVE3_OK_19:-0}" -ne 1 ]]; then
+    sz=$(wc -c < "$OUT/19-flutter-friend-list.png" 2>/dev/null | tr -d " " || echo 0)
+    if [[ "${sz:-0}" -ge "$STUB_MIN_BYTES" ]] && friend_list_content_ok; then
+      log "wave3 19: stub size override size=$sz ≥ STUB_MIN=$STUB_MIN_BYTES + content OK"
+      WAVE3_OK_19=1
+    fi
+  fi
+  # P3-E9d: size ≥ gate is NOT enough — a settled Home frame also passes it.
+  # Content-reject; on reject retry the deeplink once with a longer settle
+  # (the stub can mount a beat later after the cold Main) before zeroing.
+  if [[ "${WAVE3_OK_19:-0}" -eq 1 ]] && ! friend_list_content_ok; then
+    log "wave3 19: size gate passed but content reject — retry deeplink with longer settle"
+    WAVE3_OK_19=0
+    wave3_capture WAVE3_OK_19 "19-flutter-friend-list" "friend" 10 || true
+    if [[ "${WAVE3_OK_19:-0}" -ne 1 ]]; then
+      sz=$(wc -c < "$OUT/19-flutter-friend-list.png" 2>/dev/null | tr -d " " || echo 0)
+      if [[ "${sz:-0}" -ge "$STUB_MIN_BYTES" ]] && friend_list_content_ok; then
+        log "wave3 19: stub size override (retry) size=$sz + content OK"
+        WAVE3_OK_19=1
+      fi
+    fi
+    if [[ "${WAVE3_OK_19:-0}" -eq 1 ]] && ! friend_list_content_ok; then
+      log "wave3 19: retry still content reject — UNRELIABLE (skip baseline lock)"
+      WAVE3_OK_19=0
+    fi
+  fi
   if [[ "${WAVE3_OK_19:-0}" -ne 1 ]]; then
     log "wave3 19: deeplink UNRELIABLE — NO UI entry exists (friend_page.dart is a stub), keeping UNRELIABLE"
     WAVE3_OK_19=0
@@ -1169,6 +1281,13 @@ if want wave4; then
   # RoutePath.dubbingVideoList = '/video/dubbing/videos' → VideoListPage.
   WAVE4_OK_17=0
   wave4_capture WAVE4_OK_17 "17-flutter-video-list" "video/dubbing/videos" 6 || true
+  # P3-E8a: size ≥ gate is NOT enough — a settled Home also passes it (that is
+  # how Home got locked as 17 in evidence 149). Content-reject the deeplink
+  # shot; on reject zero the flag so the UI-tap fallback below runs.
+  if [[ "${WAVE4_OK_17:-0}" -eq 1 ]] && ! video_list_content_ok; then
+    log "wave4 17: size gate passed but content reject — falling through to UI tap fallback"
+    WAVE4_OK_17=0
+  fi
   if [[ "${WAVE4_OK_17:-0}" -ne 1 ]]; then
     log "wave4 17: deeplink UNRELIABLE — trying AllServices '视频列表' UI tap"
     if ui_capture_video_list "17-flutter-video-list"; then
@@ -1211,14 +1330,43 @@ if want wave4; then
   # Home '直播' tile UI fallback (NOT in AllServices — see all_services_data.dart).
   WAVE4_OK_23=0
   wave4_capture WAVE4_OK_23 "23-flutter-live-list" "live" 6 || true
+  # P3-E9g: true Live stub is ~57KB — WAVE4_MIN_BYTES rejects it.
+  if [[ "${WAVE4_OK_23:-0}" -ne 1 ]]; then
+    sz=$(wc -c < "$OUT/23-flutter-live-list.png" 2>/dev/null | tr -d " " || echo 0)
+    if [[ "${sz:-0}" -ge "$STUB_MIN_BYTES" ]] && live_list_content_ok; then
+      log "wave4 23: stub size override size=$sz ≥ STUB_MIN=$STUB_MIN_BYTES + content OK"
+      WAVE4_OK_23=1
+    fi
+  fi
+  # P3-E9d: size ≥ gate is not enough (Home passes it too, and Home carries a
+  # '直播' tile) — content-reject the deeplink shot; on reject zero the flag so
+  # the UI-tap fallback below runs.
+  if [[ "${WAVE4_OK_23:-0}" -eq 1 ]] && ! live_list_content_ok; then
+    log "wave4 23: size gate passed but content reject — falling through to UI tap fallback"
+    WAVE4_OK_23=0
+  fi
   if [[ "${WAVE4_OK_23:-0}" -ne 1 ]]; then
     log "wave4 23: deeplink UNRELIABLE — trying Home '直播' tile UI tap (best-effort)"
     if ui_capture_live_list "23-flutter-live-list"; then
-      log "wave4 23: UI tap fallback OK — gate won"
-      WAVE4_OK_23=1
+      # P3-E9d: the tap can miss and leave Home up (still ≥ gate) — gate the
+      # UI-tap shot on content too before declaring the stem reliable.
+      if live_list_content_ok; then
+        log "wave4 23: UI tap fallback OK — gate won"
+        WAVE4_OK_23=1
+      else
+        log "wave4 23: UI tap content reject — skip baseline lock"
+        WAVE4_OK_23=0
+      fi
     else
-      log "wave4 23: UI tap fallback UNRELIABLE — skip baseline lock"
-      WAVE4_OK_23=0
+      # P3-E9g: UI tap may also fail size gate on the stub — last-chance stub override
+      sz=$(wc -c < "$OUT/23-flutter-live-list.png" 2>/dev/null | tr -d " " || echo 0)
+      if [[ "${sz:-0}" -ge "$STUB_MIN_BYTES" ]] && live_list_content_ok; then
+        log "wave4 23: stub size override after UI-tap fail size=$sz + content OK"
+        WAVE4_OK_23=1
+      else
+        log "wave4 23: UI tap fallback UNRELIABLE — skip baseline lock"
+        WAVE4_OK_23=0
+      fi
     fi
   fi
 
