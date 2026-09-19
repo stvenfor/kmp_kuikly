@@ -1,5 +1,7 @@
 # GIT-READY — Demo Skeleton commit / PR prep
 
+> **Update 2026-09-15:** `gh auth login` OK (`stvenfor`). First push landed on `main`; review PR from `demo-skeleton`.
+
 **Date:** 2026-09-14  
 **Agent:** DevOps Automator  
 **Commit performed:** no  

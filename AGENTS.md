@@ -49,6 +49,26 @@ Intensity (Claude Code / Codex plugins): `lite` | `full` (default) | `ultra` | `
 3. `docs/adr/*`
 4. Tickets under `.scratch/demo-skeleton/issues/` (when published)
 
+## Git commit policy
+
+- 提交说明**必须使用中文**（至少含汉字）
+- **禁止** `Co-authored-by: Cursor <cursoragent@cursor.com>`
+
+Enforced by:
+
+- Cursor hooks: `.cursor/hooks.json`（`sessionStart` + `beforeShellExecution`）
+- Git hook: `.githooks/commit-msg`（安装：`./scripts/install-git-hooks.sh`）
+
+Installed from [Tencent-TDS/KuiklyUI-AI](https://github.com/Tencent-TDS/KuiklyUI-AI) into `.agents/skills/` (lockfile: `skills-lock.json`).
+
+```bash
+# reinstall / update (prefer SSH if HTTPS clone hangs)
+git clone --depth 1 git@github.com:Tencent-TDS/KuiklyUI-AI.git /tmp/KuiklyUI-AI
+npx skills add /tmp/KuiklyUI-AI/skills -a cursor -s '*' -y --copy
+```
+
+Useful for this repo: `kuikly-compose-ui-framework`, `kuikly-multi-module-config`, `kuikly-expand-api`, `kuikly-expand-view`.
+
 ## Reinstall / update
 
 From project root:

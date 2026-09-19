@@ -1,25 +1,27 @@
 # Android smoke
 
-## Build
+## One-shot (recommended)
+
+```bash
+./scripts/run.sh android
+# ./scripts/run.sh android --page Login --avd Pixel_7_Pro
+```
+
+Cold start default: **Splash** (`KuiklyRenderActivity` when `pageName` empty).
+
+## Manual
 
 ```bash
 ./gradlew :androidApp:assembleDebug
-```
-
-## Run (emulator or device)
-
-```bash
 adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
 adb shell am start -n com.example.kuikly/.KuiklyRenderActivity
-# or explicit page:
-adb shell am start -n com.example.kuikly/.KuiklyRenderActivity --es pageName HelloWorld
 adb shell am start -n com.example.kuikly/.KuiklyRenderActivity --es pageName Login
 ```
 
 ## Expect
 
-- HelloWorld: “Hello, kmp_kuikly!” + link to Login
-- Login → FeedList (Mock); cycle scenario on FeedList
+- Splash → Login or Main (session)
+- Demo pages (HelloWorld / Home Demo Map) only via explicit `--page` / Intent
 
 ## Evidence dir
 

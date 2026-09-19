@@ -22,7 +22,7 @@
 }
 
 - (instancetype)init {
-    return [self initWithPageName:@"HelloWorld" pageData:@{}];
+    return [self initWithPageName:@"Splash" pageData:@{}];
 }
 
 - (void)viewDidLoad {

@@ -3,6 +3,7 @@ package com.example.kuikly.pages
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.navigation.PageNames
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
@@ -22,17 +23,35 @@ import com.tencent.kuikly.core.annotations.Page
 internal class HomePage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         val entries = listOf(
+            "Main (四 Tab)" to PageNames.Main,
+            "Splash" to PageNames.Splash,
             "Auth + Feed" to PageNames.Login,
             "HelloWorld" to PageNames.HelloWorld,
             "Legacy DSL Lab" to PageNames.DslLab,
             "Perf Lab" to PageNames.PerfLab,
             "Gallery" to PageNames.Gallery,
+            "Compose Anim" to PageNames.ComposeAnim,
+            "Compose List" to PageNames.ComposeList,
+            "Compose Pager" to PageNames.ComposePager,
             "Permission Demo" to PageNames.PermissionDemo,
             "Share Demo" to PageNames.ShareDemo,
         )
         setContent {
-            Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+            // 背景先铺满（含状态栏），再只给文字垫 inset
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = (top + 20f).dp,
+                        bottom = (bottom + 20f).dp,
+                    ),
+            ) {
                 Text("Demo Map", fontSize = 24.sp, color = Color.Black)
                 Spacer(Modifier.height(16.dp))
                 entries.forEach { (label, page) ->

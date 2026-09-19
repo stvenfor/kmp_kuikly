@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.platform.permission.PermissionApi
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
@@ -24,9 +25,21 @@ import com.tencent.kuikly.core.annotations.Page
 internal class PermissionDemoPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         setContent {
             var result by remember { mutableStateOf("(tap check)") }
-            Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = (top + 20f).dp,
+                        bottom = (bottom + 20f).dp,
+                    ),
+            ) {
                 Text("Permission Demo", fontSize = 22.sp)
                 Spacer(Modifier.height(12.dp))
                 Text(

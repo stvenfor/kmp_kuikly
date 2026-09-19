@@ -11,8 +11,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     ) -> Bool {
         window = UIWindow(frame: UIScreen.main.bounds)
         // Default page; CLI preview overrides via URL scheme
-        let pageName = ProcessInfo.processInfo.environment["KUIKLY_PAGE"] ?? "HelloWorld"
-        let vc = KuiklyRenderViewController(pageName: pageName, pageData: [:])
+        let pageName = ProcessInfo.processInfo.environment["KUIKLY_PAGE"] ?? "Splash"
+        // Optional deep-link pageData (JSON) for golden captures, e.g.
+        // SIMCTL_CHILD_KUIKLY_PAGE_DATA='{"tab":"Me","mockLogin":"1"}'
+        var pageData: [String: Any] = [:]
+        if let json = ProcessInfo.processInfo.environment["KUIKLY_PAGE_DATA"],
+           let data = json.data(using: .utf8),
+           let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            pageData = dict
+        }
+        let vc = KuiklyRenderViewController(pageName: pageName, pageData: pageData)
         let nav = UINavigationController(rootViewController: vc)
         nav.isNavigationBarHidden = true
         window?.rootViewController = nav
