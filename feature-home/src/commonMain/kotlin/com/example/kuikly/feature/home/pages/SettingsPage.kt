@@ -63,8 +63,8 @@ internal class SettingsPage : BaseComposePager() {
     private companion object {
         /** Flutter `AppEnv` 三档 label + `EnvConfig.backendBaseUrl`。 */
         val ENVS = listOf(
-            "测试" to "http://127.0.0.1:8080",
-            "预发" to "http://127.0.0.1:8080",
+            "测试" to "http://${LanHost.fallback}:8080",
+            "预发" to "http://${LanHost.fallback}:8080",
             "线上" to "https://api.xiaomaomain.com",
         )
         val LANGUAGES = listOf("简体中文", "English")
