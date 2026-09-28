@@ -57,7 +57,10 @@ proto/**/*.kt
 /logs/
 /iosApp/logs/
 /.claude-internal
-/.cursor/
+/.cursor/*
+!/.cursor/hooks.json
+!/.cursor/hooks/
+!/.cursor/hooks/**
 .mcp.json
 # local build logs
 build_2.0.log
@@ -70,3 +73,11 @@ ohos_build.log
 buildSrc/.gradle/
 .scratch/
 !.scratch/**/*.md
+
+# Agent skills (canonical: .agents/skills — commit those)
+.aider-desk/
+.claude/skills/
+.windsurf/
+# skill 运行时 git clone 的 KuiklyUI 参考库（约数百 MB，含嵌套 .git，勿入库）
+.agents/skills/**/references/KuiklyUI/
+.agents/skills/**/scripts/.last-update

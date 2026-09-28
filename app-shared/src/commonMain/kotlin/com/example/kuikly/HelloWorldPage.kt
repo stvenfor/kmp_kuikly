@@ -2,12 +2,14 @@ package com.example.kuikly
 
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.height
+import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.material3.Text
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
@@ -23,7 +25,10 @@ internal class HelloWorldPage : BaseComposePager() {
         super.willInit()
         setContent {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

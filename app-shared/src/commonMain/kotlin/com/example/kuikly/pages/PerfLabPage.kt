@@ -1,6 +1,7 @@
 package com.example.kuikly.pages
 
 import com.example.kuikly.base.BaseComposePager
+import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
@@ -18,8 +19,20 @@ internal class PerfLabPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
         val rows = (1..50).map { "Row #$it — long list stress" }
+        val top = statusBarInset()
+        val bottom = bottomSafeInset()
         setContent {
-            Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(
+                        start = 12.dp,
+                        end = 12.dp,
+                        top = (top + 12f).dp,
+                        bottom = (bottom + 12f).dp,
+                    ),
+            ) {
                 Text("Perf Lab (50 rows)", fontSize = 20.sp, color = Color.Black)
                 rows.forEach { line ->
                     Text(

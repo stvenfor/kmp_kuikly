@@ -21,11 +21,14 @@ class FakeFeedRepository : FeedRepository {
         MockScenario.Success, MockScenario.Slow -> Result.success(seed)
         MockScenario.Empty -> Result.success(emptyList())
         MockScenario.Error -> Result.failure(IllegalStateException("mock feed error"))
+        MockScenario.Unauthorized -> Result.failure(IllegalStateException("unauthorized"))
     }
 
     override fun detail(id: String): Result<FeedItem> {
-        if (MockBackend.scenario == MockScenario.Error) {
-            return Result.failure(IllegalStateException("mock feed error"))
+        when (MockBackend.scenario) {
+            MockScenario.Error -> return Result.failure(IllegalStateException("mock feed error"))
+            MockScenario.Unauthorized -> return Result.failure(IllegalStateException("unauthorized"))
+            else -> Unit
         }
         return seed.find { it.id == id }?.let { Result.success(it) }
             ?: Result.failure(NoSuchElementException("no item $id"))

@@ -1,29 +1,34 @@
 # MODULES-DONE
 
-**Date:** 2026-09-14  
-**Tickets:** 07–09 physical expand → migrate → contract
+**Date:** 2026-09-15  
+**Tickets:** 07–09 + Kuikly `enableMultiModule`
+
+## Confirmed names
+
+| Role | Gradle / moduleId |
+|---|---|
+| Main | `app-shared` |
+| Sub | `feature_auth`, `feature_feed` |
+| Base for pages | `core-pager` (BridgeModule / BaseComposePager) |
 
 ## Layout
 
 | Gradle project | Role |
 |---|---|
-| `:core-navigation` | `PageNames` |
-| `:core-data` | MockBackend + Auth/Feed repos + unit tests |
-| `:platform-permission` | PermissionApi expect/actual |
-| `:platform-share` | ShareApi expect/actual |
-| `:feature-auth` | Feature seam + `src/pages` Login |
-| `:feature-feed` | Feature seam + `src/pages` FeedList/Detail |
-| `:app-shared` | Thin Kuikly entry (KSP / Compose / cocoapods) |
+| `:core-pager` | Shared pager base (no `@Page`) |
+| `:core-navigation` / `:core-data` | Routing names + Mock repos |
+| `:feature_auth` / `:feature_feed` | Kuikly submodules (`isMainModule=false`, own KSP) |
+| `:platform-permission` / `:platform-share` | expect/actual APIs |
+| `:app-shared` | Main module (`enableMultiModule`, `subModules=feature_auth&feature_feed`) |
 
-## Kuikly note
+## Kuikly multi-module
 
-`@Page` sources under `feature-*/src/pages/kotlin` are **source-linked** into `:app-shared` so a single `KuiklyCoreEntry` is generated. Feature modules still exist as physical Gradle projects with `api` deps on cores.
+- Removed `kotlin.srcDir` page hanging.
+- `@Page(name=…, moduleId=…)` lives in feature `commonMain`.
+- Ohos: matching `build.ohos.gradle.kts` on app-shared / features / core-pager (core-data Android plugin under ohos settings still a known gap).
 
 ## Verify
 
 ```bash
 ./gradlew :core-data:testDebugUnitTest :androidApp:assembleDebug
-# BUILD SUCCESSFUL (2026-09-14)
 ```
-
-CocoaPods pod path: `iosApp/Podfile` → `../app-shared` (framework baseName still `shared`).

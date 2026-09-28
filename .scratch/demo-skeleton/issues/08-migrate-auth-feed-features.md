@@ -5,8 +5,10 @@
 **Blocked by:** 07
 
 - [x] Physical `:feature-auth` / `:feature-feed` Gradle modules
-- [x] Auth/Feed `@Page` sources under `feature-*/src/pages` (compiled by `:app-shared` for Kuikly KSP)
-- [x] Feature marker objects `FeatureAuth` / `FeatureFeed`
+- [x] Official Kuikly multi-module KSP (`enableMultiModule`, `moduleId=feature_auth|feature_feed`)
+- [x] `@Page(name=…, moduleId=…)` in feature `commonMain` (no srcDir hang)
+- [x] `core-pager` base for BridgeModule / BaseComposePager
+- [x] `:androidApp:assembleDebug` green after migrate
 
 ## Comments
-Kuikly KSP requires a single entry (`KuiklyCoreEntry`); pages stay owned by feature dirs but compiled into app-shared.
+Gradle path keeps hyphens (`:feature-auth`); KSP `moduleId` uses underscores (`feature_auth`) — hyphens break generated Kotlin identifiers.

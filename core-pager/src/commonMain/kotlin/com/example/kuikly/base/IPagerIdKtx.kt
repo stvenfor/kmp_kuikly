@@ -1,0 +1,12 @@
+package com.example.kuikly.base
+
+import com.tencent.kuikly.core.base.IPagerId
+import com.tencent.kuikly.core.base.pagerId
+
+val IPagerId.bridgeModule: BridgeModule by pagerId {
+    Utils.bridgeModule(it)
+}
+
+fun IPagerId.setTimeout(delay: Int, callback: () -> Unit): String {
+    return com.tencent.kuikly.core.timer.setTimeout(pagerId, delay, callback)
+}

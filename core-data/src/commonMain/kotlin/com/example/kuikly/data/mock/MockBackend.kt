@@ -4,6 +4,7 @@ enum class MockScenario {
     Success,
     Empty,
     Error,
+    Unauthorized,
     Slow,
 }
 
@@ -14,7 +15,8 @@ object MockBackend {
         scenario = when (scenario) {
             MockScenario.Success -> MockScenario.Empty
             MockScenario.Empty -> MockScenario.Error
-            MockScenario.Error -> MockScenario.Slow
+            MockScenario.Error -> MockScenario.Unauthorized
+            MockScenario.Unauthorized -> MockScenario.Slow
             MockScenario.Slow -> MockScenario.Success
         }
         return scenario

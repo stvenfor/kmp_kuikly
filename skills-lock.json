@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "skills": {
+    "kuikly-animation": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-assets-resource": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-compose-interop-dsl": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-compose-ui-framework": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-coroutines-threading": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-expand-api": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-expand-view": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-multi-module-config": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-network-and-json": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-reactive-observer": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-recomposition-analyzer": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-ui-framework": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    },
+    "kuikly-visibility-exposure": {
+      "source": "Tencent-TDS/KuiklyUI-AI/skills",
+      "sourceType": "github"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+==> OK 02-main-home vs 02-flutter-main-home RMSE_rel=0.141056 (max 0.22)
+==> OK 06-main-me-guest vs 03-flutter-main-me-guest RMSE_rel=0.145985 (max 0.22)
+==> OK 07-main-me-logged-in vs 08-flutter-main-me-logged-in RMSE_rel=0.164467 (max 0.22)
+==> OK 03-login vs 07-flutter-login RMSE_rel=0.115282 (max 0.22)
+==> OK 10-search vs 10-flutter-search RMSE_rel=0.143705 (max 0.22)
+==> OK 04-usedcar-list vs 04-flutter-usedcar-list RMSE_rel=0.0733541 (max 0.22)
+==> OK 11-main-chat vs 11-flutter-main-chat RMSE_rel=0.0797038 (max 0.22)
+==> OK 13-main-community vs 13-flutter-main-community RMSE_rel=0.19668 (max 0.22)
+==> OK 12-chat-detail vs 12-flutter-chat-detail RMSE_rel=0.0911619 (max 0.22)
+==> all mapped Cross-Source diffs passed
