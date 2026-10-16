@@ -53,6 +53,27 @@ internal class LoginPage : BaseComposePager() {
                     Spacer(Modifier.height(8.dp))
                     Text(message, color = Color.Red, fontSize = 14.sp)
                 }
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = "账号密码登录",
+                    fontSize = 15.sp,
+                    color = Color(0xFF1565C0),
+                    modifier = Modifier.clickable { Utils.currentBridgeModule().openPage("LoginPassword") },
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "短信验证码登录",
+                    fontSize = 15.sp,
+                    color = Color(0xFF1565C0),
+                    modifier = Modifier.clickable { Utils.currentBridgeModule().openPage("LoginOtp") },
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "注册新账号",
+                    fontSize = 15.sp,
+                    color = Color(0xFF1565C0),
+                    modifier = Modifier.clickable { Utils.currentBridgeModule().openPage("Register") },
+                )
             }
         }
     }

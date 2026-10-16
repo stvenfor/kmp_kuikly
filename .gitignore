@@ -70,3 +70,7 @@ ohos_build.log
 buildSrc/.gradle/
 .scratch/
 !.scratch/**/*.md
+
+# 本地 agent 工作记忆与 skills 安装重复副本（不应入库）
+.workbuddy/
+/agent/

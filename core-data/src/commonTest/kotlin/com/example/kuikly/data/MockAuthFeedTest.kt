@@ -22,9 +22,14 @@ class MockAuthFeedTest {
 
     @Test
     fun login_sets_session() {
-        val user = auth.login("demo", "x").getOrThrow()
+        val user = auth.login("demo", "demo1234").getOrThrow()
         assertEquals("demo", user.name)
         assertEquals("demo", auth.currentUser()?.name)
+    }
+
+    @Test
+    fun login_rejects_short_password() {
+        assertTrue(auth.login("demo", "x").isFailure)
     }
 
     @Test
