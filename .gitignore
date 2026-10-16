@@ -74,3 +74,8 @@ buildSrc/.gradle/
 # 本地 agent 工作记忆与 skills 安装重复副本（不应入库）
 .workbuddy/
 /agent/
+
+# 本地环境配置文件（可能含敏感信息）
+.env
+.env.*
+!.env.example
