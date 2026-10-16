@@ -103,6 +103,9 @@ class CommunityRepository : BaseMockRepository<Post>() {
     }
 
     // 帖子搜索：正文 / 昵称 / 话题命中（忽略大小写）。
+    /** 帖子详情（自 demo-skeleton 并入的 PostDetail 页用）。 */
+    fun postDetail(id: String): Result<Post> = byId(id)
+
     fun searchPosts(query: String): Result<List<Post>> = all { p -> matchesPost(p, query) }
 
     private fun matchesPost(post: Post, query: String): Boolean {

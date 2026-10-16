@@ -14,6 +14,7 @@ data class Friend(
     val isOnline: Boolean,
     val pinyin: String = "",
     val phoneMasked: String = "",
+    val bio: String = "",
 ) {
     // 首字母：取拼音首字符并归一为大写字母，缺失时归到 #。
     val initial: Char
@@ -44,14 +45,17 @@ class FriendRepository : BaseMockRepository<Friend>() {
         FriendGroup("g3", "家人"),
     )
     private val friends = listOf(
-        Friend("f1", "张敏", "", "g1", true, "zhangmin", "138****0011"),
-        Friend("f2", "李雷", "", "g2", false, "lilei", "139****0022"),
-        Friend("f3", "韩梅梅", "", "g2", true, "hanmeimei", "137****0033"),
-        Friend("f4", "妈妈", "", "g3", true, "mama", "136****0044"),
+        Friend("f1", "张敏", "", "g1", true, "zhangmin", "138****0011", "英语启蒙课主讲，擅长用儿歌带孩子开口说。"),
+        Friend("f2", "李雷", "", "g2", false, "lilei", "139****0022", "产品同学，周末一起爬山遛娃。"),
+        Friend("f3", "韩梅梅", "", "g2", true, "hanmeimei", "137****0033", "英语教研组，负责中高年级阅读。"),
+        Friend("f4", "妈妈", "", "g3", true, "mama", "136****0044", "家里最忙的班主任，最爱提醒我喝水。"),
     )
 
     override fun seed(): List<Friend> = friends
     override fun idOf(item: Friend): String = item.id
+
+    /** 好友详情（自 demo-skeleton 并入的 FriendDetail 页用）。 */
+    fun detail(id: String): Result<Friend> = byId(id)
 
     fun groups(): Result<List<FriendGroup>> = all { true }.map { groups }
 

@@ -42,6 +42,13 @@ class PayRepository {
         else Result.success(plans)
 
     /** 创建订单（返回订单号）。 */
+    /** 套餐详情（自 demo-skeleton 并入的 PayConfirm 页用）。 */
+    fun planDetail(id: String): Result<MembershipPlan> {
+        val list = plans().getOrElse { return Result.failure(it) }
+        return list.firstOrNull { it.id == id }?.let { Result.success(it) }
+            ?: Result.failure(NoSuchElementException("plan=$id"))
+    }
+
     fun createOrder(planId: String): Result<String> {
         if (MockBackend.scenario == MockScenario.Error) return Result.failure(IllegalStateException("mock pay error"))
         val plan = plans.find { it.id == planId } ?: return Result.failure(NoSuchElementException("plan=$planId"))

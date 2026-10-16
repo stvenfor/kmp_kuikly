@@ -139,7 +139,7 @@ internal class MusicPage : BaseComposePager() {
                         }
                         item {
                             Spacer(Modifier.height(4.dp))
-                            MusicMiniPlayerBar(
+                            MusicPageMiniBar(
                                 playingId = playingId,
                                 pbState = pbState,
                                 onToggle = {
@@ -267,7 +267,7 @@ internal fun MusicCoverBlock(title: String, size: Int) {
 }
 
 @Composable
-private fun MusicMiniPlayerBar(
+private fun MusicPageMiniBar(
     playingId: String?,
     pbState: PlaybackState,
     onToggle: () -> Unit,

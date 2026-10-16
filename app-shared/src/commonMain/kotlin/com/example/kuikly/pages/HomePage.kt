@@ -23,6 +23,12 @@ internal class HomePage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
         val entries = listOf(
+            "★ 多 Tab 主框架 (Main)" to PageNames.Main,
+            "全部分类" to PageNames.AllServices,
+            "Splash 启动页" to PageNames.Splash,
+            "Compose 动画" to PageNames.ComposeAnim,
+            "Compose 列表" to PageNames.ComposeList,
+            "Compose Pager" to PageNames.ComposePager,
             "Auth + Feed" to PageNames.Login,
             "Data Analytics" to PageNames.AnalyticsList,
             "Settings" to PageNames.Settings,

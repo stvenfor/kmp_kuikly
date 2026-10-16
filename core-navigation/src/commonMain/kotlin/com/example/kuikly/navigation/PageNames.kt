@@ -3,6 +3,13 @@ package com.example.kuikly.navigation
 object PageNames {
     const val HelloWorld = "HelloWorld"
     const val Home = "Home"
+    // ---- 多 Tab 主框架（自 demo-skeleton 并入）----
+    const val Main = "Main"
+    const val Splash = "Splash"
+    const val AllServices = "AllServices"
+    const val ComposeAnim = "ComposeAnim"
+    const val ComposeList = "ComposeList"
+    const val ComposePager = "ComposePager"
     const val Login = "Login"
     const val FeedList = "FeedList"
     const val FeedDetail = "FeedDetail"
@@ -61,6 +68,35 @@ object PageNames {
     const val MallOrderDetail = "MallOrderDetail"
     const val MembershipRenew = "MembershipRenew"
     const val WalletLedger = "WalletLedger"
+
+    // ---- 自 demo-skeleton 并入的新增页面 ----
+    const val LearningReport = "LearningReport"
+    const val HotRankDetail = "HotRankDetail"
+    const val PostDetail = "PostDetail"
+    const val PayConfirm = "PayConfirm"
+    const val CheckInMall = "CheckInMall"
+    const val FriendDetail = "FriendDetail"
+    const val LiveDetail = "LiveDetail"
+    const val ClassroomDetail = "ClassroomDetail"
+    const val ClassroomMyClass = "ClassroomMyClass"
+    const val ClassroomGiftClaim = "ClassroomGiftClaim"
+    const val DubbingHome = "DubbingHome"
+    const val DubbingWorkList = "DubbingWorkList"
+    const val DubbingWorkDetail = "DubbingWorkDetail"
+    const val UsedCarList = "UsedCarList"
+    const val UsedCarDetail = "UsedCarDetail"
+
+    // ---- demo-skeleton 页面名 → main 实际页面的别名映射 ----
+    // Main 框架（HomeDashboardTab）沿用 demo-skeleton 的路由名，这里映射到 main 已有的等价页面。
+    const val Search = "CommunitySearch"
+    const val Strategy = "AnalyticsStrategy"
+    const val FriendList = "Friend"
+    const val PayList = "MallOrders"
+    const val LiveList = "Live"
+    const val VideoList = "Video"
+    const val ClassroomList = "Classroom"
+    const val MusicList = "Music"
+    const val MusicNowPlaying = "NowPlaying"
 
     const val DslLab = "DslLab"
     const val PerfLab = "PerfLab"

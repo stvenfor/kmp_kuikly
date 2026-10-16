@@ -24,8 +24,16 @@ data class StoreItem(
 
 interface AuthRepository {
     fun currentUser(): User?
+
+    /** 便捷判断：是否已登录（Main / 我的 Tab 的访客态判断用）。 */
+    fun isLoggedIn(): Boolean = currentUser() != null
+
     fun login(username: String, password: String): Result<User>
     fun otpLogin(phone: String, code: String): Result<User>
+
+    /** OTP 登录别名（demo-skeleton 的 Main 框架用名），与 [otpLogin] 等价。 */
+    fun loginWithOtp(phone: String, code: String): Result<User> = otpLogin(phone, code)
+
     fun register(username: String, password: String): Result<User>
     fun logout()
     fun stores(): Result<List<StoreItem>>
@@ -39,6 +47,13 @@ class FakeAuthRepository : AuthRepository {
         StoreItem(2, "上海中心店", 1, "销售经理", false),
         StoreItem(3, "广州天河店", 0, "销售顾问", false),
     )
+
+    /** Mock OTP 登录常量（golden 捕获脚本与 Main 框架的 mockLogin 用）。 */
+    companion object {
+        const val MOCK_PHONE = "13400000000"
+        const val MOCK_OTP = "123456"
+        const val DISPLAY_ID_PREFIX = "dev-"
+    }
 
     override fun currentUser(): User? = session
 
