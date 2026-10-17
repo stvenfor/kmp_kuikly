@@ -1,6 +1,8 @@
 package com.example.kuikly.data.live
 
 import com.example.kuikly.data.BaseMockRepository
+import com.example.kuikly.data.mock.MockBackend
+import com.example.kuikly.data.mock.MockScenario
 
 enum class LiveStatus { offline, live }
 
@@ -16,6 +18,8 @@ data class LiveRoom(
     val announcement: String = "",
     val likeCount: Int = 0,
     val tags: List<String> = emptyList(),
+    val followed: Boolean = false,
+    val giftCount: Int = 0,
 ) {
     val viewerLabel: String get() = compactCount(viewerCount)
 
@@ -30,11 +34,40 @@ data class DanmakuMessage(
     val seq: Int,
 )
 
-private fun compactCount(n: Int): String = when {
+/** 礼物面板目录项：`coin` 为钻石单价。 */
+data class LiveGift(
+    val id: String,
+    val name: String,
+    val coin: Int,
+    val glyph: String,
+)
+
+/** 一次送礼的流水记录。 */
+data class LiveGiftRecord(
+    val id: String,
+    val giftName: String,
+    val coin: Int,
+    val user: String,
+)
+
+internal fun compactCount(n: Int): String = when {
     n >= 10000 -> "${"%.1f".format(n / 10000.0)}w"
     n >= 1000 -> "${"%.1f".format(n / 1000.0)}k"
     else -> "$n"
 }
+
+/** 送礼初始钻石余额（Mock 钱包）。 */
+private const val LIVE_COIN_BALANCE = 5000
+
+/** 礼物流水最多保留条数。 */
+private const val LIVE_GIFT_FEED_LIMIT = 20
+
+private val LIVE_GIFT_CATALOG = listOf(
+    LiveGift("gf1", "小心心", 10, "♥"),
+    LiveGift("gf2", "加油棒", 50, "✦"),
+    LiveGift("gf3", "皇冠", 500, "♛"),
+    LiveGift("gf4", "火箭", 2000, "⇡"),
+)
 
 class LiveRepository : BaseMockRepository<LiveRoom>() {
     private val rooms = mutableListOf(
@@ -98,12 +131,73 @@ class LiveRepository : BaseMockRepository<LiveRoom>() {
         }
     }
 
+    private val giftFeedStore: MutableMap<String, MutableList<LiveGiftRecord>> = mutableMapOf()
+    private var coinBalance: Int = LIVE_COIN_BALANCE
+    private var giftSeq: Int = 0
+
     override fun seed(): List<LiveRoom> = rooms
     override fun idOf(item: LiveRoom): String = item.id
 
     fun fetchById(id: String): Result<LiveRoom> = byId(id)
 
     fun liveRooms(): Result<List<LiveRoom>> = all { it.status == LiveStatus.live }
+
+    /** 列表页分类Tab：所有在播/预告房间去重后的分类。 */
+    fun categories(): Result<List<String>> = all().map { list -> list.map { it.category }.distinct() }
+
+    /** 按分类筛选（与 [liveRooms] 同为列表页筛选入口）。 */
+    fun byCategory(category: String): Result<List<LiveRoom>> = all { it.category == category }
+
+    /** 点赞：累加房间赞数。 */
+    fun likeRoom(roomId: String): Result<LiveRoom> =
+        mutate(roomId) { it.copy(likeCount = it.likeCount + 1) }
+
+    /** 关注 / 取关主播，返回最新房间态。 */
+    fun toggleFollow(roomId: String): Result<LiveRoom> =
+        mutate(roomId) { it.copy(followed = !it.followed) }
+
+    fun giftCatalog(): Result<List<LiveGift>> = when (MockBackend.scenario) {
+        MockScenario.Error -> Result.failure(IllegalStateException("mock backend error"))
+        MockScenario.Empty -> Result.success(emptyList())
+        else -> Result.success(LIVE_GIFT_CATALOG)
+    }
+
+    fun coinBalance(): Int = coinBalance
+
+    /** 本房间的送礼流水（最新在前）。 */
+    fun giftFeedOf(roomId: String): List<LiveGiftRecord> =
+        giftFeedStore[roomId]?.toList() ?: emptyList()
+
+    /**
+     * 送礼：扣钻石 → 写房间流水 → 礼物数 +1。
+     * 失败路径：礼物不存在 / 房间不存在 / 钻石不足。
+     */
+    fun sendGift(roomId: String, giftId: String): Result<LiveGiftRecord> {
+        val gift = LIVE_GIFT_CATALOG.firstOrNull { it.id == giftId }
+            ?: return Result.failure(NoSuchElementException("giftId=$giftId"))
+        val room = rooms.firstOrNull { it.id == roomId }
+            ?: return Result.failure(NoSuchElementException("room=$roomId"))
+        if (coinBalance < gift.coin) {
+            return Result.failure(IllegalStateException("钻石不足，请充值"))
+        }
+        coinBalance -= gift.coin
+        giftSeq += 1
+        val record = LiveGiftRecord("gr_$giftSeq", gift.name, gift.coin, "我")
+        val feed = giftFeedStore.getOrPut(roomId) { mutableListOf() }
+        feed.add(0, record)
+        if (feed.size > LIVE_GIFT_FEED_LIMIT) feed.removeAt(feed.size - 1)
+        val index = rooms.indexOfFirst { it.id == roomId }
+        rooms[index] = room.copy(giftCount = room.giftCount + 1)
+        return Result.success(record)
+    }
+
+    private fun mutate(roomId: String, transform: (LiveRoom) -> LiveRoom): Result<LiveRoom> {
+        val index = rooms.indexOfFirst { it.id == roomId }
+        if (index < 0) return Result.failure(NoSuchElementException("room=$roomId"))
+        val updated = transform(rooms[index])
+        rooms[index] = updated
+        return Result.success(updated)
+    }
 
     /** 刷新在线人数：确定性递增 1..23，返回更新后的房间。 */
     fun refreshViewers(roomId: String): Result<LiveRoom> {

@@ -51,6 +51,7 @@ internal class MusicPage : BaseComposePager() {
             var playlists by remember { mutableStateOf<List<Playlist>>(emptyList()) }
             var activePlaylistId by remember { mutableStateOf<String?>(null) }
             var playingId by remember { mutableStateOf<String?>(null) }
+            var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
             var pbState by remember { mutableStateOf(PlaybackState.idle) }
             var error by remember { mutableStateOf<String?>(null) }
             var empty by remember { mutableStateOf(false) }
@@ -61,6 +62,10 @@ internal class MusicPage : BaseComposePager() {
                 val pb = MusicStore.repo.playbackState()
                 pbState = pb.first
                 playingId = pb.second
+            }
+
+            fun refreshFavorites() {
+                favoriteIds = MusicStore.repo.favoriteTracks().map { it.id }.toSet()
             }
 
             fun applyResult(ok: Boolean, tracks: List<Track>, message: String?) {
@@ -91,17 +96,36 @@ internal class MusicPage : BaseComposePager() {
                 booted = true
                 playlists = MusicStore.repo.playlists().getOrDefault(emptyList())
                 syncPlayback()
+                refreshFavorites()
                 reload()
             }
 
             Column(modifier = Modifier.fillMaxSize().background(KuiklyTheme.canvasSoft2)) {
-                Text(
-                    "音乐",
-                    fontSize = 22.sp,
-                    color = KuiklyTheme.foreground,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "音乐",
+                        fontSize = 22.sp,
+                        color = KuiklyTheme.foreground,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    MusicTextButton(text = "搜索", onClick = {
+                        Utils.currentBridgeModule().openPage(url = "MusicSearch")
+                    })
+                    Spacer(Modifier.width(8.dp))
+                    MusicTextButton(text = "收藏 · 下载", onClick = {
+                        Utils.currentBridgeModule().openPage(url = "MusicCollection")
+                    })
+                    Spacer(Modifier.width(8.dp))
+                    MusicTextButton(text = "随机播放", onClick = {
+                        MusicStore.repo.shuffle()
+                        syncPlayback()
+                        Utils.currentBridgeModule().openPage(url = "NowPlaying")
+                    })
+                }
                 MusicPlaylistRow(
                     playlists = playlists,
                     activeId = activePlaylistId,
@@ -122,9 +146,16 @@ internal class MusicPage : BaseComposePager() {
                             MusicTrackTile(
                                 track = track,
                                 playing = playingId == track.id && pbState == PlaybackState.playing,
+                                favorite = favoriteIds.contains(track.id),
                                 onTap = {
                                     MusicStore.repo.play(track.id)
                                     syncPlayback()
+                                },
+                                onToggleFavorite = {
+                                    MusicStore.repo.toggleFavorite(track.id)
+                                    refreshFavorites()
+                                    Utils.currentBridgeModule()
+                                        .toast(if (favoriteIds.contains(track.id)) "已取消收藏" else "已收藏 ${track.title}")
                                 },
                                 onOpenPlayer = {
                                     MusicStore.repo.play(track.id)
@@ -138,19 +169,30 @@ internal class MusicPage : BaseComposePager() {
                             Spacer(Modifier.height(8.dp))
                         }
                         item {
-                            Spacer(Modifier.height(4.dp))
-                            MusicPageMiniBar(
-                                playingId = playingId,
-                                pbState = pbState,
-                                onToggle = {
-                                    pbState = MusicStore.repo.toggle()
-                                    playingId = MusicStore.repo.playbackState().second
-                                },
-                                onOpen = {
-                                    Utils.currentBridgeModule().openPage(url = "NowPlaying")
-                                },
-                            )
-                            Spacer(Modifier.height(8.dp))
+                            // 迷你播放条（对齐 Flutter MusicMiniPlayerBar）：仅在有播放会话时显示，
+                            // 含进度条、位置/总时长与关闭（stop）入口。
+                            val pb = MusicStore.repo.playbackState()
+                            val activeTrack = pb.third
+                            if (activeTrack != null && (pb.first == PlaybackState.playing || pb.first == PlaybackState.paused)) {
+                                MusicPageMiniBar(
+                                    track = activeTrack,
+                                    pbState = pb.first,
+                                    position = MusicStore.repo.position(),
+                                    total = MusicStore.repo.durationSec(),
+                                    onToggle = {
+                                        pbState = MusicStore.repo.toggle()
+                                        playingId = MusicStore.repo.playbackState().second
+                                    },
+                                    onOpen = {
+                                        Utils.currentBridgeModule().openPage(url = "NowPlaying")
+                                    },
+                                    onClose = {
+                                        MusicStore.repo.stop()
+                                        syncPlayback()
+                                    },
+                                )
+                                Spacer(Modifier.height(8.dp))
+                            }
                             MusicMockCycleRow(scenario = scenario) {
                                 scenario = MockBackend.cycle()
                                 reload()
@@ -204,7 +246,9 @@ private fun MusicFilterPill(text: String, selected: Boolean, onClick: () -> Unit
 private fun MusicTrackTile(
     track: Track,
     playing: Boolean,
+    favorite: Boolean,
     onTap: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onOpenPlayer: () -> Unit,
 ) {
     Column(
@@ -238,6 +282,24 @@ private fun MusicTrackTile(
             Spacer(Modifier.width(6.dp))
             KChip(track.playlistId, color = KuiklyTheme.violet)
             Spacer(Modifier.width(6.dp))
+            Box(
+                modifier = Modifier
+                    .background(
+                        if (favorite) KuiklyTheme.highlightMagenta else KuiklyTheme.canvasSoft2,
+                        RoundedCornerShape(KuiklyTheme.radiusSm),
+                    )
+                    .clickable { onToggleFavorite() }
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    if (favorite) "♥ 已收藏" else "♡ 收藏",
+                    fontSize = 12.sp,
+                    color = if (favorite) KuiklyTheme.onPrimary else KuiklyTheme.ink,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(Modifier.width(6.dp))
             Text(
                 "打开播放器 ›",
                 fontSize = 12.sp,
@@ -268,43 +330,59 @@ internal fun MusicCoverBlock(title: String, size: Int) {
 
 @Composable
 private fun MusicPageMiniBar(
-    playingId: String?,
+    track: Track,
     pbState: PlaybackState,
+    position: Int,
+    total: Int,
     onToggle: () -> Unit,
     onOpen: () -> Unit,
+    onClose: () -> Unit,
 ) {
     KCard {
-        if (playingId == null) {
-            Text("暂无播放曲目，点击列表开始播放", fontSize = 13.sp, color = KuiklyTheme.muted)
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                MusicCoverBlock(title = playingId, size = 40)
-                Spacer(Modifier.width(10.dp))
-                Column(modifier = Modifier.width(140.dp)) {
-                    Text("当前曲目 $playingId", fontSize = 13.sp, color = KuiklyTheme.ink, maxLines = 1)
-                    Text(
-                        when (pbState) {
-                            PlaybackState.playing -> "播放中"
-                            PlaybackState.paused -> "已暂停"
-                            PlaybackState.idle -> "空闲"
-                        },
-                        fontSize = 11.sp,
-                        color = KuiklyTheme.muted,
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                MusicTextButton(text = if (pbState == PlaybackState.playing) "暂停" else "播放", onClick = onToggle)
-                Spacer(Modifier.width(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MusicCoverBlock(title = track.title, size = 40)
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.width(140.dp)) {
+                Text(track.title, fontSize = 13.sp, color = KuiklyTheme.ink, maxLines = 1)
                 Text(
-                    "详情 ›",
-                    fontSize = 12.sp,
-                    color = KuiklyTheme.link,
-                    modifier = Modifier.clickable { onOpen() },
+                    when (pbState) {
+                        PlaybackState.playing -> "播放中"
+                        PlaybackState.paused -> "已暂停"
+                        PlaybackState.idle -> "空闲"
+                    },
+                    fontSize = 11.sp,
+                    color = KuiklyTheme.muted,
                 )
             }
+            Spacer(Modifier.width(8.dp))
+            MusicTextButton(text = if (pbState == PlaybackState.playing) "暂停" else "播放", onClick = onToggle)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "详情 ›",
+                fontSize = 12.sp,
+                color = KuiklyTheme.link,
+                modifier = Modifier.clickable { onOpen() },
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MusicProgressTrack(
+                progress = if (total > 0) position.toDouble() / total.toDouble() else 0.0,
+                trackWidth = 200,
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "${formatMusicSec(position)} / ${formatMusicSec(total)}",
+                fontSize = 12.sp,
+                color = KuiklyTheme.muted,
+            )
+            Spacer(Modifier.width(8.dp))
+            MusicTextButton(text = "关闭", onClick = onClose)
         }
     }
 }
+
+private fun formatMusicSec(sec: Int): String = "%d:%02d".format(sec / 60, sec % 60)
 
 @Composable
 internal fun MusicTextButton(text: String, onClick: () -> Unit) {

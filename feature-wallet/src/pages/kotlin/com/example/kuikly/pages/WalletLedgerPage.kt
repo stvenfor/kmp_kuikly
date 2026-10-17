@@ -38,9 +38,10 @@ import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
+import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
 /**
- * 钱包流水页：余额卡 + 充值 + 收支明细 + 银行卡。
+ * 钱包流水页：余额卡 + 充值 + 收支明细（全部/收入/支出筛选）+ 银行卡。
  */
 @Page("WalletLedger")
 internal class WalletLedgerPage : BaseComposePager() {
@@ -50,12 +51,19 @@ internal class WalletLedgerPage : BaseComposePager() {
             var balance by remember { mutableStateOf("") }
             var items by remember { mutableStateOf<List<LedgerEntry>>(emptyList()) }
             var cards by remember { mutableStateOf<List<BankCard>>(emptyList()) }
+            var ledgerFilter by remember { mutableStateOf(0) } // 0 全部 1 收入 2 支出
             var error by remember { mutableStateOf<String?>(null) }
             var booted by remember { mutableStateOf(false) }
 
             fun reload() {
                 balance = WalletStore.repo.balanceLabel()
-                WalletStore.repo.page(1, 50)
+                WalletStore.repo.page(1, 50) { e ->
+                    when (ledgerFilter) {
+                        1 -> e.deltaFen >= 0
+                        2 -> e.deltaFen < 0
+                        else -> true
+                    }
+                }
                     .onSuccess { items = it.items; error = null }
                     .onFailure { items = emptyList(); error = it.message ?: "加载失败" }
                 WalletStore.repo.cards()
@@ -119,7 +127,27 @@ internal class WalletLedgerPage : BaseComposePager() {
                     }
 
                     item {
-                        Text("收支明细", fontSize = 15.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium)
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("收支明细", fontSize = 15.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.width(12.dp))
+                            KChip(
+                                text = "全部",
+                                color = if (ledgerFilter == 0) KuiklyTheme.link else KuiklyTheme.muted,
+                                onClick = { ledgerFilter = 0; reload() },
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            KChip(
+                                text = "收入",
+                                color = if (ledgerFilter == 1) KuiklyTheme.link else KuiklyTheme.muted,
+                                onClick = { ledgerFilter = 1; reload() },
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            KChip(
+                                text = "支出",
+                                color = if (ledgerFilter == 2) KuiklyTheme.link else KuiklyTheme.muted,
+                                onClick = { ledgerFilter = 2; reload() },
+                            )
+                        }
                         Spacer(Modifier.height(8.dp))
                     }
 
@@ -143,7 +171,24 @@ internal class WalletLedgerPage : BaseComposePager() {
                     if (cards.isNotEmpty()) {
                         item {
                             Spacer(Modifier.height(10.dp))
-                            Text("我的银行卡", fontSize = 15.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text("我的银行卡", fontSize = 15.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium)
+                                Text(
+                                    "管理 ›",
+                                    fontSize = 13.sp,
+                                    color = KuiklyTheme.link,
+                                    modifier = Modifier.clickable {
+                                        Utils.currentBridgeModule().openPage(
+                                            url = "WalletCards",
+                                            userData = JSONObject(),
+                                        )
+                                    },
+                                )
+                            }
                             Spacer(Modifier.height(8.dp))
                             cards.forEach { card ->
                                 Row(
@@ -188,7 +233,7 @@ private fun LedgerRow(entry: LedgerEntry) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column {
-            Text(entry.reason, fontSize = 14.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium)
+            Text(entry.reasonLabel, fontSize = 14.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(2.dp))
             Text("单号 ${entry.refId}", fontSize = 11.sp, color = KuiklyTheme.muted)
         }
@@ -200,7 +245,7 @@ private fun LedgerRow(entry: LedgerEntry) {
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(2.dp))
-            Text("余额 ¥${entry.balanceFen / 100}", fontSize = 11.sp, color = KuiklyTheme.muted)
+            Text("余额 ${entry.balanceLabel}", fontSize = 11.sp, color = KuiklyTheme.muted)
         }
     }
 }

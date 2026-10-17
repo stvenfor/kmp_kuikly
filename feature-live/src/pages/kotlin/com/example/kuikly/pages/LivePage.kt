@@ -47,6 +47,8 @@ internal class LivePage : BaseComposePager() {
         setContent {
             var rooms by remember { mutableStateOf<List<LiveRoom>>(emptyList()) }
             var filter by remember { mutableStateOf("all") }
+            var category by remember { mutableStateOf<String?>(null) }
+            var categoryTotal by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
             var error by remember { mutableStateOf<String?>(null) }
             var empty by remember { mutableStateOf(false) }
             var scenario by remember { mutableStateOf(MockBackend.scenario) }
@@ -54,9 +56,13 @@ internal class LivePage : BaseComposePager() {
 
             fun reload() {
                 scenario = MockBackend.scenario
-                val result = when (filter) {
-                    "live" -> LiveStore.repo.liveRooms()
-                    "offline" -> LiveStore.repo.all { it.status == LiveStatus.offline }
+                categoryTotal = LiveStore.repo.categories().getOrDefault(emptyList())
+                    .associateWith { name -> LiveStore.repo.byCategory(name).getOrDefault(emptyList()).size }
+                val picked = category
+                val result = when {
+                    filter == "live" -> LiveStore.repo.liveRooms()
+                    filter == "offline" -> LiveStore.repo.all { it.status == LiveStatus.offline }
+                    picked != null -> LiveStore.repo.byCategory(picked)
                     else -> runCatching { LiveStore.repo.page(1, 50).getOrThrow().items }
                 }
                 result
@@ -85,12 +91,22 @@ internal class LivePage : BaseComposePager() {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 )
-                LiveFilterRow(filter = filter, onPick = { filter = it; reload() })
+                LiveFilterRow(filter = filter, onPick = { filter = it; category = null; reload() })
+                Spacer(Modifier.height(8.dp))
+                LiveCategoryRow(
+                    categories = categoryTotal.toList(),
+                    selected = category,
+                    onPick = { category = it; reload() },
+                )
+                Spacer(Modifier.height(8.dp))
+                LiveScheduleEntryRow {
+                    Utils.currentBridgeModule().openPage(url = "LiveSchedule")
+                }
                 Spacer(Modifier.height(8.dp))
                 when {
                     error != null && rooms.isEmpty() ->
                         LiveErrorState(message = error ?: "加载失败", onRetry = ::reload)
-                    empty -> LiveEmptyState(onRefresh = { filter = "all"; reload() })
+                    empty -> LiveEmptyState(onRefresh = { filter = "all"; category = null; reload() })
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
                     ) {
@@ -134,6 +150,47 @@ private fun LiveFilterRow(filter: String, onPick: (String) -> Unit) {
         LiveFilterPill(text = "直播中", selected = filter == "live") { onPick("live") }
         Spacer(Modifier.width(8.dp))
         LiveFilterPill(text = "未开播", selected = filter == "offline") { onPick("offline") }
+    }
+}
+
+@Composable
+private fun LiveCategoryRow(
+    categories: List<Pair<String, Int>>,
+    selected: String?,
+    onPick: (String?) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("分类", fontSize = 12.sp, color = KuiklyTheme.muted)
+        Spacer(Modifier.width(8.dp))
+        LiveFilterPill(text = "全部", selected = selected == null) { onPick(null) }
+        categories.forEach { (name, count) ->
+            Spacer(Modifier.width(8.dp))
+            LiveFilterPill(text = "$name $count", selected = selected == name) { onPick(name) }
+        }
+    }
+}
+
+@Composable
+private fun LiveScheduleEntryRow(onOpenSchedule: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(KuiklyTheme.canvas, RoundedCornerShape(KuiklyTheme.radiusSm))
+            .clickable { onOpenSchedule() }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column {
+            Text("直播日程", fontSize = 14.sp, color = KuiklyTheme.ink, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(2.dp))
+            Text("预告 / 回放 / 我的预约", fontSize = 12.sp, color = KuiklyTheme.muted)
+        }
+        Spacer(Modifier.width(8.dp))
+        Text("›", fontSize = 15.sp, color = KuiklyTheme.muted)
     }
 }
 

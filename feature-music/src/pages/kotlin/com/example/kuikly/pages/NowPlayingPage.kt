@@ -49,6 +49,7 @@ internal class NowPlayingPage : BaseComposePager() {
             var pbState by remember { mutableStateOf(PlaybackState.idle) }
             var position by remember { mutableStateOf(0) }
             var muted by remember { mutableStateOf(false) }
+            var favorite by remember { mutableStateOf(false) }
             var scenario by remember { mutableStateOf(MockBackend.scenario) }
             var booted by remember { mutableStateOf(false) }
 
@@ -58,6 +59,8 @@ internal class NowPlayingPage : BaseComposePager() {
                 currentId = pb.second
                 position = MusicStore.repo.position()
                 muted = MusicStore.repo.isMuted()
+                val idNow = pb.second
+                favorite = idNow != null && MusicStore.repo.isFavorite(idNow)
             }
 
             if (!booted) {
@@ -121,10 +124,30 @@ internal class NowPlayingPage : BaseComposePager() {
                             NowPlayingControlCard(
                                 playing = pbState == PlaybackState.playing,
                                 muted = muted,
+                                favorite = favorite,
                                 onPrev = { MusicStore.repo.previous(); sync() },
                                 onToggle = { pbState = MusicStore.repo.toggle(); sync() },
                                 onNext = { MusicStore.repo.next(); sync() },
                                 onMute = { MusicStore.repo.toggleMute(); sync() },
+                                onToggleFavorite = {
+                                    val idNow = currentId
+                                    if (idNow != null) {
+                                        MusicStore.repo.toggleFavorite(idNow)
+                                            .onSuccess { fav ->
+                                                favorite = fav
+                                                Utils.currentBridgeModule()
+                                                    .toast(if (fav) "已收藏" else "已取消收藏")
+                                            }
+                                            .onFailure {
+                                                Utils.currentBridgeModule().toast("操作失败")
+                                            }
+                                    }
+                                },
+                                onComplete = {
+                                    // 源 onComplete：播放完成自动进入下一首（连播）。
+                                    MusicStore.repo.onComplete()
+                                    sync()
+                                },
                             )
                             Spacer(Modifier.height(10.dp))
                         }
@@ -228,10 +251,13 @@ private fun MusicSeekChip(text: String, onClick: () -> Unit) {
 private fun NowPlayingControlCard(
     playing: Boolean,
     muted: Boolean,
+    favorite: Boolean,
     onPrev: () -> Unit,
     onToggle: () -> Unit,
     onNext: () -> Unit,
     onMute: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onComplete: () -> Unit,
 ) {
     KCard {
         Row(
@@ -260,6 +286,35 @@ private fun NowPlayingControlCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(if (muted) "已静音" else "静音", fontSize = 12.sp, color = KuiklyTheme.ink)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        if (favorite) KuiklyTheme.highlightMagenta else KuiklyTheme.canvasSoft2,
+                        RoundedCornerShape(KuiklyTheme.radiusSm),
+                    )
+                    .clickable { onToggleFavorite() }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    if (favorite) "♥ 已收藏" else "♡ 收藏",
+                    fontSize = 12.sp,
+                    color = if (favorite) KuiklyTheme.onPrimary else KuiklyTheme.ink,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .background(KuiklyTheme.canvasSoft2, RoundedCornerShape(KuiklyTheme.radiusSm))
+                    .clickable { onComplete() }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("⏭ 模拟播放完成", fontSize = 12.sp, color = KuiklyTheme.ink)
             }
         }
     }

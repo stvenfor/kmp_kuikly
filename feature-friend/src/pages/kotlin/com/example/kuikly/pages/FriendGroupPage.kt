@@ -167,6 +167,38 @@ internal class FriendGroupPage : BaseComposePager() {
                     Spacer(Modifier.height(12.dp))
                 }
 
+                // 管理类入口：与源端"通讯录"页的建群/搜索动作同层，只是拆成独立页面承载。
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        FriendPillButton(
+                            label = "添加好友",
+                            filled = false,
+                            onClick = { Utils.currentBridgeModule().openPage(url = "FriendSearch") },
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        FriendPillButton(
+                            label = "新的朋友",
+                            filled = false,
+                            onClick = { Utils.currentBridgeModule().openPage(url = "FriendRequest") },
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        FriendPillButton(
+                            label = "分组管理",
+                            filled = false,
+                            onClick = { Utils.currentBridgeModule().openPage(url = "FriendGroupManage") },
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        FriendPillButton(
+                            label = "黑名单",
+                            filled = false,
+                            onClick = { Utils.currentBridgeModule().openPage(url = "FriendBlockList") },
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
                 if (error != null) {
                     item {
                         FriendStateBlock(

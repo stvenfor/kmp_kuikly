@@ -38,6 +38,7 @@ import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
+import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
 private val LIVE_QUICK_DANMAKU = listOf("666", "主播加油", "已下单", "前排围观", "讲得真好")
 
@@ -111,7 +112,25 @@ internal class LiveRoomPage : BaseComposePager() {
                                     toastText = "发送失败：${ex.message}"
                                 }
                         },
-                        onFollow = { Utils.currentBridgeModule().toast("已关注主播") },
+                        onFollow = {
+                            LiveStore.repo.toggleFollow(current.id)
+                                .onSuccess { updated ->
+                                    room = updated
+                                    Utils.currentBridgeModule().toast(
+                                        if (updated.followed) "已关注主播" else "已取消关注",
+                                    )
+                                }
+                        },
+                        onLike = {
+                            LiveStore.repo.likeRoom(current.id).onSuccess { updated ->
+                                room = updated
+                                Utils.currentBridgeModule().toast("点赞 ${updated.likeCount}")
+                            }
+                        },
+                        onGift = {
+                            val data = JSONObject().apply { put("id", current.id) }
+                            Utils.currentBridgeModule().openPage(url = "LiveGift", userData = data)
+                        },
                     )
                 }
             }
@@ -127,6 +146,8 @@ private fun LiveRoomBody(
     onRefreshViewers: () -> Unit,
     onSend: (String) -> Unit,
     onFollow: () -> Unit,
+    onLike: () -> Unit,
+    onGift: () -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
         item {
@@ -134,7 +155,13 @@ private fun LiveRoomBody(
             Spacer(Modifier.height(10.dp))
         }
         item {
-            LiveRoomInfoCard(room = room, onRefreshViewers = onRefreshViewers, onFollow = onFollow)
+            LiveRoomInfoCard(
+                room = room,
+                onRefreshViewers = onRefreshViewers,
+                onFollow = onFollow,
+                onLike = onLike,
+                onGift = onGift,
+            )
             Spacer(Modifier.height(10.dp))
         }
         item {
@@ -207,7 +234,13 @@ private fun LivePlayerShell(room: LiveRoom) {
 }
 
 @Composable
-private fun LiveRoomInfoCard(room: LiveRoom, onRefreshViewers: () -> Unit, onFollow: () -> Unit) {
+private fun LiveRoomInfoCard(
+    room: LiveRoom,
+    onRefreshViewers: () -> Unit,
+    onFollow: () -> Unit,
+    onLike: () -> Unit,
+    onGift: () -> Unit,
+) {
     KCard {
         Text(room.title, fontSize = 17.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
@@ -226,6 +259,8 @@ private fun LiveRoomInfoCard(room: LiveRoom, onRefreshViewers: () -> Unit, onFol
             KMetricPill("在线", room.viewerLabel, accent = true)
             Spacer(Modifier.width(6.dp))
             KMetricPill("点赞", "${room.likeCount}")
+            Spacer(Modifier.width(6.dp))
+            KMetricPill("礼物", "${room.giftCount}", accent = room.giftCount > 0)
         }
         Spacer(Modifier.height(10.dp))
         Text(room.announcement, fontSize = 13.sp, color = KuiklyTheme.body)
@@ -233,7 +268,13 @@ private fun LiveRoomInfoCard(room: LiveRoom, onRefreshViewers: () -> Unit, onFol
         Row(verticalAlignment = Alignment.CenterVertically) {
             LiveActionButton(text = "刷新在线人数", onClick = onRefreshViewers)
             Spacer(Modifier.width(8.dp))
-            LiveActionButton(text = "关注主播", onClick = onFollow)
+            LiveActionButton(text = if (room.followed) "已关注" else "关注主播", onClick = onFollow)
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LiveActionButton(text = "点赞", onClick = onLike)
+            Spacer(Modifier.width(8.dp))
+            LiveActionButton(text = "送礼物", onClick = onGift)
         }
     }
 }
