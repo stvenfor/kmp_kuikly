@@ -210,8 +210,8 @@ class SettingsRepositoryTest {
     @Test
     fun `invoices filter by status`() {
         val repo = newRepo()
-        assertEquals(4, repo.invoices().getOrThrow().size)
-        assertEquals(1, repo.invoices(InvoiceStatus.Pending).getOrThrow().size)
+        assertEquals(5, repo.invoices().getOrThrow().size)
+        assertEquals(2, repo.invoices(InvoiceStatus.Pending).getOrThrow().size)
         assertEquals(2, repo.invoices(InvoiceStatus.Approved).getOrThrow().size)
         assertEquals(1, repo.invoices(InvoiceStatus.Rejected).getOrThrow().size)
     }
@@ -220,8 +220,8 @@ class SettingsRepositoryTest {
     fun `invoice stats count all buckets`() {
         val repo = newRepo()
         val stats = repo.invoiceStats().getOrThrow()
-        assertEquals(4, stats.uploaded)
-        assertEquals(1, stats.pending)
+        assertEquals(5, stats.uploaded)
+        assertEquals(2, stats.pending)
         assertEquals(2, stats.approved)
         assertEquals(1, stats.rejected)
     }
@@ -266,5 +266,113 @@ class SettingsRepositoryTest {
         assertFalse(AddressRules.isValidName(""))
         assertNull(AddressRules.validate(sampleAddress()))
         assertNotNull(AddressRules.validate(sampleAddress().copy(detail = "")))
+    }
+
+    // ---------- 发票上传 / 客户 / 评分 ----------
+
+    @Test
+    fun `customers success returns seed`() {
+        val repo = newRepo()
+        val list = repo.customers().getOrThrow()
+        assertEquals(4, list.size)
+        assertEquals("张三", list.first { it.id == "c1" }.name)
+    }
+
+    @Test
+    fun `customers empty scenario yields empty`() {
+        MockBackend.scenario = MockScenario.Empty
+        val list = SettingsRepository().customers().getOrThrow()
+        assertTrue(list.isEmpty())
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `customers error scenario fails`() {
+        MockBackend.scenario = MockScenario.Error
+        assertTrue(SettingsRepository().customers().isFailure)
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `upload invoice appends pending and infers type`() {
+        val repo = newRepo()
+        val before = repo.invoices().getOrThrow().size
+        val created = repo.uploadInvoice("c3").getOrThrow()
+        assertEquals(InvoiceStatus.Pending, created.status)
+        assertEquals("深圳优车", created.customerName)
+        assertEquals("company", created.type)
+        assertEquals(before + 1, repo.invoices().getOrThrow().size)
+        val personal = repo.uploadInvoice("c1").getOrThrow()
+        assertEquals("personal", personal.type)
+    }
+
+    @Test
+    fun `upload unknown customer fails`() {
+        val repo = newRepo()
+        assertTrue(repo.uploadInvoice("nope").isFailure)
+        assertTrue(repo.uploadInvoice("").isFailure)
+    }
+
+    @Test
+    fun `rate invoice clamps and updates stars`() {
+        val repo = newRepo()
+        val rated = repo.rateInvoice("i2", 3).getOrThrow()
+        assertEquals(3, rated.ratingStars)
+        val clamped = repo.rateInvoice("i2", 9).getOrThrow()
+        assertEquals(5, clamped.ratingStars)
+        assertTrue(repo.rateInvoice("nope", 4).isFailure)
+    }
+
+    @Test
+    fun `find invoice by id and missing`() {
+        val repo = newRepo()
+        assertEquals("i3", repo.findInvoice("i3").getOrThrow().id)
+        assertTrue(repo.findInvoice("missing").isFailure)
+    }
+
+    // ---------- 购车补贴 / 产品化保险 / 商业险 ----------
+
+    @Test
+    fun `effective rate cuts by subsidy and never negative`() {
+        assertEquals(2.0, PurchaseCalculator.effectiveAnnualRate(2.99, PurchaseCalculator.SUBSIDY_RATE_CUT, 0.99), 0.001)
+        assertEquals(0.0, PurchaseCalculator.effectiveAnnualRate(1.0, PurchaseCalculator.SUBSIDY_RATE_CUT, 5.0), 0.001)
+        assertEquals(4.75, PurchaseCalculator.effectiveAnnualRate(4.75, PurchaseCalculator.SUBSIDY_NONE, 9.0), 0.001)
+        assertEquals(4.75, PurchaseCalculator.effectiveAnnualRate(4.75, PurchaseCalculator.SUBSIDY_AMOUNT_CUT, 9.0), 0.001)
+    }
+
+    @Test
+    fun `amount subsidy reduces fee and never negative`() {
+        assertEquals(1500.0, PurchaseCalculator.applyAmountSubsidy(1500.0, PurchaseCalculator.SUBSIDY_NONE, 1000.0), 0.001)
+        assertEquals(1500.0, PurchaseCalculator.applyAmountSubsidy(1500.0, PurchaseCalculator.SUBSIDY_RATE_CUT, 1000.0), 0.001)
+        assertEquals(500.0, PurchaseCalculator.applyAmountSubsidy(1500.0, PurchaseCalculator.SUBSIDY_AMOUNT_CUT, 1000.0), 0.001)
+        assertEquals(0.0, PurchaseCalculator.applyAmountSubsidy(800.0, PurchaseCalculator.SUBSIDY_AMOUNT_CUT, 1000.0), 0.001)
+    }
+
+    @Test
+    fun `loan quote applies rate cut as effective rate`() {
+        val repo = newRepo()
+        // 产品 1：年化 2.99，贴息 0.99 -> 实际 2.0
+        val quote = repo.calcQuote(PurchaseCalculator.MODE_LOAN, 100000.0, 0.0, 60000.0, 24, 1).getOrThrow()
+        assertEquals(2.0, quote.effectiveAnnualRate, 0.001)
+        assertEquals(2.99, quote.annualRatePercent, 0.001)
+        assertTrue(quote.lines.any { it.code == "fee" && it.amount == 1500.0 })
+    }
+
+    @Test
+    fun `loan quote applies amount cut to service fee`() {
+        val repo = newRepo()
+        // 产品 4：服务费 2500，直补 1000 -> 实付 1500
+        val quote = repo.calcQuote(PurchaseCalculator.MODE_LOAN, 100000.0, 0.0, 30000.0, 36, 4).getOrThrow()
+        assertEquals(1500.0, quote.lines.first { it.code == "fee" }.amount, 0.001)
+        assertEquals(5.88, quote.effectiveAnnualRate, 0.001)
+    }
+
+    @Test
+    fun `cash quote uses product insurance and fee`() {
+        val repo = newRepo()
+        val quote = repo.calcQuote(PurchaseCalculator.MODE_CASH, 100000.0, 0.0, productId = 2).getOrThrow()
+        assertEquals(950.0, quote.lines.first { it.code == "compulsory" }.amount, 0.001)
+        assertEquals(2000.0, quote.lines.first { it.code == "fee" }.amount, 0.001)
+        assertEquals(quote.initialPayment, quote.totalDue, 0.001)
     }
 }

@@ -16,6 +16,7 @@ import com.example.kuikly.design.KChip
 import com.example.kuikly.design.KMetricPill
 import com.example.kuikly.design.KuiklyTheme
 import com.tencent.kuikly.compose.foundation.background
+import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
+import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
 @Page("InvoiceList")
 internal class InvoiceListPage : BaseComposePager() {
@@ -85,6 +87,21 @@ internal class InvoiceListPage : BaseComposePager() {
                     }
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(KuiklyTheme.link, RoundedCornerShape(KuiklyTheme.radiusMd))
+                            .clickable { Utils.currentBridgeModule().openPage("InvoiceUpload") }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("+ 上传发票", fontSize = 13.sp, color = KuiklyTheme.onPrimary, fontWeight = FontWeight.Bold)
+                    }
+                }
+
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
                     SettingsChip(text = "全部", selected = tab.isEmpty(), onClick = { tab = ""; reload() })
                     Spacer(Modifier.width(8.dp))
@@ -116,6 +133,11 @@ internal class InvoiceListPage : BaseComposePager() {
                         items(items, key = { it.id }) { item ->
                             InvoiceCard(
                                 item = item,
+                                onOpen = {
+                                    val data = JSONObject()
+                                    data.put("id", item.id)
+                                    Utils.currentBridgeModule().openPage(url = "InvoiceUpload", userData = data)
+                                },
                                 onResubmit = {
                                     SettingsStore.repo.resubmitInvoice(item.id)
                                         .onSuccess { Utils.currentBridgeModule().toast("已重新提交"); reload() }
@@ -133,7 +155,7 @@ internal class InvoiceListPage : BaseComposePager() {
 }
 
 @Composable
-private fun InvoiceCard(item: Invoice, onResubmit: () -> Unit) {
+private fun InvoiceCard(item: Invoice, onOpen: () -> Unit, onResubmit: () -> Unit) {
     val statusColor: Color = when (item.status) {
         InvoiceStatus.Approved -> KuiklyTheme.success
         InvoiceStatus.Rejected -> KuiklyTheme.error
@@ -142,6 +164,7 @@ private fun InvoiceCard(item: Invoice, onResubmit: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(KuiklyTheme.canvas, RoundedCornerShape(KuiklyTheme.radiusMd))
+            .clickable { onOpen() }
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

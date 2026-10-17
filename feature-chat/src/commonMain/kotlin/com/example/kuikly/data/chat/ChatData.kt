@@ -2,10 +2,12 @@ package com.example.kuikly.data.chat
 
 import com.example.kuikly.data.BaseMockRepository
 import com.example.kuikly.data.Paged
+import com.example.kuikly.data.mock.MockBackend
+import com.example.kuikly.data.mock.MockScenario
 
 enum class ConversationType { private, group }
 
-enum class MessageType { text, image, voice, video, system }
+enum class MessageType { text, image, voice, video, system, custom }
 
 enum class SendStatus { sending, sent, failed }
 
@@ -50,6 +52,11 @@ data class Message(
     val senderName: String = "",
     val imageUrl: String? = null,
     val voiceDurationSeconds: Int = 0,
+    // 自定义消息（源 MessageModel.customType / customPayload）。
+    val customType: String = "",
+    val customPayload: Map<String, String> = emptyMap(),
+    // 撤回标记（源 MessageModel.isRecalled）。
+    val isRecalled: Boolean = false,
 )
 
 /** 按时间切分后的消息分组（供会话详情页渲染时间分隔条）。 */
@@ -59,7 +66,7 @@ data class MessageSection(
 )
 
 class ChatRepository : BaseMockRepository<Conversation>() {
-    private val conversations = listOf(
+    private val conversations = mutableListOf(
         Conversation("c1", ConversationType.private, "u_a", "产品群-张敏", "", "新版原型已发群里", 1_700_000_000L, true, 2, 0),
         Conversation("c2", ConversationType.group, "g_1", "增长增长增长", "", "周三复盘会 20:00", 1_700_000_100L, false, 5, 128),
         Conversation("c3", ConversationType.private, "u_b", "客户-李工", "", "[图片]", 1_700_000_200L, false, 0, 0),
@@ -90,11 +97,14 @@ class ChatRepository : BaseMockRepository<Conversation>() {
     // 未读清零覆盖表：key = 会话 id，value = 覆盖后的未读数。
     private val unreadOverride = mutableMapOf<String, Int>()
 
-    override fun seed(): List<Conversation> =
-        conversations.map { c ->
+    override fun seed(): List<Conversation> {
+        // 源 MockImChatStore._emitConversations：按 lastMessageTime 倒序。
+        val base = conversations.map { c ->
             val override = unreadOverride[c.id]
             if (override == null) c else c.copy(unreadCount = override)
         }
+        return base.sortedByDescending { it.lastMessageTime }
+    }
 
     override fun idOf(item: Conversation): String = item.id
 
@@ -102,6 +112,26 @@ class ChatRepository : BaseMockRepository<Conversation>() {
         (messages + outbox)
             .filter { it.conversationId == conversationId }
             .sortedBy { it.createdAt }
+
+    // 源 MockImChatStore._upsertConversationPreview：会话列表预览文案映射。
+    private fun previewText(msg: Message): String = when (msg.type) {
+        MessageType.image -> "[图片]"
+        MessageType.voice -> "[语音]"
+        MessageType.custom -> "[自定义消息]"
+        MessageType.system -> msg.content
+        else -> msg.content
+    }
+
+    // 源 _upsertConversationPreview：发/收消息后同步会话的 lastMessage / lastMessageTime，
+    // 使会话列表返回时显示最新预览（main 此前缺失，列表会停留旧文案）。
+    private fun touchPreview(conversationId: String, preview: String, atEpochSeconds: Long) {
+        val idx = conversations.indexOfFirst { it.id == conversationId }
+        if (idx < 0) return
+        conversations[idx] = conversations[idx].copy(
+            lastMessage = preview,
+            lastMessageTime = atEpochSeconds,
+        )
+    }
 
     fun messages(conversationId: String): Result<List<Message>> =
         Result.success(messagesOf(conversationId))
@@ -116,8 +146,13 @@ class ChatRepository : BaseMockRepository<Conversation>() {
         return Result.success(Paged(slice, all.size, page, pageSize))
     }
 
+    // 发送文本：模拟"发送中 -> 已发送/失败"状态机。Error 场景模拟网络失败，
+    // 不在 outbox 落库（UI 以乐观消息的 failed 态呈现并可重试）。
     fun send(conversationId: String, text: String): Result<Message> {
         if (text.isBlank()) return Result.failure(IllegalArgumentException("empty message"))
+        if (MockBackend.scenario == MockScenario.Error) {
+            return Result.failure(IllegalStateException("网络异常，发送失败"))
+        }
         val m = Message(
             id = "s${outbox.size + 1}",
             conversationId = conversationId,
@@ -126,9 +161,80 @@ class ChatRepository : BaseMockRepository<Conversation>() {
             isSelf = true,
             createdAt = nextTimestamp(),
             sendStatus = SendStatus.sent,
+            readStatus = ReadStatus.unread,
             senderName = "我",
         )
         outbox.add(m)
+        touchPreview(conversationId, previewText(m), m.createdAt)
+        return Result.success(m)
+    }
+
+    // 发送图片（源 sendImage；mock 用 localPath 当预览地址）。
+    fun sendImage(conversationId: String, localPath: String): Result<Message> {
+        if (MockBackend.scenario == MockScenario.Error) {
+            return Result.failure(IllegalStateException("网络异常，发送失败"))
+        }
+        val m = Message(
+            id = "img${outbox.size + 1}",
+            conversationId = conversationId,
+            type = MessageType.image,
+            content = "[图片]",
+            isSelf = true,
+            createdAt = nextTimestamp(),
+            sendStatus = SendStatus.sent,
+            senderName = "我",
+            imageUrl = localPath,
+        )
+        outbox.add(m)
+        touchPreview(conversationId, previewText(m), m.createdAt)
+        return Result.success(m)
+    }
+
+    // 发送语音（源 sendVoice；mock 不真正录音，durationSeconds 由调用方给定）。
+    fun sendVoice(conversationId: String, durationSeconds: Int): Result<Message> {
+        if (MockBackend.scenario == MockScenario.Error) {
+            return Result.failure(IllegalStateException("网络异常，发送失败"))
+        }
+        val m = Message(
+            id = "vc${outbox.size + 1}",
+            conversationId = conversationId,
+            type = MessageType.voice,
+            content = "[语音]",
+            isSelf = true,
+            createdAt = nextTimestamp(),
+            sendStatus = SendStatus.sent,
+            senderName = "我",
+            voiceDurationSeconds = durationSeconds.coerceIn(1, 60),
+        )
+        outbox.add(m)
+        touchPreview(conversationId, previewText(m), m.createdAt)
+        return Result.success(m)
+    }
+
+    // 发送自定义名片消息（源 sendCustomDemoCard）。
+    fun sendCustom(
+        conversationId: String,
+        customType: String,
+        title: String,
+        subtitle: String,
+    ): Result<Message> {
+        if (MockBackend.scenario == MockScenario.Error) {
+            return Result.failure(IllegalStateException("网络异常，发送失败"))
+        }
+        val m = Message(
+            id = "ct${outbox.size + 1}",
+            conversationId = conversationId,
+            type = MessageType.custom,
+            content = title,
+            isSelf = true,
+            createdAt = nextTimestamp(),
+            sendStatus = SendStatus.sent,
+            senderName = "我",
+            customType = customType,
+            customPayload = mapOf("title" to title, "subtitle" to subtitle),
+        )
+        outbox.add(m)
+        touchPreview(conversationId, previewText(m), m.createdAt)
         return Result.success(m)
     }
 
@@ -153,6 +259,7 @@ class ChatRepository : BaseMockRepository<Conversation>() {
             senderName = peerName,
         )
         outbox.add(m)
+        touchPreview(conversationId, previewText(m), m.createdAt)
         return Result.success(m)
     }
 
@@ -164,8 +271,112 @@ class ChatRepository : BaseMockRepository<Conversation>() {
 
     fun unreadTotal(): Int = seed().sumOf { it.unreadCount }
 
+    // 源 MockImChatStore.ensurePrivateConversation：若不存在则创建单聊会话项（按 peer 去重）。
+    fun ensurePrivateConversation(
+        peerImUserId: String,
+        title: String,
+        portraitUrl: String,
+    ): Result<Conversation> {
+        val id = "p_$peerImUserId"
+        val existing = conversations.firstOrNull { it.id == id }
+        if (existing != null) return Result.success(existing)
+        val c = Conversation(
+            id = id,
+            type = ConversationType.private,
+            targetId = peerImUserId,
+            title = title.ifBlank { peerImUserId },
+            portraitUrl = portraitUrl.ifBlank { "https://picsum.photos/seed/chat_$peerImUserId/150" },
+            lastMessage = "",
+            lastMessageTime = nextTimestamp(),
+            isOnline = false,
+            unreadCount = 0,
+            memberCount = 0,
+        )
+        conversations.add(0, c)
+        return Result.success(c)
+    }
+
+    // 源 ImChatRepository.ensureGroupConversation：按 groupId 去重，存在时按非空标题更新。
+    fun ensureGroupConversation(groupId: String, title: String): Result<Conversation> {
+        val id = "g_$groupId"
+        val existing = conversations.firstOrNull { it.id == id }
+        if (existing != null) {
+            if (title.isNotBlank() && existing.title != title) {
+                val updated = existing.copy(title = title)
+                val idx = conversations.indexOfFirst { it.id == id }
+                conversations[idx] = updated
+                return Result.success(updated)
+            }
+            return Result.success(existing)
+        }
+        val c = Conversation(
+            id = id,
+            type = ConversationType.group,
+            targetId = groupId,
+            title = title.ifBlank { groupId },
+            portraitUrl = "https://picsum.photos/seed/chat_g_$groupId/150",
+            lastMessage = "",
+            lastMessageTime = nextTimestamp(),
+            isOnline = false,
+            unreadCount = 0,
+            memberCount = 0,
+        )
+        conversations.add(0, c)
+        return Result.success(c)
+    }
+
     fun images(conversationId: String): List<String> =
         messagesOf(conversationId).mapNotNull { it.imageUrl }
+
+    // 会话搜索（源 ChatViewModel.visibleConversations：按名称或最后一条消息过滤）。
+    fun searchConversations(query: String): Result<List<Conversation>> {
+        if (MockBackend.scenario == MockScenario.Error) {
+            return Result.failure(IllegalStateException("mock backend error"))
+        }
+        val q = query.trim().lowercase()
+        val all = seed()
+        if (q.isEmpty()) return Result.success(all)
+        return Result.success(
+            all.filter {
+                it.title.lowercase().contains(q) || it.lastMessage.lowercase().contains(q)
+            },
+        )
+    }
+
+    // 单条消息查询（源 store.findMessage）。
+    fun messageById(conversationId: String, messageId: String): Result<Message> =
+        messagesOf(conversationId).firstOrNull { it.id == messageId }
+            ?.let { Result.success(it) }
+            ?: Result.failure(NoSuchElementException("message id=$messageId"))
+
+    // 删除消息（源 store.removeMessage / repository.deleteMessage）。
+    fun deleteMessage(conversationId: String, messageId: String): Result<Unit> {
+        val removed = outbox.removeIf { it.id == messageId && it.conversationId == conversationId }
+        return if (removed) Result.success(Unit) else Result.failure(NoSuchElementException("message id=$messageId"))
+    }
+
+    // 撤回消息（源 store.replaceMessage + isRecalled）。仅作用于 outbox 内已发消息。
+    fun recallMessage(conversationId: String, messageId: String): Result<Message> {
+        val idx = outbox.indexOfFirst { it.id == messageId && it.conversationId == conversationId }
+        if (idx < 0) return Result.failure(NoSuchElementException("message id=$messageId"))
+        val recalled = outbox[idx].copy(
+            content = "你撤回了一条消息",
+            type = MessageType.text,
+            isRecalled = true,
+            sendStatus = SendStatus.sent,
+        )
+        outbox[idx] = recalled
+        return Result.success(recalled)
+    }
+
+    // 模拟对方已读（源 store.simulatePeerRead）：把指定 self 消息标记为已读。
+    fun simulatePeerRead(conversationId: String, messageId: String): Result<Message> {
+        val idx = outbox.indexOfFirst { it.id == messageId && it.conversationId == conversationId && it.isSelf }
+        if (idx < 0) return Result.failure(NoSuchElementException("message id=$messageId"))
+        val updated = outbox[idx].copy(readStatus = ReadStatus.read)
+        outbox[idx] = updated
+        return Result.success(updated)
+    }
 
     private fun nextTimestamp(): Long {
         val latest = (messages + outbox).maxOfOrNull { it.createdAt } ?: 1_700_000_000L
@@ -238,4 +449,28 @@ fun groupMessagesByTime(
     }
     sections.add(MessageSection(chatTimeLabel(sectionStart, nowSeconds), current.toList()))
     return sections
+}
+
+// 消息状态机文案（源 ChatDetailViewModel.readStatusLabel）：
+// 非自己发送不显示；发送中 / 发送失败 / 已发送+已读 / 已发送+未读(送达)。
+fun statusLabel(message: Message): String {
+    if (!message.isSelf) return ""
+    return when (message.sendStatus) {
+        SendStatus.sending -> "发送中"
+        SendStatus.failed -> "发送失败"
+        SendStatus.sent ->
+            if (message.readStatus == ReadStatus.read) "已读" else "送达"
+    }
+}
+
+// 是否可撤回（源 MessageModel.canRecall）：自己发送、未撤回、且处在时间窗内。
+fun canRecall(message: Message, nowSeconds: Long, windowSeconds: Long = 180L): Boolean {
+    if (!message.isSelf || message.isRecalled) return false
+    if (message.type == MessageType.image ||
+        message.type == MessageType.voice ||
+        message.type == MessageType.system
+    ) {
+        return false
+    }
+    return (nowSeconds - message.createdAt) <= windowSeconds
 }

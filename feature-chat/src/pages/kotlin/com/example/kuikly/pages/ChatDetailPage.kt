@@ -11,7 +11,11 @@ import com.example.kuikly.data.chat.ChatStore
 import com.example.kuikly.data.chat.Conversation
 import com.example.kuikly.data.chat.Message
 import com.example.kuikly.data.chat.MessageType
+import com.example.kuikly.data.chat.ReadStatus
+import com.example.kuikly.data.chat.SendStatus
+import com.example.kuikly.data.chat.canRecall
 import com.example.kuikly.data.chat.groupMessagesByTime
+import com.example.kuikly.data.chat.statusLabel
 import com.example.kuikly.design.KChip
 import com.example.kuikly.design.KuiklyTheme
 import com.tencent.kuikly.compose.foundation.background
@@ -47,6 +51,15 @@ private val CHAT_QUICK_PHRASES = listOf(
     "稍后把结论贴出来",
 )
 
+// 源 ChatDetailViewModel.emojiList（16 个）。
+private val CHAT_EMOJIS = listOf(
+    "😀", "😂", "🥰", "😎", "🤔", "👍", "🙏", "🎉",
+    "❤️", "🔥", "👋", "😭", "🤣", "😊", "🥳", "💪",
+)
+
+// more 面板动作（源 MorePanel：相册 / 拍摄 / 语音自检 + 语音发送）。
+private val CHAT_MORE_ACTIONS = listOf("相册", "拍摄", "语音", "名片")
+
 private const val CHAT_PAGE_SIZE = 5
 
 @Page("ChatDetail")
@@ -63,6 +76,11 @@ internal class ChatDetailPage : BaseComposePager() {
             var draft by remember { mutableStateOf("") }
             var marked by remember { mutableStateOf(false) }
             var booted by remember { mutableStateOf(false) }
+            var emojiOpen by remember { mutableStateOf(false) }
+            var moreOpen by remember { mutableStateOf(false) }
+            var sendSeq by remember { mutableStateOf(0) }
+
+            fun nowSeconds(): Long = messages.maxOfOrNull { it.createdAt } ?: 1_700_000_000L
 
             fun reload() {
                 ChatStore.repo.byId(conversationId)
@@ -92,6 +110,68 @@ internal class ChatDetailPage : BaseComposePager() {
                     }
             }
 
+            // 乐观发送：先插入 sending 态消息，再根据 repo 结果落到 sent/failed。
+            fun doSend(text: String) {
+                if (text.isBlank()) {
+                    Utils.currentBridgeModule().toast("请先选择要发送的内容")
+                    return
+                }
+                val tempId = "tmp_${++sendSeq}"
+                val optimistic = Message(
+                    id = tempId,
+                    conversationId = conversationId,
+                    type = MessageType.text,
+                    content = text,
+                    isSelf = true,
+                    createdAt = nowSeconds() + 1,
+                    sendStatus = SendStatus.sending,
+                    readStatus = ReadStatus.unread,
+                    senderName = "我",
+                )
+                messages = messages + optimistic
+                ChatStore.repo.send(conversationId, text)
+                    .onSuccess { sent ->
+                        messages = messages.map { if (it.id == tempId) sent.copy(readStatus = ReadStatus.unread) else it }
+                        ChatStore.repo.autoReply(conversationId, text)
+                            .onSuccess { reply -> messages = messages + reply }
+                        // 模拟对方已读回执：把刚发出的 self 消息标为已读。
+                        messages = messages.map { if (it.id == sent.id) it.copy(readStatus = ReadStatus.read) else it }
+                        draft = ""
+                        emojiOpen = false
+                        moreOpen = false
+                        Utils.currentBridgeModule().toast("已发送")
+                    }
+                    .onFailure {
+                        messages = messages.map { if (it.id == tempId) it.copy(sendStatus = SendStatus.failed) else it }
+                        Utils.currentBridgeModule().toast("发送失败，点击下方消息重发")
+                    }
+            }
+
+            fun doSendImage() {
+                val url = "https://picsum.photos/seed/album_${++sendSeq}/800"
+                ChatStore.repo.sendImage(conversationId, url)
+                    .onSuccess { messages = messages + it; moreOpen = false; Utils.currentBridgeModule().toast("已发送图片") }
+                    .onFailure { Utils.currentBridgeModule().toast("图片发送失败") }
+            }
+
+            fun doSendVoice() {
+                ChatStore.repo.sendVoice(conversationId, 3)
+                    .onSuccess { messages = messages + it; moreOpen = false; Utils.currentBridgeModule().toast("已发送语音") }
+                    .onFailure { Utils.currentBridgeModule().toast("语音发送失败") }
+            }
+
+            fun doSendCustom() {
+                ChatStore.repo.sendCustom(conversationId, "card", "Demo 名片", "来自自定义消息")
+                    .onSuccess { messages = messages + it; moreOpen = false; Utils.currentBridgeModule().toast("已发送名片") }
+                    .onFailure { Utils.currentBridgeModule().toast("名片发送失败") }
+            }
+
+            fun doRecall(messageId: String) {
+                ChatStore.repo.recallMessage(conversationId, messageId)
+                    .onSuccess { recalled -> messages = messages.map { if (it.id == messageId) recalled else it } }
+                    .onFailure { Utils.currentBridgeModule().toast("撤回失败") }
+            }
+
             if (!booted) {
                 booted = true
                 reload()
@@ -102,8 +182,8 @@ internal class ChatDetailPage : BaseComposePager() {
                 }
             }
 
-            val nowSeconds = messages.maxOfOrNull { it.createdAt } ?: 0L
-            val sections = groupMessagesByTime(messages, nowSeconds)
+            val now = nowSeconds()
+            val sections = groupMessagesByTime(messages, now)
 
             Box(modifier = Modifier.fillMaxSize().background(KuiklyTheme.canvasSoft2)) {
                 when {
@@ -114,7 +194,7 @@ internal class ChatDetailPage : BaseComposePager() {
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
                     ) {
-                        item { ChatDetailHeader(conversation = conversation) }
+                        item { ChatDetailHeader(conversation = conversation, onRefresh = ::reload) }
                         item {
                             if (error != null) {
                                 ChatErrorBanner(text = error ?: "加载失败", onRetry = ::reload)
@@ -130,11 +210,14 @@ internal class ChatDetailPage : BaseComposePager() {
                             items(section.messages) { msg ->
                                 ChatBubble(
                                     message = msg,
+                                    nowSeconds = now,
                                     onImageClick = { url ->
                                         val data = JSONObject().apply { put("url", url) }
                                         Utils.currentBridgeModule()
                                             .openPage(url = "ChatImagePreview", userData = data)
                                     },
+                                    onRetry = { doSend(it) },
+                                    onRecall = { doRecall(it) },
                                 )
                                 Spacer(Modifier.height(8.dp))
                             }
@@ -146,21 +229,15 @@ internal class ChatDetailPage : BaseComposePager() {
                             ChatInputPanel(
                                 draft = draft,
                                 onDraftChange = { draft = it },
-                                onSend = {
-                                    if (draft.isBlank()) {
-                                        Utils.currentBridgeModule().toast("请先选择要发送的内容")
-                                        return@ChatInputPanel
-                                    }
-                                    ChatStore.repo.send(conversationId, draft)
-                                        .onSuccess { sent ->
-                                            messages = messages + sent
-                                            ChatStore.repo.autoReply(conversationId, draft)
-                                                .onSuccess { reply -> messages = messages + reply }
-                                            draft = ""
-                                            Utils.currentBridgeModule().toast("已发送")
-                                        }
-                                        .onFailure { Utils.currentBridgeModule().toast("发送失败") }
-                                },
+                                onSend = { doSend(draft) },
+                                emojiOpen = emojiOpen,
+                                moreOpen = moreOpen,
+                                onToggleEmoji = { emojiOpen = !emojiOpen; if (emojiOpen) moreOpen = false },
+                                onToggleMore = { moreOpen = !moreOpen; if (moreOpen) emojiOpen = false },
+                                onAppendEmoji = { draft = draft + it },
+                                onSendImage = ::doSendImage,
+                                onSendVoice = ::doSendVoice,
+                                onSendCustom = ::doSendCustom,
                             )
                         }
                         item { Spacer(Modifier.height(24.dp)) }
@@ -172,7 +249,7 @@ internal class ChatDetailPage : BaseComposePager() {
 }
 
 @Composable
-private fun ChatDetailHeader(conversation: Conversation?) {
+private fun ChatDetailHeader(conversation: Conversation?, onRefresh: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
     Row(
         modifier = Modifier.fillMaxWidth()
@@ -187,7 +264,7 @@ private fun ChatDetailHeader(conversation: Conversation?) {
             modifier = Modifier.clickable { Utils.currentBridgeModule().closePage() },
         )
         Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 conversation?.title ?: "会话",
                 fontSize = 17.sp,
@@ -203,6 +280,12 @@ private fun ChatDetailHeader(conversation: Conversation?) {
                 maxLines = 1,
             )
         }
+        Text(
+            "刷新",
+            fontSize = 13.sp,
+            color = KuiklyTheme.link,
+            modifier = Modifier.clickable { onRefresh() }.padding(start = 8.dp),
+        )
     }
     Spacer(Modifier.height(10.dp))
     }
@@ -216,7 +299,21 @@ private fun ChatTimeDivider(label: String) {
 }
 
 @Composable
-private fun ChatBubble(message: Message, onImageClick: (String) -> Unit) {
+private fun ChatBubble(
+    message: Message,
+    nowSeconds: Long,
+    onImageClick: (String) -> Unit,
+    onRetry: (String) -> Unit,
+    onRecall: (String) -> Unit,
+) {
+    // 撤回消息：居中灰条，不再渲染气泡。
+    if (message.isRecalled) {
+        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+            Text("你撤回了一条消息", fontSize = 12.sp, color = KuiklyTheme.muted)
+        }
+        return
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isSelf) Arrangement.End else Arrangement.Start,
@@ -233,29 +330,65 @@ private fun ChatBubble(message: Message, onImageClick: (String) -> Unit) {
                 Text(message.senderName, fontSize = 11.sp, color = KuiklyTheme.muted)
                 Spacer(Modifier.height(3.dp))
             }
-            if (message.type == MessageType.image) {
-                Box(
-                    modifier = Modifier
-                        .width(160.dp)
-                        .height(110.dp)
-                        .background(KuiklyTheme.hairline, RoundedCornerShape(KuiklyTheme.radiusSm))
-                        .clickable { onImageClick(message.imageUrl ?: message.content) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("图片消息 · 点击预览", fontSize = 12.sp, color = KuiklyTheme.body)
+            when (message.type) {
+                MessageType.image -> {
+                    Box(
+                        modifier = Modifier
+                            .width(160.dp)
+                            .height(110.dp)
+                            .background(KuiklyTheme.hairline, RoundedCornerShape(KuiklyTheme.radiusSm))
+                            .clickable { onImageClick(message.imageUrl ?: message.content) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("图片消息 · 点击预览", fontSize = 12.sp, color = KuiklyTheme.body)
+                    }
                 }
-            } else {
-                Text(message.content, fontSize = 15.sp, color = KuiklyTheme.ink)
+                MessageType.voice -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🔊", fontSize = 18.sp)
+                        Spacer(Modifier.width(6.dp))
+                        Text("${message.voiceDurationSeconds}″", fontSize = 14.sp, color = KuiklyTheme.ink)
+                    }
+                }
+                MessageType.custom -> {
+                    Column {
+                        Text(
+                            message.customPayload["title"] ?: message.customType,
+                            fontSize = 14.sp,
+                            color = KuiklyTheme.foreground,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        val sub = message.customPayload["subtitle"]
+                        if (!sub.isNullOrEmpty()) {
+                            Spacer(Modifier.height(3.dp))
+                            Text(sub, fontSize = 12.sp, color = KuiklyTheme.muted)
+                        }
+                    }
+                }
+                else -> {
+                    Text(message.content, fontSize = 15.sp, color = KuiklyTheme.ink)
+                }
             }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (message.isSelf) "已读" else "",
-                    fontSize = 10.sp,
-                    color = KuiklyTheme.muted,
-                )
-                if (message.voiceDurationSeconds > 0) {
-                    Text("${message.voiceDurationSeconds}″", fontSize = 10.sp, color = KuiklyTheme.muted)
+                val label = statusLabel(message)
+                if (label.isNotEmpty()) {
+                    val failed = message.sendStatus == SendStatus.failed
+                    Text(
+                        label,
+                        fontSize = 10.sp,
+                        color = if (failed) KuiklyTheme.error else KuiklyTheme.muted,
+                        modifier = if (failed) Modifier.clickable { onRetry(message.content) } else Modifier,
+                    )
+                }
+                if (message.isSelf && canRecall(message, nowSeconds)) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "撤回",
+                        fontSize = 10.sp,
+                        color = KuiklyTheme.link,
+                        modifier = Modifier.clickable { onRecall(message.id) },
+                    )
                 }
             }
         }
@@ -285,12 +418,37 @@ private fun ChatNoMoreTip(hasMore: Boolean, total: Int) {
 }
 
 @Composable
-private fun ChatInputPanel(draft: String, onDraftChange: (String) -> Unit, onSend: () -> Unit) {
+private fun ChatInputPanel(
+    draft: String,
+    onDraftChange: (String) -> Unit,
+    onSend: () -> Unit,
+    emojiOpen: Boolean,
+    moreOpen: Boolean,
+    onToggleEmoji: () -> Unit,
+    onToggleMore: () -> Unit,
+    onAppendEmoji: (String) -> Unit,
+    onSendImage: () -> Unit,
+    onSendVoice: () -> Unit,
+    onSendCustom: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(KuiklyTheme.canvas, RoundedCornerShape(KuiklyTheme.radiusMd))
             .padding(horizontal = 12.dp, vertical = 12.dp),
     ) {
+        if (emojiOpen) {
+            ChatEmojiPanel(onAppendEmoji = onAppendEmoji)
+            Spacer(Modifier.height(10.dp))
+        }
+        if (moreOpen) {
+            ChatMorePanel(
+                onSendImage = onSendImage,
+                onSendVoice = onSendVoice,
+                onSendCustom = onSendCustom,
+            )
+            Spacer(Modifier.height(10.dp))
+        }
+
         Text("快捷候选内容", fontSize = 12.sp, color = KuiklyTheme.muted)
         Spacer(Modifier.height(8.dp))
         CHAT_QUICK_PHRASES.forEach { phrase ->
@@ -327,6 +485,27 @@ private fun ChatInputPanel(draft: String, onDraftChange: (String) -> Unit, onSen
         }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // 表情 / 更多 切换（源 InputPanel 的 smiley + plus 按钮）
+            Box(
+                modifier = Modifier
+                    .background(KuiklyTheme.canvasSoft2, RoundedCornerShape(KuiklyTheme.radiusSm))
+                    .clickable { onToggleEmoji() }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(if (emojiOpen) "⌨" else "😊", fontSize = 14.sp, color = KuiklyTheme.body)
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .background(KuiklyTheme.canvasSoft2, RoundedCornerShape(KuiklyTheme.radiusSm))
+                    .clickable { onToggleMore() }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("⊕", fontSize = 14.sp, color = KuiklyTheme.body)
+            }
+            Spacer(Modifier.width(8.dp))
             KChip(if (draft.isBlank()) "未选择" else "已选 ${draft.length} 字", color = KuiklyTheme.muted)
             Spacer(Modifier.width(8.dp))
             Box(
@@ -350,6 +529,67 @@ private fun ChatInputPanel(draft: String, onDraftChange: (String) -> Unit, onSen
                 contentAlignment = Alignment.Center,
             ) {
                 Text("发送", fontSize = 14.sp, color = KuiklyTheme.onPrimary, fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatEmojiPanel(onAppendEmoji: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        CHAT_EMOJIS.chunked(8).forEach { row ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                row.forEach { emoji ->
+                    Box(
+                        modifier = Modifier.weight(1f).clickable { onAppendEmoji(emoji) }.padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(emoji, fontSize = 22.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatMorePanel(
+    onSendImage: () -> Unit,
+    onSendVoice: () -> Unit,
+    onSendCustom: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        CHAT_MORE_ACTIONS.forEach { action ->
+            Column(
+                modifier = Modifier.clickable {
+                    when (action) {
+                        "相册", "拍摄" -> onSendImage()
+                        "语音" -> onSendVoice()
+                        "名片" -> onSendCustom()
+                    }
+                },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    modifier = Modifier.width(52.dp).height(52.dp)
+                        .background(KuiklyTheme.canvasSoft2, RoundedCornerShape(KuiklyTheme.radiusMd)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        when (action) {
+                            "相册" -> "🖼"
+                            "拍摄" -> "📷"
+                            "语音" -> "🎤"
+                            else -> "📇"
+                        },
+                        fontSize = 22.sp,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(action, fontSize = 12.sp, color = KuiklyTheme.body)
             }
         }
     }

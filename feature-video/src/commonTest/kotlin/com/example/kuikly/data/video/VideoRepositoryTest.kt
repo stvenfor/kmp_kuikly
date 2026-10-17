@@ -84,4 +84,57 @@ class VideoRepositoryTest {
         assertTrue(VideoRepository().fetchById("v1").isFailure)
         MockBackend.scenario = MockScenario.Success
     }
+
+    @Test
+    fun `my videos returns only mine`() {
+        MockBackend.scenario = MockScenario.Success
+        val list = VideoRepository().myVideos().getOrThrow()
+        assertTrue(list.isNotEmpty())
+        assertTrue(list.all { it.isMine })
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `leaderboard returned`() {
+        MockBackend.scenario = MockScenario.Success
+        val board = VideoRepository().leaderboard("v1").getOrThrow()
+        assertEquals(3, board.size)
+        assertTrue(board.all { it.likeCount > 0 })
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `report view increments count`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = VideoRepository()
+        val before = repo.fetchById("v2").getOrThrow().viewCount
+        val after = repo.reportView("v2").getOrThrow()
+        assertEquals(before + 1, after)
+        assertEquals(after, repo.fetchById("v2").getOrThrow().viewCount)
+        assertTrue(repo.reportView("missing").isFailure)
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `delete removes video`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = VideoRepository()
+        assertTrue(repo.fetchById("v1").isSuccess)
+        repo.delete("v1").getOrThrow()
+        assertTrue(repo.fetchById("v1").isFailure)
+        assertTrue(repo.delete("missing").isFailure)
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `add comment bumps count and stores`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = VideoRepository()
+        val before = repo.fetchById("v1").getOrThrow().commentCount
+        val c = repo.addComment("v1", "学到了").getOrThrow()
+        assertEquals("学到了", c.content)
+        assertEquals(before + 1, repo.fetchById("v1").getOrThrow().commentCount)
+        assertTrue(repo.addComment("v1", "   ").isFailure)
+        MockBackend.scenario = MockScenario.Success
+    }
 }

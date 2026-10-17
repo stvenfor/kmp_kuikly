@@ -31,25 +31,78 @@ import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
+// 搜索预设关键词（mock 无输入框，用关键词 chips 触发 repo.searchConversations）。
+private val CHAT_SEARCH_KEYWORDS = listOf("增长", "张敏", "李工", "原型", "复盘")
+
 @Page("ChatList")
 internal class ChatListPage : BaseComposePager() {
     override fun willInit() {
         super.willInit()
         setContent {
             var list by remember { mutableStateOf<List<com.example.kuikly.data.chat.Conversation>>(emptyList()) }
+            var displayList by remember { mutableStateOf<List<com.example.kuikly.data.chat.Conversation>>(emptyList()) }
             var error by remember { mutableStateOf<String?>(null) }
             var booted by remember { mutableStateOf(false) }
+            var searchOpen by remember { mutableStateOf(false) }
+            var query by remember { mutableStateOf("") }
 
             fun reload() {
-                ChatStore.repo.page(1, 50).onSuccess { list = it.items }.onFailure { error = it.message }
+                ChatStore.repo.page(1, 50).onSuccess { r ->
+                    list = r.items
+                    if (!searchOpen) displayList = r.items
+                }.onFailure { error = it.message }
+            }
+            fun applySearch() {
+                if (!searchOpen || query.isBlank()) { displayList = list; return }
+                ChatStore.repo.searchConversations(query)
+                    .onSuccess { displayList = it }
+                    .onFailure { displayList = emptyList() }
             }
             if (!booted) { booted = true; reload() }
 
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Text("消息", fontSize = 22.sp, color = KuiklyTheme.foreground, fontWeight = com.tencent.kuikly.compose.ui.text.font.FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("消息", fontSize = 22.sp, color = KuiklyTheme.foreground, fontWeight = com.tencent.kuikly.compose.ui.text.font.FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        if (searchOpen) "✕" else "🔍",
+                        fontSize = 18.sp,
+                        color = KuiklyTheme.link,
+                        modifier = Modifier.clickable {
+                            searchOpen = !searchOpen
+                            if (!searchOpen) { query = ""; displayList = list }
+                            else applySearch()
+                        }.padding(6.dp),
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
+                if (searchOpen) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        CHAT_SEARCH_KEYWORDS.forEach { kw ->
+                            val selected = query == kw
+                            Box(
+                                modifier = Modifier.padding(end = 8.dp)
+                                    .background(
+                                        if (selected) KuiklyTheme.link else KuiklyTheme.canvasSoft2,
+                                        RoundedCornerShape(KuiklyTheme.radiusPill),
+                                    )
+                                    .clickable {
+                                        query = if (selected) "" else kw
+                                        applySearch()
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                            ) {
+                                Text(kw, fontSize = 12.sp, color = if (selected) KuiklyTheme.onPrimary else KuiklyTheme.body)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
                 if (error != null) Text("Error: $error", color = Color.Red, fontSize = 14.sp)
-                list.forEach { c ->
+                displayList.forEach { c ->
                     Row(
                         modifier = Modifier.fillMaxWidth()
                             .clickable { Utils.currentBridgeModule().openPage("ChatDetail", userData = JSONObject().apply { put("id", c.id) }) }
@@ -67,6 +120,19 @@ internal class ChatListPage : BaseComposePager() {
                                 Text(c.unreadCount.toString(), fontSize = 11.sp, color = Color.White)
                             }
                         }
+                    }
+                }
+                if (displayList.isEmpty()) {
+                    // 源 ConversationListEmpty / "没有匹配的会话"：列表空 与 搜索无结果 两种空态。
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            if (searchOpen) "没有匹配的会话" else "暂无会话",
+                            fontSize = 14.sp,
+                            color = KuiklyTheme.muted,
+                        )
                     }
                 }
                 Spacer(Modifier.height(16.dp))

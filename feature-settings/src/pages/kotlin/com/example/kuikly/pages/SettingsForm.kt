@@ -190,6 +190,22 @@ fun SettingsChip(text: String, selected: Boolean = false, color: Color = KuiklyT
     }
 }
 
+/** 五星评分：点击第 n 颗星即评为 n 分（1..5）。 */
+@Composable
+fun SettingsStarRating(stars: Int, onRate: (Int) -> Unit = {}) {
+    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+        for (i in 1..5) {
+            val filled = i <= stars
+            Text(
+                if (filled) "★" else "☆",
+                fontSize = 22.sp,
+                color = if (filled) KuiklyTheme.warningDeep else KuiklyTheme.hairlineStrong,
+                modifier = Modifier.clickable { onRate(i) }.padding(horizontal = 2.dp),
+            )
+        }
+    }
+}
+
 /** 文本输入区：候选词追加 + 退格 + 清空（无 TextField 时的替代方案）。 */
 @Composable
 fun SettingsTextInput(

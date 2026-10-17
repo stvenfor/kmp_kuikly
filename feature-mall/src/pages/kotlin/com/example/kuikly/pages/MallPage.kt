@@ -10,6 +10,7 @@ import com.example.kuikly.base.Utils
 import com.example.kuikly.data.mall.MallStore
 import com.example.kuikly.data.mall.Product
 import com.example.kuikly.data.mock.MockBackend
+import com.example.kuikly.data.mock.MockScenario
 import com.example.kuikly.design.KButton
 import com.example.kuikly.design.KCard
 import com.example.kuikly.design.KChip
@@ -50,21 +51,23 @@ internal class MallPage : BaseComposePager() {
             var error by remember { mutableStateOf<String?>(null) }
             var empty by remember { mutableStateOf(false) }
             var booted by remember { mutableStateOf(false) }
+            var filter by remember { mutableStateOf(2) } // 0积分 1热兑 2上新 3筛选
 
             fun reload() {
-                MallStore.repo.page(1, 50)
-                    .onSuccess {
-                        items = it.items
-                        empty = it.items.isEmpty()
-                        error = null
-                    }
-                    .onFailure {
-                        items = emptyList()
-                        empty = false
-                        error = it.message ?: "加载失败"
-                    }
+                val list = if (MockBackend.scenario == MockScenario.Error) {
+                    emptyList()
+                } else {
+                    MallStore.repo.browse(filter)
+                }
+                items = list
+                empty = list.isEmpty()
+                error = if (MockBackend.scenario == MockScenario.Error) "加载失败" else null
                 cartCount = MallStore.repo.cartCount()
                 subtotal = MallStore.repo.cartSubtotalLabel()
+            }
+
+            fun openCart() {
+                Utils.currentBridgeModule().openPage(url = "MallCart", userData = JSONObject())
             }
 
             if (!booted) {
@@ -91,6 +94,34 @@ internal class MallPage : BaseComposePager() {
                     )
                 }
 
+                // 商品筛选 / 排序（port of source 积分 / 热兑 / 上新 / 筛选）
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(KuiklyTheme.canvas)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    val tabs = listOf(0 to "积分", 1 to "热兑", 2 to "上新", 3 to "筛选")
+                    tabs.forEach { (idx, label) ->
+                        val selectedTab = filter == idx
+                        Box(
+                            modifier = Modifier.padding(end = 8.dp)
+                                .background(
+                                    if (selectedTab) KuiklyTheme.primary else KuiklyTheme.canvasSoft2,
+                                    RoundedCornerShape(KuiklyTheme.radiusPill),
+                                )
+                                .clickable { filter = idx; reload() }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                label,
+                                fontSize = 12.sp,
+                                color = if (selectedTab) KuiklyTheme.onPrimary else KuiklyTheme.body,
+                                fontWeight = if (selectedTab) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        }
+                    }
+                }
+
                 when {
                     error != null && items.isEmpty() -> MallErrorState(message = error!!, onRetry = ::reload)
                     empty -> MallEmptyState(onRefresh = ::reload)
@@ -98,10 +129,15 @@ internal class MallPage : BaseComposePager() {
                         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
                         item {
-                            MallCartBar(count = cartCount, subtotal = subtotal, onClear = {
-                                MallStore.repo.clearCart()
-                                reload()
-                            })
+                            MallCartBar(
+                                count = cartCount,
+                                subtotal = subtotal,
+                                onOpen = ::openCart,
+                                onClear = {
+                                    MallStore.repo.clearCart()
+                                    reload()
+                                },
+                            )
                             Spacer(Modifier.height(8.dp))
                         }
                         items(items) { p ->
@@ -137,8 +173,8 @@ internal class MallPage : BaseComposePager() {
 }
 
 @Composable
-private fun MallCartBar(count: Int, subtotal: String, onClear: () -> Unit) {
-    KCard {
+private fun MallCartBar(count: Int, subtotal: String, onOpen: () -> Unit, onClear: () -> Unit) {
+    KCard(modifier = Modifier.clickable { onOpen() }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -150,16 +186,7 @@ private fun MallCartBar(count: Int, subtotal: String, onClear: () -> Unit) {
                 Text("合计 $subtotal", fontSize = 16.sp, color = KuiklyTheme.link, fontWeight = FontWeight.Bold)
             }
             Column(horizontalAlignment = Alignment.End) {
-                KButton(text = "去结算", enabled = count > 0, onClick = {
-                    val order = MallStore.repo.placeOrder()
-                    order.onSuccess {
-                        val data = JSONObject()
-                        data.put("id", it.orderId)
-                        Utils.currentBridgeModule().openPage(url = "MallOrderDetail", userData = data)
-                    }.onFailure {
-                        Utils.currentBridgeModule().toast(it.message ?: "下单失败")
-                    }
-                })
+                KButton(text = "去结算", enabled = count > 0, onClick = onOpen)
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "清空",

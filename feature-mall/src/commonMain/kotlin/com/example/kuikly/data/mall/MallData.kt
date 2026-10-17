@@ -19,8 +19,10 @@ data class Product(
     val soldLabel: String?,
     val badges: List<String>,
     val stockQty: Int = 99,
+    val kind: Int = 0,
+    val sold: Int = 0,
 ) {
-    val isVirtual: Boolean get() = skuId % 2 == 1
+    val isVirtual: Boolean get() = kind == 1
     val priceLabel: String get() = if (points != null && points > 0) "$points 积分" else formatYuan(price)
 }
 
@@ -75,11 +77,22 @@ data class CartLine(
     val coverUrl: String,
     val unitPrice: Double,
     val qty: Int,
+    val kind: Int = 0,
 ) {
     val lineAmount: Double get() = unitPrice * qty
     val lineAmountLabel: String get() = formatYuan(lineAmount)
     val unitPriceLabel: String get() = formatYuan(unitPrice)
 }
+
+/** 收货地址（port of source WysAddressChooseBridge 地址簿）。 */
+data class Address(
+    val id: String,
+    val name: String,
+    val phone: String,
+    val detail: String,   // 完整收货地址
+    val tag: String = "", // 家 / 公司
+    val isDefault: Boolean = false,
+)
 
 /** 订单行（port of source MallOrderItem）。 */
 data class OrderItem(
@@ -191,9 +204,9 @@ data class Order(
 
 class MallRepository : BaseMockRepository<Product>() {
     private val products = listOf(
-        Product("pd1", 101, "降噪无线耳机", 1299.0, "https://picsum.photos/seed/pd1/400", "主动降噪 · 30h 续航", null, "已兑1.2万", listOf("热销", "包邮"), 42),
-        Product("pd2", 202, "视频会员月卡", 25.0, "https://picsum.photos/seed/pd2/400", "全平台通用", null, null, listOf("虚拟"), 9999),
-        Product("pd3", 303, "定制保温杯", 1500.0, "https://picsum.photos/seed/pd3/400", "积分专享", 1500, "已兑3200", listOf("积分"), 8),
+        Product("pd1", 101, "降噪无线耳机", 1299.0, "https://picsum.photos/seed/pd1/400", "主动降噪 · 30h 续航", null, "已兑1.2万", listOf("热销", "包邮"), 42, sold = 12000),
+        Product("pd2", 202, "视频会员月卡", 25.0, "https://picsum.photos/seed/pd2/400", "全平台通用", null, "已兑9.9万", listOf("虚拟"), 9999, sold = 99000),
+        Product("pd3", 303, "定制保温杯", 1500.0, "https://picsum.photos/seed/pd3/400", "积分专享", 1500, "已兑3200", listOf("积分"), 8, sold = 3200),
     )
 
     private val details: Map<String, ProductDetail> = mapOf(
@@ -252,6 +265,13 @@ class MallRepository : BaseMockRepository<Product>() {
     )
 
     private val cart = mutableMapOf<String, Int>() // productId -> qty
+    private val selected = mutableSetOf<String>()  // 购物车选中的 productId
+    private val addressBook = listOf(
+        Address("a1", "张三", "138****8888", "深圳市南山区科技园 1 号楼", "家", true),
+        Address("a2", "李四", "139****6666", "广州市天河区珠江新城 2 座", "公司"),
+        Address("a3", "王五", "137****1234", "北京市朝阳区建国路 88 号", "学校"),
+    )
+    private var selectedAddressId: String = "a1"
     private val orderTable = mutableListOf(
         Order(1, "NO20240501001", 0, 1299.0, "2024-05-01", listOf(OrderItem(11, 1, "降噪无线耳机", "https://picsum.photos/seed/pd1/400", 1, 1299.0, "")),
             receiverName = "张三", receiverPhone = "138****8888", receiverAddress = "深圳市南山区科技园 1 号楼", payDeadlineAt = "2024-05-01 23:59"),
@@ -285,11 +305,20 @@ class MallRepository : BaseMockRepository<Product>() {
 
     // --- 购物车 ---
 
-    fun addToCart(productId: String, qty: Int = 1): Int = setCartQty(productId, quantityOf(productId) + qty)
+    fun addToCart(productId: String, qty: Int = 1): Int {
+        setCartQty(productId, quantityOf(productId) + qty)
+        selected.add(productId)
+        return cartCount()
+    }
 
     fun setCartQty(productId: String, qty: Int): Int {
         val safe = qty.coerceAtLeast(0)
-        if (safe == 0) cart.remove(productId) else cart[productId] = safe
+        if (safe == 0) {
+            cart.remove(productId)
+            selected.remove(productId)
+        } else {
+            cart[productId] = safe
+        }
         return cartCount()
     }
 
@@ -302,7 +331,7 @@ class MallRepository : BaseMockRepository<Product>() {
     // 同一商品合并为一行，天然去重。
     fun cartLines(): List<CartLine> = cart.entries.mapNotNull { (pid, qty) ->
         products.find { it.id == pid }?.let { p ->
-            CartLine(p.id, p.skuId, p.title, p.coverUrl, p.price, qty)
+            CartLine(p.id, p.skuId, p.title, p.coverUrl, p.price, qty, if (p.isVirtual) 1 else 0)
         }
     }
 
@@ -310,8 +339,61 @@ class MallRepository : BaseMockRepository<Product>() {
 
     fun cartSubtotalLabel(): String = formatYuan(cartSubtotal())
 
+    // --- 购物车选中态（增删改 / 全选 / 选中合计） ---
+
+    fun isSelected(productId: String): Boolean = selected.contains(productId)
+
+    fun selectedKeys(): Set<String> = selected.toSet()
+
+    fun toggleSelect(productId: String) {
+        if (selected.contains(productId)) selected.remove(productId) else selected.add(productId)
+    }
+
+    fun selectAll(on: Boolean) {
+        if (on) selected.addAll(cart.keys) else selected.clear()
+    }
+
+    fun allSelected(): Boolean = cart.isNotEmpty() && selected.containsAll(cart.keys)
+
+    fun selectedLines(): List<CartLine> = cartLines().filter { selected.contains(it.productId) }
+
+    fun selectedCount(): Int = selectedLines().sumOf { it.qty }
+
+    fun selectedSubtotal(): Double = selectedLines().sumOf { it.lineAmount }
+
+    fun selectedSubtotalLabel(): String = formatYuan(selectedSubtotal())
+
+    fun removeSelected(): Int {
+        selected.toList().forEach { cart.remove(it) }
+        selected.clear()
+        return cartCount()
+    }
+
+    // --- 地址簿（port of source 地址选择桥） ---
+
+    fun addresses(): List<Address> = addressBook
+
+    fun selectedAddress(): Address? = addressBook.firstOrNull { it.id == selectedAddressId }
+
+    fun selectAddress(id: String) {
+        selectedAddressId = id
+    }
+
+    // --- 商品筛选 / 排序（port of source 积分 / 热兑 / 上新 / 筛选） ---
+
+    fun browse(filterIndex: Int): List<Product> {
+        val base = products
+        return when (filterIndex) {
+            0 -> base.filter { (it.points ?: 0) > 0 }       // 积分兑换
+            1 -> base.sortedByDescending { it.sold }          // 热兑（按已兑降序）
+            2 -> base                                          // 上新（种子顺序）
+            else -> base                                        // 筛选（默认全部）
+        }
+    }
+
     fun clearCart() {
         cart.clear()
+        selected.clear()
     }
 
     // --- 下单 ---
@@ -339,8 +421,25 @@ class MallRepository : BaseMockRepository<Product>() {
         if (safeQty > product.stockQty) {
             return Result.failure(IllegalStateException("库存不足，仅剩 ${product.stockQty} 件"))
         }
-        val line = CartLine(product.id, product.skuId, product.title, product.coverUrl, product.price, safeQty)
+        val line = CartLine(product.id, product.skuId, product.title, product.coverUrl, product.price, safeQty, if (product.isVirtual) 1 else 0)
         return Result.success(buildOrder(listOf(line), line.lineAmount, product.points ?: 0, receiverName, receiverPhone, receiverAddress))
+    }
+
+    // 结算流程：按购物车「选中」行创建订单，并从购物车移除这些行（port of source createOrder）。
+    fun placeSelectedOrder(
+        receiverName: String = "",
+        receiverPhone: String = "",
+        receiverAddress: String = "",
+    ): Result<Order> {
+        val lines = selectedLines()
+        if (lines.isEmpty()) return Result.failure(IllegalStateException("请至少选择一件商品"))
+        val total = lines.sumOf { it.lineAmount }
+        val points = lines.sumOf { products.find { p -> p.id == it.productId }?.points ?: 0 }
+        val removed = selected.toList()
+        val order = buildOrder(lines, total, points, receiverName, receiverPhone, receiverAddress)
+        removed.forEach { cart.remove(it) }
+        selected.clear()
+        return Result.success(order)
     }
 
     private fun buildOrder(

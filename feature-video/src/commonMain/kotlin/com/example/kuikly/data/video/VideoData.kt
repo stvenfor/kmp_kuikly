@@ -5,6 +5,32 @@ import com.example.kuikly.data.Paged
 
 enum class ShortVideoStatus { draft, published, reviewing }
 
+/** 视频作者主页资料（port of source `ShortVideoProfileModel`）。 */
+data class VideoProfile(
+    val displayName: String,
+    val avatarUrl: String,
+    val roleBadge: String,
+    val storeName: String,
+    val isMe: Boolean,
+    val stats: VideoProfileStats,
+)
+
+/** 视频资料统计（port of source `ShortVideoStatsModel`）。 */
+data class VideoProfileStats(
+    val videoCount: Int,
+    val viewCount: Int,
+    val likeCount: Int,
+)
+
+/** 视频评论（port of source 评论列表）。 */
+data class VideoComment(
+    val id: String,
+    val authorName: String,
+    val content: String,
+    val likeCount: Int,
+    val createdAt: String,
+)
+
 /** 视频专辑分集（port of source DubbingAlbumPart）。 */
 data class VideoAlbumPart(
     val id: String,
@@ -38,6 +64,7 @@ data class ShortVideo(
     val albumCount: Int = 0,
     val tags: List<String> = emptyList(),
     val albumParts: List<VideoAlbumPart> = emptyList(),
+    val commentCount: Int = 0,
 ) {
     val uploaderLabel: String get() = if (uploaderName.isBlank()) nickname else uploaderName
 
@@ -92,7 +119,7 @@ private fun compactCount(n: Int): String = when {
 }
 
 class VideoRepository : BaseMockRepository<ShortVideo>() {
-    private val videos = listOf(
+    private val videos = mutableListOf(
         ShortVideo(
             id = "v1",
             title = "露营的一天",
@@ -242,6 +269,10 @@ class VideoRepository : BaseMockRepository<ShortVideo>() {
         ),
     )
 
+    private val favoriteMap = mutableMapOf<String, Boolean>()
+    private val viewBump = mutableMapOf<String, Int>()
+    private val commentMap = mutableMapOf<String, MutableList<VideoComment>>()
+
     private val dubbing = mutableListOf(
         DubbingTask("d1", "v3", "en", 0.6, "running", "城市夜骑"),
         DubbingTask("d2", "v1", "ja", 1.0, "done", "露营的一天"),
@@ -310,6 +341,162 @@ class VideoRepository : BaseMockRepository<ShortVideo>() {
         )
         dubbing[index] = updated
         return Result.success(updated)
+    }
+
+    // ── 点赞 / 收藏（port of source toggleLike + 收藏） ──
+
+    /** 切换点赞；返回更新后的视频（likeCount 与 isLiked 同步）。 */
+    fun toggleLike(id: String, liked: Boolean): Result<ShortVideo> {
+        val index = videos.indexOfFirst { it.id == id }
+        if (index < 0) return Result.failure(NoSuchElementException("video=$id"))
+        val old = videos[index]
+        val delta = when {
+            liked && !old.isLiked -> 1
+            !liked && old.isLiked -> -1
+            else -> 0
+        }
+        val updated = old.copy(isLiked = liked, likeCount = (old.likeCount + delta).coerceAtLeast(0))
+        videos[index] = updated
+        return Result.success(updated)
+    }
+
+    /** 切换收藏；返回切换后的状态。 */
+    fun favorite(id: String): Result<Boolean> {
+        if (videos.none { it.id == id }) return Result.failure(NoSuchElementException("video=$id"))
+        val next = !(favoriteMap[id] ?: false)
+        favoriteMap[id] = next
+        return Result.success(next)
+    }
+
+    fun isFavorited(id: String): Boolean = favoriteMap[id] ?: false
+
+    /** 上报播放，播放量 +1（port of source reportView）。 */
+    fun reportView(id: String): Result<Int> {
+        val index = videos.indexOfFirst { it.id == id }
+        if (index < 0) return Result.failure(NoSuchElementException("video=$id"))
+        val old = videos[index]
+        val updated = old.copy(viewCount = old.viewCount + 1)
+        videos[index] = updated
+        return Result.success(updated.viewCount)
+    }
+
+    // ── 上传 / 删除（port of source create / delete） ──
+
+    /** 发布小视频（mock 上传：标题校验 + 默认片源，状态置为审核中）。 */
+    fun publish(title: String, topicId: String? = null): Result<ShortVideo> {
+        val name = title.trim()
+        if (name.isEmpty()) return Result.failure(IllegalArgumentException("标题不能为空"))
+        if (name.length > 50) return Result.failure(IllegalArgumentException("标题最多 50 字"))
+        val id = "v_up_${videos.size + 1}"
+        val item = ShortVideo(
+            id = id,
+            title = name,
+            coverUrl = "https://picsum.photos/seed/$id/400",
+            videoUrl = "https://v/$id.mp4",
+            viewCount = 0,
+            likeCount = 0,
+            duration = "00:15",
+            aspectRatio = 0.5625,
+            status = ShortVideoStatus.reviewing,
+            isLiked = false,
+            isMine = true,
+            nickname = "我",
+            topicName = null,
+            desc = "由我发布的小视频（mock 上传，使用默认片源，封面仅供预览）。",
+            category = "我的",
+            dislikeCount = 0,
+            sentenceCount = 0,
+            difficulty = "PreA1",
+            uploaderName = "我",
+            subtitleEn = "",
+            subtitleZh = "",
+            albumCount = 0,
+            tags = if (topicId.isNullOrBlank()) listOf("我的") else listOf("我的", topicId),
+            albumParts = emptyList(),
+            commentCount = 0,
+        )
+        videos.add(0, item)
+        return Result.success(item)
+    }
+
+    fun delete(id: String): Result<Unit> {
+        val removed = videos.removeIf { it.id == id }
+        if (!removed) return Result.failure(NoSuchElementException("video=$id"))
+        favoriteMap.remove(id)
+        commentMap.remove(id)
+        return Result.success(Unit)
+    }
+
+    // ── 个人资料（port of source fetchProfile） ──
+
+    fun fetchProfile(): Result<VideoProfile> {
+        val mine = videos.filter { it.isMine }
+        val stats = VideoProfileStats(
+            videoCount = mine.size,
+            viewCount = mine.sumOf { it.viewCount },
+            likeCount = mine.sumOf { it.likeCount },
+        )
+        return Result.success(
+            VideoProfile(
+                displayName = "我",
+                avatarUrl = "https://picsum.photos/seed/mine_profile/200",
+                roleBadge = "销售顾问",
+                storeName = "[4S]北京沃德龙鼎吉利",
+                isMe = true,
+                stats = stats,
+            ),
+        )
+    }
+
+    // ── 推荐 / 历史（port of source 猜你喜欢 / 观看历史） ──
+
+    fun recommend(): Result<List<ShortVideo>> = Result.success(videos.filter { !it.isMine })
+
+    fun history(): Result<List<ShortVideo>> =
+        Result.success(videos.filter { progressOf(it.id) > 0.0 || playedSecOf(it.id) > 0 })
+
+    // ── 我的视频（port of source ShortVideoPage gridItems / profile 关联） ──
+
+    /** 仅返回本人发布的视频（isMine），用于资料页「我的视频」管理。 */
+    fun myVideos(): Result<List<ShortVideo>> = Result.success(videos.filter { it.isMine })
+
+    // ── 点赞榜（port of source DubbingVideoDetailPage 点赞榜 section） ──
+
+    /**
+     * 视频点赞榜。源的 `DubbingLeaderboardEntry`（rank/avatarUrl/level 等）在本工程以
+     * 轻量 `VideoLeaderboard` 承载；此处返回固定 mock 榜单，level 字段映射源的 V 等级。
+     */
+    fun leaderboard(videoId: String = ""): Result<List<VideoLeaderboard>> {
+        val seed = listOf(
+            VideoLeaderboard("美诺明年夏天见", "2020-11-03", "杭州市", 11000, "V5"),
+            VideoLeaderboard("小趣友宁Sir", "2020-11-02", "北京", 9200, "V4"),
+            VideoLeaderboard("唯有爱与美不可辜负", "2020-11-01", "上海", 8100, "V4"),
+        )
+        return Result.success(seed)
+    }
+
+    // ── 评论（port of source 评论列表） ──
+
+    fun comments(videoId: String): Result<List<VideoComment>> {
+        val list = commentMap.getOrPut(videoId) { mutableListOf() }
+        return Result.success(list.toList())
+    }
+
+    fun addComment(videoId: String, content: String, authorName: String = "我"): Result<VideoComment> {
+        val text = content.trim()
+        if (text.isEmpty()) return Result.failure(IllegalArgumentException("评论内容不能为空"))
+        val list = commentMap.getOrPut(videoId) { mutableListOf() }
+        val comment = VideoComment(
+            id = "c_${list.size + 1}_$videoId",
+            authorName = authorName,
+            content = text,
+            likeCount = 0,
+            createdAt = "刚刚",
+        )
+        list.add(0, comment)
+        val index = videos.indexOfFirst { it.id == videoId }
+        if (index >= 0) videos[index] = videos[index].copy(commentCount = videos[index].commentCount + 1)
+        return Result.success(comment)
     }
 }
 

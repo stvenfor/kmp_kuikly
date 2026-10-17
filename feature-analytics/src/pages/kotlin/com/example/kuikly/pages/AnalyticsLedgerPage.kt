@@ -9,7 +9,9 @@ import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.analytics.AnalyticsLedgerEntry
 import com.example.kuikly.data.analytics.AnalyticsLedgerStore
+import com.example.kuikly.data.analytics.LedgerAnalysis
 import com.example.kuikly.data.analytics.LedgerSummary
+import com.example.kuikly.data.analytics.analyzeLedger
 import com.example.kuikly.design.KCard
 import com.example.kuikly.design.KChip
 import com.example.kuikly.design.KuiklyTheme
@@ -49,8 +51,10 @@ internal class AnalyticsLedgerPage : BaseComposePager() {
             var isLoading by remember { mutableStateOf(true) }
             var entries by remember { mutableStateOf<List<AnalyticsLedgerEntry>>(emptyList()) }
             var summary by remember { mutableStateOf<LedgerSummary?>(null) }
+            var analysis by remember { mutableStateOf<LedgerAnalysis?>(null) }
             var error by remember { mutableStateOf<String?>(null) }
             var tabIndex by remember { mutableStateOf(0) }
+            var categoryFilter by remember { mutableStateOf<String?>(null) }
 
             fun load() {
                 val rows = AnalyticsLedgerStore.repo.page(1, 50)
@@ -59,10 +63,13 @@ internal class AnalyticsLedgerPage : BaseComposePager() {
                 if (failure != null) {
                     entries = emptyList()
                     summary = null
+                    analysis = null
                     error = failure.message ?: "账单加载失败"
                 } else {
-                    entries = rows.getOrThrow().items
+                    val items = rows.getOrThrow().items
+                    entries = items
                     summary = totals.getOrThrow()
+                    analysis = analyzeLedger(items)
                     error = null
                 }
                 isLoading = false
@@ -72,6 +79,8 @@ internal class AnalyticsLedgerPage : BaseComposePager() {
                 error = null
                 entries = emptyList()
                 summary = null
+                analysis = null
+                categoryFilter = null
                 isLoading = true
                 booted = false
             }
@@ -83,10 +92,15 @@ internal class AnalyticsLedgerPage : BaseComposePager() {
                 load()
             }
 
-            val visibleEntries = when (tabIndex) {
+            val baseEntries = when (tabIndex) {
                 1 -> entries.filter { it.isIncome }
                 2 -> entries.filter { !it.isIncome }
                 else -> entries
+            }
+            val visibleEntries = if (categoryFilter == null) {
+                baseEntries
+            } else {
+                baseEntries.filter { it.category == categoryFilter }
             }
 
             Column(modifier = Modifier.fillMaxSize().background(KuiklyTheme.canvasSoft2)) {
@@ -111,8 +125,40 @@ internal class AnalyticsLedgerPage : BaseComposePager() {
                                 options = LEDGER_TABS,
                                 selectedIndex = tabIndex,
                                 cellWidth = 84,
-                                onSelect = { tabIndex = it },
+                                onSelect = {
+                                    tabIndex = it
+                                    categoryFilter = null
+                                },
                             )
+                        }
+                        if (analysis != null) {
+                            item {
+                                LedgerCategoryBreakdown(analysis = analysis!!, onPick = { categoryFilter = it })
+                                Spacer(Modifier.height(12.dp))
+                            }
+                            item {
+                                LedgerMonthTrend(analysis = analysis!!)
+                                Spacer(Modifier.height(12.dp))
+                            }
+                        }
+                        if (categoryFilter != null) {
+                            item {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    KChip("品类：$categoryFilter", color = KuiklyTheme.link)
+                                    Spacer(Modifier.width(8.dp))
+                                    Box(
+                                        modifier = Modifier.clickable { categoryFilter = null }
+                                            .background(KuiklyTheme.canvasSoft, RoundedCornerShape(KuiklyTheme.radiusSm))
+                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    ) {
+                                        Text("清除筛选", fontSize = 12.sp, color = KuiklyTheme.muted)
+                                    }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
                         }
                         if (visibleEntries.isEmpty()) {
                             item {
@@ -195,5 +241,64 @@ private fun LedgerRow(entry: AnalyticsLedgerEntry, onTap: () -> Unit) {
             }
         }
         Text(entry.amountLabel, fontSize = 16.sp, color = amountColor, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** 品类分布（明细下钻入口）：每类一行，进度条表示占总流动份额。 */
+@Composable
+private fun LedgerCategoryBreakdown(analysis: LedgerAnalysis, onPick: (String) -> Unit) {
+    KCard {
+        Text("品类分布", fontSize = 14.sp, color = KuiklyTheme.ink, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "客单价 ${analysis.avgTicketLabel} · 储蓄率 ${analysis.savingsRateLabel}" +
+                if (analysis.largestExpense != null) " · 最大单笔 ${analysis.largestExpense!!.amountLabel}" else "",
+            fontSize = 12.sp, color = KuiklyTheme.muted,
+        )
+        Spacer(Modifier.height(10.dp))
+        analysis.topCategories(6).forEach { stat ->
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { onPick(stat.category) }.padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stat.category, fontSize = 13.sp, color = KuiklyTheme.body, modifier = Modifier.width(56.dp))
+                Spacer(Modifier.width(8.dp))
+                AnalyticsProgressBar(ratio = stat.share, label = "${stat.shareLabel} · ${stat.amountLabel}")
+            }
+        }
+    }
+}
+
+/** 月度收支走势：收入(绿)/支出(红)双条归一对比。 */
+@Composable
+private fun LedgerMonthTrend(analysis: LedgerAnalysis) {
+    val months = analysis.byMonth
+    val maxVal = (months.maxOfOrNull { kotlin.math.max(it.income, it.expense) } ?: 0.0).coerceAtLeast(0.01)
+    KCard {
+        Text("月度收支", fontSize = 14.sp, color = KuiklyTheme.ink, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        months.forEach { m ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(m.month, fontSize = 12.sp, color = KuiklyTheme.muted, modifier = Modifier.width(64.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth((m.income / maxVal).toFloat())
+                            .height(8.dp)
+                            .background(KuiklyTheme.success, RoundedCornerShape(KuiklyTheme.radiusPill)),
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Box(
+                        modifier = Modifier.fillMaxWidth((m.expense / maxVal).toFloat())
+                            .height(8.dp)
+                            .background(KuiklyTheme.error, RoundedCornerShape(KuiklyTheme.radiusPill)),
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(m.balanceLabel, fontSize = 12.sp, color = KuiklyTheme.foreground, fontWeight = FontWeight.Medium, modifier = Modifier.width(80.dp))
+            }
+        }
     }
 }

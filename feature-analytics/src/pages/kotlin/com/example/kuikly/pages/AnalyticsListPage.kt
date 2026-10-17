@@ -9,8 +9,12 @@ import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.analytics.AnalyticsRecord
 import com.example.kuikly.data.analytics.AnalyticsStore
+import com.example.kuikly.data.analytics.RecordSortKey
+import com.example.kuikly.data.analytics.aggregateRecords
+import com.example.kuikly.data.analytics.sortRecordsBy
 import com.example.kuikly.data.mock.MockBackend
 import com.example.kuikly.design.KChip
+import com.example.kuikly.design.KCard
 import com.example.kuikly.design.KMetricPill
 import com.example.kuikly.design.KuiklyTheme
 import com.tencent.kuikly.compose.foundation.background
@@ -40,6 +44,15 @@ import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
+private val SORT_KEYS = listOf(
+    RecordSortKey.DEFAULT,
+    RecordSortKey.PV,
+    RecordSortKey.REVENUE,
+    RecordSortKey.ROI,
+    RecordSortKey.CONVERSION,
+)
+private val SORT_LABELS = listOf("默认", "PV", "收入", "ROI", "转化")
+
 @Page("AnalyticsList")
 internal class AnalyticsListPage : BaseComposePager() {
     override fun willInit() {
@@ -55,6 +68,7 @@ internal class AnalyticsListPage : BaseComposePager() {
             var total by remember { mutableStateOf(0) }
             var page by remember { mutableStateOf(0) }
             var booted by remember { mutableStateOf(false) }
+            var sortKey by remember { mutableStateOf(RecordSortKey.DEFAULT) }
 
             fun reload() {
                 scenario = MockBackend.scenario
@@ -99,6 +113,9 @@ internal class AnalyticsListPage : BaseComposePager() {
                 reload()
             }
 
+            val aggregate = remember(items) { if (items.isEmpty()) null else aggregateRecords(items) }
+            val visibleItems = remember(items, sortKey) { sortRecordsBy(items, sortKey) }
+
             Column(modifier = Modifier.fillMaxSize().background(KuiklyTheme.canvasSoft2)) {
                 if (items.isNotEmpty()) {
                     SummaryBar(page = page, total = total, count = items.size)
@@ -114,7 +131,21 @@ internal class AnalyticsListPage : BaseComposePager() {
                         modifier = Modifier.fillMaxSize()
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
-                        items(items, key = { it.id }) { item ->
+                        if (aggregate != null) {
+                            item {
+                                AnalyticsAggregateBar(aggregate = aggregate!!)
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
+                        item {
+                            AnalyticsSegments(
+                                options = SORT_LABELS,
+                                selectedIndex = SORT_KEYS.indexOf(sortKey).coerceAtLeast(0),
+                                cellWidth = 64,
+                                onSelect = { sortKey = SORT_KEYS[it] },
+                            )
+                        }
+                        items(visibleItems, key = { it.id }) { item ->
                             AnalyticsTile(item = item, onTap = {
                                 val data = JSONObject().apply { put("id", item.id) }
                                 Utils.currentBridgeModule()
@@ -257,4 +288,37 @@ private fun compact(n: Int): String = when {
     n >= 10000 -> "${String.format("%.1f", n / 10000.0)}w"
     n >= 1000 -> "${String.format("%.1f", n / 1000.0)}k"
     else -> "$n"
+}
+
+/** 全量聚合卡片：总量指标 + 分类分布（数据聚合 / 维度切换展示）。 */
+@Composable
+private fun AnalyticsAggregateBar(aggregate: com.example.kuikly.data.analytics.AnalyticsAggregate) {
+    KCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            KMetricPill("总PV", compact(aggregate.totalPv.toInt()))
+            Spacer(Modifier.width(8.dp))
+            KMetricPill("总UV", compact(aggregate.totalUv.toInt()))
+            Spacer(Modifier.width(8.dp))
+            KMetricPill("收入", aggregate.totalRevenueLabel, accent = true)
+            Spacer(Modifier.width(8.dp))
+            KMetricPill("转化", aggregate.avgConversionLabel)
+        }
+        Spacer(Modifier.height(10.dp))
+        Text("分类分布", fontSize = 13.sp, color = KuiklyTheme.ink, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        aggregate.byCategory.forEach { cat ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(cat.category, fontSize = 12.sp, color = KuiklyTheme.body, modifier = Modifier.width(80.dp))
+                Text("${cat.count}笔", fontSize = 12.sp, color = KuiklyTheme.muted, modifier = Modifier.width(48.dp))
+                Text("PV ${compact(cat.totalPv.toInt())}", fontSize = 12.sp, color = KuiklyTheme.muted, modifier = Modifier.width(96.dp))
+                Text("ROI ${cat.avgRoiLabel}", fontSize = 12.sp, color = KuiklyTheme.link)
+            }
+        }
+    }
 }

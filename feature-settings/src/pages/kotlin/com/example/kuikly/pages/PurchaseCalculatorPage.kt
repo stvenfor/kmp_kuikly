@@ -237,6 +237,14 @@ private fun QuoteResultCard(quote: PurchaseCalcQuote, onCopy: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         SettingsKeyValue(label = "首付合计", value = "¥${"%.2f".format(quote.initialPayment)}", bold = true)
         if (quote.mode == PurchaseCalculator.MODE_LOAN) {
+            if (quote.effectiveAnnualRate != quote.annualRatePercent) {
+                SettingsKeyValue(
+                    label = "贴息后年化",
+                    value = "%.2f%%（原 %.2f%%）".format(quote.effectiveAnnualRate, quote.annualRatePercent),
+                    valueColor = KuiklyTheme.violet,
+                    bold = true,
+                )
+            }
             SettingsKeyValue(label = "月供", value = "¥${"%.2f".format(quote.monthlyPayment)} × ${quote.termMonths} 期", bold = true)
             SettingsKeyValue(label = "总利息", value = "¥${"%.2f".format(quote.totalInterest)}")
             SettingsKeyValue(label = "还款总额", value = "¥${"%.2f".format(quote.totalRepayment)}")

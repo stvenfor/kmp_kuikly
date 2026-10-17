@@ -59,11 +59,13 @@ fun KChip(
     text: String,
     modifier: Modifier = Modifier,
     color: Color = KuiklyTheme.muted,
+    onClick: (() -> Unit)? = null,
 ) {
     Box(
         modifier = modifier
             .background(color.copy(alpha = 0.12f), RoundedCornerShape(KuiklyTheme.radiusPill))
-            .padding(horizontal = KuiklyTheme.spaceXs, vertical = 3.dp),
+            .padding(horizontal = KuiklyTheme.spaceXs, vertical = 3.dp)
+            .let { if (onClick != null) it.clickable { onClick() } else it },
         contentAlignment = Alignment.Center,
     ) {
         Text(text, color = color, fontSize = KuiklyTheme.textCaption, fontWeight = FontWeight.Bold)

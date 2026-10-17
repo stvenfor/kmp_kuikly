@@ -7,9 +7,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
+import com.example.kuikly.data.analytics.UsedCarAggregate
 import com.example.kuikly.data.analytics.UsedCarOrder
 import com.example.kuikly.data.analytics.UsedCarOrderStats
 import com.example.kuikly.data.analytics.UsedCarOrderStore
+import com.example.kuikly.data.analytics.aggregateUsedCars
+import com.example.kuikly.data.analytics.depreciationRateLabel
+import com.example.kuikly.data.analytics.estimatedValueLabel
 import com.example.kuikly.data.analytics.formatUnixSeconds
 import com.example.kuikly.design.KCard
 import com.example.kuikly.design.KChip
@@ -51,6 +55,7 @@ internal class AnalyticsUsedCarPage : BaseComposePager() {
             var isLoading by remember { mutableStateOf(true) }
             var orders by remember { mutableStateOf<List<UsedCarOrder>>(emptyList()) }
             var stats by remember { mutableStateOf<UsedCarOrderStats?>(null) }
+            var carAnalysis by remember { mutableStateOf<UsedCarAggregate?>(null) }
             var error by remember { mutableStateOf<String?>(null) }
             var tabIndex by remember { mutableStateOf(0) }
 
@@ -61,10 +66,13 @@ internal class AnalyticsUsedCarPage : BaseComposePager() {
                 if (failure != null) {
                     orders = emptyList()
                     stats = null
+                    carAnalysis = null
                     error = failure.message ?: "业务单加载失败"
                 } else {
-                    orders = rows.getOrThrow().items
+                    val items = rows.getOrThrow().items
+                    orders = items
                     stats = counters.getOrThrow()
+                    carAnalysis = aggregateUsedCars(items)
                     error = null
                 }
                 isLoading = false
@@ -74,6 +82,7 @@ internal class AnalyticsUsedCarPage : BaseComposePager() {
                 error = null
                 orders = emptyList()
                 stats = null
+                carAnalysis = null
                 isLoading = true
                 booted = false
             }
@@ -106,6 +115,12 @@ internal class AnalyticsUsedCarPage : BaseComposePager() {
                         if (stats != null) {
                             item {
                                 UsedCarStatsCard(stats = stats!!)
+                                Spacer(Modifier.height(12.dp))
+                            }
+                        }
+                        if (carAnalysis != null) {
+                            item {
+                                UsedCarValuationCard(analysis = carAnalysis!!)
                                 Spacer(Modifier.height(12.dp))
                             }
                         }
@@ -172,6 +187,31 @@ private fun StatsCell(label: String, value: String, color: Color) {
     }
 }
 
+/** 估值总览：GMV、均价、按类型拆分。 */
+@Composable
+private fun UsedCarValuationCard(analysis: UsedCarAggregate) {
+    KCard {
+        Text("估值总览", fontSize = 14.sp, color = KuiklyTheme.ink, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            StatsCell("总 GMV", analysis.gmvLabel, KuiklyTheme.foreground)
+            StatsCell("均价", analysis.avgAmountLabel, KuiklyTheme.link)
+            StatsCell("单数", analysis.count.toString(), KuiklyTheme.violet)
+        }
+        Spacer(Modifier.height(10.dp))
+        analysis.byKind.forEach { kind ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(kind.kindLabel, fontSize = 13.sp, color = KuiklyTheme.body, modifier = Modifier.width(56.dp))
+                Spacer(Modifier.width(8.dp))
+                AnalyticsProgressBar(ratio = if (analysis.gmv <= 0.0) 0.0 else kind.totalAmount / analysis.gmv, label = "${kind.count} 单 · 均 ${kind.avgAmountLabel}")
+            }
+        }
+    }
+}
+
 @Composable
 private fun UsedCarOrderCard(order: UsedCarOrder, onTap: () -> Unit) {
     val statusColor: Color = when (order.status) {
@@ -200,6 +240,12 @@ private fun UsedCarOrderCard(order: UsedCarOrder, onTap: () -> Unit) {
             KMetricPill(order.amountLabel, order.amountYuanLabel, accent = true)
             Spacer(Modifier.width(8.dp))
             KMetricPill("里程", order.mileageLabel)
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            KMetricPill("当前估值", order.estimatedValueLabel, accent = true)
+            Spacer(Modifier.width(8.dp))
+            KChip("折旧率 ${order.depreciationRateLabel}", color = KuiklyTheme.warning)
         }
         Spacer(Modifier.height(10.dp))
         KVLine("车架号", order.vin)

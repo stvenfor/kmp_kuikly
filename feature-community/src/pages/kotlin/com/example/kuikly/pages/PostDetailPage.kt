@@ -1,7 +1,10 @@
 package com.example.kuikly.pages
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
 import com.example.kuikly.base.Utils
 import com.example.kuikly.data.community.CommunityStore
@@ -48,6 +51,7 @@ import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 import com.tencent.kuikly.core.base.attr.ImageUri
+import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
 /**
  * 帖子详情 — Phase-2 / P2-V4d 视觉加厚。
@@ -73,6 +77,8 @@ internal class PostDetailPage : BaseComposePager() {
         val bottom = bottomSafeInset()
         setContent {
             val result = remember(id) { CommunityStore.repo.postDetail(id) }
+            var liked by remember(id) { mutableStateOf(false) }
+            var likeCount by remember(id) { mutableStateOf(0) }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -103,6 +109,8 @@ internal class PostDetailPage : BaseComposePager() {
                     )
                 }
                 result.onSuccess { post ->
+                    liked = post.isLiked
+                    likeCount = post.likeCount
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -158,33 +166,74 @@ internal class PostDetailPage : BaseComposePager() {
                             // LikeBarWidget 形制的互动行（20 图标 + 13 文案，间隔 24）。
                             Spacer(Modifier.height(16.dp))
                             Row {
-                                PostDetailAction(label = if (post.likeCount > 0) post.likeCount.toString() else "赞") {
-                                    Text("♡", fontSize = 20.sp, color = CommunityPalette.labelSecondary)
+                                // 点赞（对齐源 LikeBarWidget：翻转 + 计数）。
+                                PostDetailAction(
+                                    label = if (likeCount > 0) likeCount.toString() else "赞",
+                                    onClick = {
+                                        CommunityStore.repo.toggleLike(post.id, !liked)
+                                            .onSuccess { updated ->
+                                                liked = updated.isLiked
+                                                likeCount = updated.likeCount
+                                                Utils.currentBridgeModule().toast(if (updated.isLiked) "已赞" else "已取消赞")
+                                            }
+                                            .onFailure { Utils.currentBridgeModule().toast("操作失败") }
+                                    },
+                                ) {
+                                    Text("♥", fontSize = 20.sp, color = if (liked) CommunityPalette.likeRed else CommunityPalette.labelSecondary)
                                 }
                                 Spacer(Modifier.width(24.dp))
-                                // Flutter `CupertinoIcons.chat_bubble`（20 / labelSecondary）。原 `💬` 是
-                                // **全彩 emoji**，与灰阶 chrome 冲突；改为 Canvas 线稿（几何同
-                                // `MainPage` 底栏 / `CommunityTab` `ChatBubbleIcon`）。
-                                PostDetailAction(label = if (post.commentCount > 0) post.commentCount.toString() else "评论") {
+                                // 评论（打开评论列表页，对齐源 showCommentSheet）。
+                                PostDetailAction(
+                                    label = if (post.commentCount > 0) post.commentCount.toString() else "评论",
+                                    onClick = {
+                                        val params = JSONObject()
+                                        params.put("id", post.id)
+                                        Utils.currentBridgeModule().openPage(url = "CommunityComments", userData = params)
+                                    },
+                                ) {
                                     ChatBubbleIcon(sizeDp = 20f, tint = CommunityPalette.labelSecondary)
                                 }
                                 Spacer(Modifier.width(24.dp))
-                                PostDetailAction(label = "分享") {
+                                PostDetailAction(label = "分享", onClick = {
+                                    Utils.currentBridgeModule().toast("分享功能即将接入")
+                                }) {
                                     Text("↗", fontSize = 20.sp, color = CommunityPalette.labelSecondary)
+                                }
+                            }
+                            // 仅自己帖子可删除（对齐源 PostCardWidget._showMore -> 删除）。
+                            if (post.isMine) {
+                                Spacer(Modifier.height(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clickable {
+                                            CommunityStore.repo.deletePost(post.id)
+                                                .onSuccess {
+                                                    Utils.currentBridgeModule().toast("已删除")
+                                                    Utils.currentBridgeModule().closePage()
+                                                }
+                                                .onFailure { Utils.currentBridgeModule().toast("删除失败") }
+                                        }
+                                        .padding(vertical = 6.dp),
+                                ) {
+                                    Text("删除这条帖子", fontSize = 13.sp, color = CommunityPalette.likeRed)
                                 }
                             }
                         }
                         Spacer(Modifier.height(24.dp))
-                        // 发布 CTA：accent 填充整宽圆角钮（Cupertino filled 惯例）。
+                        // 查看评论 CTA：accent 填充整宽圆角钮，跳转评论列表页（对齐源评论入口）。
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(CommunityPalette.accent, RoundedCornerShape(CommunityPalette.RADIUS_MD.dp))
-                                .clickable { Utils.currentBridgeModule().toast("发布功能即将接入") }
+                                .clickable {
+                                    val params = JSONObject()
+                                    params.put("id", post.id)
+                                    Utils.currentBridgeModule().openPage(url = "CommunityComments", userData = params)
+                                }
                                 .padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("发布", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("查看评论 (${post.commentCount})", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                         }
                     }
                 }.onFailure {
@@ -210,8 +259,11 @@ internal class PostDetailPage : BaseComposePager() {
 }
 
 @Composable
-private fun PostDetailAction(label: String, icon: @Composable () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+private fun PostDetailAction(label: String, onClick: () -> Unit = {}, icon: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         icon()
         Spacer(Modifier.width(4.dp))
         Text(label, fontSize = 13.sp, color = CommunityPalette.labelSecondary)

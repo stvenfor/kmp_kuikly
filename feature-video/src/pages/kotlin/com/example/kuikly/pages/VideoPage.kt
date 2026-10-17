@@ -97,7 +97,12 @@ internal class VideoPage : BaseComposePager() {
             }
 
             Column(modifier = Modifier.fillMaxSize().background(KuiklyTheme.canvasSoft2)) {
-                VideoListHeader(count = items.size, total = total, page = page)
+                VideoListHeader(
+                    count = items.size,
+                    total = total,
+                    page = page,
+                    onOpenProfile = { Utils.currentBridgeModule().openPage(url = "VideoProfile") },
+                )
                 when {
                     error != null && items.isEmpty() ->
                         VideoListErrorState(message = error ?: "加载失败", onRetry = ::reload)
@@ -143,7 +148,7 @@ internal class VideoPage : BaseComposePager() {
 }
 
 @Composable
-private fun VideoListHeader(count: Int, total: Int, page: Int) {
+private fun VideoListHeader(count: Int, total: Int, page: Int, onOpenProfile: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 12.dp)
@@ -152,18 +157,22 @@ private fun VideoListHeader(count: Int, total: Int, page: Int) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            "已加载 $count / 共 $total · 第 $page 页",
-            fontSize = 13.sp,
-            color = KuiklyTheme.muted,
-            fontWeight = FontWeight.Medium,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            KChip("我的主页", color = KuiklyTheme.violet) { onOpenProfile() }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "已加载 $count / 共 $total · 第 $page 页",
+                fontSize = 13.sp,
+                color = KuiklyTheme.muted,
+                fontWeight = FontWeight.Medium,
+            )
+        }
         KChip("分页 $VIDEO_PAGE_SIZE 条/页", color = KuiklyTheme.link)
     }
 }
 
 @Composable
-private fun VideoListTile(item: ShortVideo, onTap: () -> Unit, onDubbing: () -> Unit) {
+internal fun VideoListTile(item: ShortVideo, onTap: () -> Unit, onDubbing: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(KuiklyTheme.canvas, RoundedCornerShape(KuiklyTheme.radiusMd))

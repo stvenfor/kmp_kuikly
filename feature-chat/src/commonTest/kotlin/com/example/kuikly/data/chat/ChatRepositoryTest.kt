@@ -119,4 +119,145 @@ class ChatRepositoryTest {
         assertEquals("22:13", chatClock(1_700_000_000L))
         assertEquals("00:00", chatClock(1_699_920_000L))
     }
+
+    @Test
+    fun `search matches title or last message`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val byTitle = repo.searchConversations("增长").getOrThrow()
+        assertTrue(byTitle.any { it.id == "c2" })
+        val byMessage = repo.searchConversations("原型").getOrThrow()
+        assertTrue(byMessage.any { it.id == "c1" })
+        assertEquals(3, repo.searchConversations("").getOrThrow().size)
+    }
+
+    @Test
+    fun `send image appends to history`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val sent = repo.sendImage("c3", "file://x.png").getOrThrow()
+        assertTrue(sent.type == MessageType.image)
+        assertTrue(repo.images("c3").contains("file://x.png"))
+    }
+
+    @Test
+    fun `send voice keeps duration`() {
+        MockBackend.scenario = MockScenario.Success
+        val sent = ChatRepository().sendVoice("c1", 7).getOrThrow()
+        assertEquals(7, sent.voiceDurationSeconds)
+        assertEquals(MessageType.voice, sent.type)
+    }
+
+    @Test
+    fun `send custom carries payload`() {
+        MockBackend.scenario = MockScenario.Success
+        val sent = ChatRepository().sendCustom("c1", "card", "Demo 名片", "来自自定义消息").getOrThrow()
+        assertEquals(MessageType.custom, sent.type)
+        assertEquals("Demo 名片", sent.customPayload["title"])
+    }
+
+    @Test
+    fun `delete removes outbox message`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val sent = repo.send("c1", "临时").getOrThrow()
+        assertTrue(repo.deleteMessage("c1", sent.id).isSuccess)
+        assertTrue(repo.messageById("c1", sent.id).isFailure)
+    }
+
+    @Test
+    fun `recall marks message recalled`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val sent = repo.send("c2", "撤回我").getOrThrow()
+        val recalled = repo.recallMessage("c2", sent.id).getOrThrow()
+        assertTrue(recalled.isRecalled)
+        assertEquals("你撤回了一条消息", recalled.content)
+    }
+
+    @Test
+    fun `simulate peer read sets self message read`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val sent = repo.send("c1", "已读回执测试").getOrThrow()
+        val read = repo.simulatePeerRead("c1", sent.id).getOrThrow()
+        assertEquals(ReadStatus.read, read.readStatus)
+    }
+
+    @Test
+    fun `status label reflects state machine`() {
+        val selfSending = Message("a", "c", MessageType.text, "x", true, 1L, sendStatus = SendStatus.sending)
+        val selfFailed = selfSending.copy(sendStatus = SendStatus.failed)
+        val selfSentUnread = selfSending.copy(sendStatus = SendStatus.sent, readStatus = ReadStatus.unread)
+        val selfSentRead = selfSending.copy(sendStatus = SendStatus.sent, readStatus = ReadStatus.read)
+        val peer = Message("b", "c", MessageType.text, "y", false, 1L)
+        assertEquals("发送中", statusLabel(selfSending))
+        assertEquals("发送失败", statusLabel(selfFailed))
+        assertEquals("送达", statusLabel(selfSentUnread))
+        assertEquals("已读", statusLabel(selfSentRead))
+        assertEquals("", statusLabel(peer))
+    }
+
+    @Test
+    fun `send fails under error scenario`() {
+        MockBackend.scenario = MockScenario.Error
+        assertTrue(ChatRepository().send("c1", "hi").isFailure)
+        MockBackend.scenario = MockScenario.Success
+    }
+
+    @Test
+    fun `sending updates conversation preview`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        repo.send("c1", "新的预览内容").getOrThrow()
+        assertEquals("新的预览内容", repo.byId("c1").getOrThrow().lastMessage)
+    }
+
+    @Test
+    fun `sending image updates preview to image tag`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        repo.sendImage("c3", "file://x.png").getOrThrow()
+        assertEquals("[图片]", repo.byId("c3").getOrThrow().lastMessage)
+    }
+
+    @Test
+    fun `auto reply updates conversation preview`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        repo.autoReply("c1", "你好").getOrThrow()
+        assertEquals("已读：你好", repo.byId("c1").getOrThrow().lastMessage)
+    }
+
+    @Test
+    fun `seed sorts conversations by last message time desc`() {
+        MockBackend.scenario = MockScenario.Success
+        val items = ChatRepository().page(1, 50).getOrThrow().items
+        for (i in 1 until items.size) {
+            assertTrue(items[i - 1].lastMessageTime >= items[i].lastMessageTime)
+        }
+    }
+
+    @Test
+    fun `ensure private conversation creates once`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val a = repo.ensurePrivateConversation("u_new", "新朋友", "").getOrThrow()
+        assertEquals("u_new", a.targetId)
+        assertTrue(a.isGroup.not())
+        val b = repo.ensurePrivateConversation("u_new", "新朋友", "").getOrThrow()
+        assertEquals(a.id, b.id)
+        assertEquals(4, repo.page(1, 50).getOrThrow().total)
+    }
+
+    @Test
+    fun `ensure group conversation updates title`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = ChatRepository()
+        val g = repo.ensureGroupConversation("g_x", "群X").getOrThrow()
+        val g2 = repo.ensureGroupConversation("g_x", "群X改名").getOrThrow()
+        assertEquals("群X改名", g2.title)
+        assertEquals(g.id, g2.id)
+        assertTrue(g2.isGroup)
+    }
 }
