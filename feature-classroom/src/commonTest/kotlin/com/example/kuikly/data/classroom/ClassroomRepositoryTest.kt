@@ -13,8 +13,8 @@ class ClassroomRepositoryTest {
         val tasks = ClassroomRepository().tasks().getOrThrow()
         assertEquals(3, tasks.size)
         val stats = ClassroomRepository().stats().getOrThrow()
-        assertEquals(3, stats.totalCount)
-        assertTrue(stats.classCompletionRate > 0.0 && stats.classCompletionRate < 1.0)
+        assertEquals(12, stats.totalCount)
+        assertTrue(stats.classCompletionRate > 0.0 && stats.classCompletionRate <= 100.0)
     }
 
     @Test

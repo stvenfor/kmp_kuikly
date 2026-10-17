@@ -50,7 +50,7 @@ internal class ClassroomPage : BaseComposePager() {
                     color = KuiklyTheme.link,
                     modifier = Modifier.clickable {
                         Utils.currentBridgeModule().openPage(
-                            url = "HomeworkStats",
+                            url = "ClassroomHomeworkStats",
                             userData = com.tencent.kuikly.core.nvi.serialization.json.JSONObject(),
                         )
                     },
@@ -60,8 +60,8 @@ internal class ClassroomPage : BaseComposePager() {
                 tasks.forEach { t ->
                     Column(modifier = Modifier.fillMaxWidth().clickable {
                         val data = com.tencent.kuikly.core.nvi.serialization.json.JSONObject()
-                        data.put("id", t.id)
-                        Utils.currentBridgeModule().openPage(url = "HomeworkDetail", userData = data)
+                        data.put("studentId", "student_003")
+                        Utils.currentBridgeModule().openPage(url = "ClassroomHomeworkDetailStudent", userData = data)
                     }.padding(vertical = 10.dp)) {
                         Text("${t.title} ${if (t.isCompleted) "✓" else ""}", fontSize = 15.sp, color = KuiklyTheme.foreground, fontWeight = com.tencent.kuikly.compose.ui.text.font.FontWeight.Medium)
                         Text("${t.className} · ${t.subtitle} · ⭐${t.starReward}", fontSize = 12.sp, color = KuiklyTheme.muted)

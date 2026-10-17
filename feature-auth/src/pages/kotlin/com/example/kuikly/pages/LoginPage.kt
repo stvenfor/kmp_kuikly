@@ -74,6 +74,13 @@ internal class LoginPage : BaseComposePager() {
                     color = Color(0xFF1565C0),
                     modifier = Modifier.clickable { Utils.currentBridgeModule().openPage("Register") },
                 )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "账号中心（门店 / 登录态 / 登出）",
+                    fontSize = 15.sp,
+                    color = Color(0xFF1565C0),
+                    modifier = Modifier.clickable { Utils.currentBridgeModule().openPage("AuthAccount") },
+                )
             }
         }
     }
