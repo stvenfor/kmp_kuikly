@@ -1,0 +1,3 @@
+# 由 golden_vs_flutter_diff.py / golden-vs-flutter-diff.sh 每次运行重新生成，
+# 与 goldens/android/{actual,diff}/ 同类，不入库。
+diff/

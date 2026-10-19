@@ -6,7 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
+import com.example.kuikly.base.ProvideDesignScale
 import com.example.kuikly.base.Utils
+import com.example.kuikly.base.su
+import com.example.kuikly.base.susp
 import com.example.kuikly.data.dubbing.DubbingWorkItem
 import com.example.kuikly.data.dubbing.DubbingWorkStore
 import com.tencent.kuikly.compose.foundation.background
@@ -37,7 +40,7 @@ import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
-import com.tencent.kuikly.compose.ui.unit.sp
+
 import com.tencent.kuikly.core.annotations.Page
 
 /**
@@ -61,6 +64,7 @@ internal class DubbingWorkDetailPage : BaseComposePager() {
             var tab by remember { mutableStateOf(0) }
             val allWorks = remember { DubbingWorkStore.repo.list().getOrDefault(emptyList()) }
 
+            ProvideDesignScale(pagerData.pageViewWidth, designWidth = 480f) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -107,6 +111,7 @@ internal class DubbingWorkDetailPage : BaseComposePager() {
                     )
                 }
             }
+            }
         }
     }
 }
@@ -117,20 +122,21 @@ private fun WorkVideoHeader(topInset: Float, onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(16f / 9f)
+            // 参考图实测黑头部 953/1440 = 0.662 × 屏宽（非 16:9）
+            .aspectRatio(1440f / 953f)
             .background(Color.Black),
     ) {
         Box(modifier = Modifier.align(Alignment.Center)) {
-            Text("▶", fontSize = 44.sp, color = Color(0x8AFFFFFF))
+            Text("▶", fontSize = 44.susp, color = Color(0x8AFFFFFF))
         }
         Text(
             "‹",
-            fontSize = 22.sp,
+            fontSize = 22.susp,
             color = Color.White,
             modifier = Modifier
-                .padding(start = 4.dp, top = (topInset + 4f).dp)
+                .padding(start = 4.su, top = (topInset + 4f).dp)
                 .clickable(onClick = onBack)
-                .padding(8.dp),
+                .padding(8.su),
         )
     }
 }
@@ -158,7 +164,7 @@ private fun WorkDetailTabs(selected: Int, commentCount: Int, onSelect: (Int) -> 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(0.5.dp)
+            .height(0.5.su)
             .background(VideoPalette.divider),
     )
 }
@@ -168,21 +174,21 @@ private fun WorkDetailTab(modifier: Modifier, label: String, selected: Boolean, 
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 12.su),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             label,
-            fontSize = 15.sp,
+            fontSize = 15.susp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (selected) VideoPalette.primaryGreen else VideoPalette.textGray,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.su))
         Box(
             modifier = Modifier
-                .width(if (selected) 24.dp else 0.dp)
-                .height(3.dp)
-                .background(VideoPalette.primaryGreen, RoundedCornerShape(2.dp)),
+                .width(if (selected) 24.su else 0.su)
+                .height(3.su)
+                .background(VideoPalette.primaryGreen, RoundedCornerShape(2.su)),
         )
     }
 }
@@ -191,93 +197,93 @@ private fun WorkDetailTab(modifier: Modifier, label: String, selected: Boolean, 
 private fun WorkIntroTab(item: DubbingWorkItem, moreWorks: List<DubbingWorkItem>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(16.su),
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(44.su)
                         .background(VideoPalette.divider, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("👤", fontSize = 18.sp)
+                    Text("👤", fontSize = 18.susp)
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(10.su))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         item.authorName,
-                        fontSize = 15.sp,
+                        fontSize = 15.susp,
                         fontWeight = FontWeight.SemiBold,
                         color = VideoPalette.titleBlack,
                     )
                     Text(
                         "${item.location} · 粉丝1.5K",
-                        fontSize = 12.sp,
+                        fontSize = 12.susp,
                         color = VideoPalette.textGray,
                     )
                 }
                 Box(
                     modifier = Modifier
-                        .border(1.dp, VideoPalette.primaryGreen, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .border(1.su, VideoPalette.primaryGreen, RoundedCornerShape(4.su))
+                        .padding(horizontal = 12.su, vertical = 6.su),
                 ) {
-                    Text("已关注", fontSize = 12.sp, color = VideoPalette.primaryGreen)
+                    Text("已关注", fontSize = 12.susp, color = VideoPalette.primaryGreen)
                 }
             }
         }
-        item { Spacer(Modifier.height(16.dp)) }
+        item { Spacer(Modifier.height(16.su)) }
         item {
             Row {
                 item.badge?.let { badge ->
                     Box(
                         modifier = Modifier
-                            .padding(end = 6.dp, top = 2.dp)
-                            .background(Color(0x1FE91E63), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                            .padding(end = 6.su, top = 2.su)
+                            .background(Color(0x1FE91E63), RoundedCornerShape(4.su))
+                            .padding(horizontal = 6.su, vertical = 2.su),
                     ) {
-                        Text(badge, fontSize = 10.sp, color = Color(0xFFE91E63))
+                        Text(badge, fontSize = 10.susp, color = Color(0xFFE91E63))
                     }
                 }
                 Text(
                     item.title,
-                    fontSize = 15.sp,
+                    fontSize = 15.susp,
                     fontWeight = FontWeight.SemiBold,
                     color = VideoPalette.titleBlack,
                     modifier = Modifier.weight(1f),
                 )
             }
         }
-        item { Spacer(Modifier.height(8.dp)) }
+        item { Spacer(Modifier.height(8.su)) }
         item {
             Text(
                 "${item.publishedAt} 12:09",
-                fontSize = 12.sp,
+                fontSize = 12.susp,
                 color = VideoPalette.textGray,
             )
         }
-        item { Spacer(Modifier.height(16.dp)) }
+        item { Spacer(Modifier.height(16.su)) }
         item {
             Text(
                 "99+ 人也配了这个视频",
-                fontSize = 13.sp,
+                fontSize = 13.susp,
                 color = VideoPalette.textGray,
             )
         }
         if (moreWorks.isNotEmpty()) {
-            item { Spacer(Modifier.height(20.dp)) }
+            item { Spacer(Modifier.height(20.su)) }
             item {
                 Text(
                     "Ta的更多作品",
-                    fontSize = 15.sp,
+                    fontSize = 15.susp,
                     fontWeight = FontWeight.SemiBold,
                     color = VideoPalette.titleBlack,
                 )
             }
-            item { Spacer(Modifier.height(12.dp)) }
+            item { Spacer(Modifier.height(12.su)) }
             items(moreWorks, key = { it.id }) { work ->
                 MoreWorkRow(work = work)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(12.su))
             }
         }
     }
@@ -288,35 +294,25 @@ private fun MoreWorkRow(work: DubbingWorkItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(8.dp))
-            .padding(8.dp),
+            .background(Color.White, RoundedCornerShape(8.su))
+            .padding(8.su),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .width(80.dp)
-                .height(56.dp)
-                .background(VideoPalette.coverPlaceholder, RoundedCornerShape(6.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("▶", fontSize = 20.sp, color = VideoPalette.textGray)
-        }
-        Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             work.badge?.let { badge ->
-                Text(badge, fontSize = 10.sp, color = VideoPalette.orange)
+                Text(badge, fontSize = 10.susp, color = VideoPalette.orange)
             }
             Text(
                 work.title,
-                fontSize = 13.sp,
+                fontSize = 13.susp,
                 color = VideoPalette.titleBlack,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(4.su))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("👍", fontSize = 12.sp, color = VideoPalette.textGray)
-                Text(" ${work.likeCount}", fontSize = 11.sp, color = VideoPalette.textGray)
+                Text("👍", fontSize = 12.susp, color = VideoPalette.textGray)
+                Text(" ${work.likeCount}", fontSize = 11.susp, color = VideoPalette.textGray)
             }
         }
     }
@@ -326,22 +322,22 @@ private fun MoreWorkRow(work: DubbingWorkItem) {
 private fun WorkCommentsTab() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(16.su),
     ) {
         item {
             Row(verticalAlignment = Alignment.Top) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(40.su)
                         .background(VideoPalette.divider, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("B", fontSize = 14.sp, color = VideoPalette.titleBlack)
+                    Text("B", fontSize = 14.susp, color = VideoPalette.titleBlack)
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(12.su))
                 Column {
-                    Text("乌克丽丽", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("发音标准，继续加油", fontSize = 13.sp, color = VideoPalette.textGray)
+                    Text("乌克丽丽", fontSize = 14.susp, fontWeight = FontWeight.SemiBold)
+                    Text("发音标准，继续加油", fontSize = 13.susp, color = VideoPalette.textGray)
                 }
             }
         }
@@ -356,39 +352,39 @@ private fun WorkDetailBottomBar(likeCount: Int, bottomInset: Float, onStartDubbi
             .fillMaxWidth()
             .background(Color.White)
             .padding(
-                start = 16.dp,
-                top = 10.dp,
-                end = 16.dp,
+                start = 16.su,
+                top = 10.su,
+                end = 16.su,
                 bottom = (bottomInset + 10f).dp,
             ),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(0.5.dp)
+                .height(0.5.su)
                 .background(VideoPalette.divider),
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(10.su))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("👍", fontSize = 22.sp, color = VideoPalette.titleBlack)
-            Spacer(Modifier.width(4.dp))
-            Text("$likeCount", fontSize = 12.sp, color = VideoPalette.titleBlack)
-            Spacer(Modifier.width(16.dp))
-            Text("⇪", fontSize = 22.sp, color = VideoPalette.titleBlack)
-            Spacer(Modifier.width(4.dp))
-            Text("分享", fontSize = 12.sp, color = VideoPalette.titleBlack)
-            Spacer(Modifier.width(16.dp))
+            Text("👍", fontSize = 22.susp, color = VideoPalette.titleBlack)
+            Spacer(Modifier.width(4.su))
+            Text("$likeCount", fontSize = 12.susp, color = VideoPalette.titleBlack)
+            Spacer(Modifier.width(16.su))
+            Text("⇪", fontSize = 22.susp, color = VideoPalette.titleBlack)
+            Spacer(Modifier.width(4.su))
+            Text("分享", fontSize = 12.susp, color = VideoPalette.titleBlack)
+            Spacer(Modifier.width(16.su))
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(44.dp)
-                    .background(VideoPalette.primaryGreen, RoundedCornerShape(24.dp))
+                    .height(44.su)
+                    .background(VideoPalette.primaryGreen, RoundedCornerShape(24.su))
                     .clickable(onClick = onStartDubbing),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "开启配音",
-                    fontSize = 15.sp,
+                    fontSize = 15.susp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
                 )

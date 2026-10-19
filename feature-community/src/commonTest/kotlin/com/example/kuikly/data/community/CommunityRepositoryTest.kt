@@ -12,7 +12,7 @@ class CommunityRepositoryTest {
         MockBackend.scenario = MockScenario.Success
         val r = CommunityRepository().page(1, 50).getOrThrow()
         assertEquals(3, r.total)
-        assertTrue(r.items.any { it.topicName == "健身打卡" })
+        assertTrue(r.items.any { it.nickname == "张三" })
     }
 
     @Test
@@ -48,9 +48,9 @@ class CommunityRepositoryTest {
     fun `search posts matches content and nickname`() {
         MockBackend.scenario = MockScenario.Success
         val repo = CommunityRepository()
-        assertEquals(1, repo.searchPosts("耳机").getOrThrow().size)
+        assertEquals(1, repo.searchPosts("咖啡店").getOrThrow().size)
         assertEquals(1, repo.searchPosts("效率").getOrThrow().size)
-        assertEquals(1, repo.searchPosts("小鹿").getOrThrow().size)
+        assertEquals(1, repo.searchPosts("张三").getOrThrow().size)
         assertEquals(3, repo.searchPosts("").getOrThrow().size)
         assertTrue(repo.searchPosts("不存在的关键词").getOrThrow().isEmpty())
         // 大小写不敏感
@@ -63,9 +63,9 @@ class CommunityRepositoryTest {
         val repo = CommunityRepository()
         assertEquals(3, repo.postsByTopic(null).getOrThrow().size)
         assertEquals(3, repo.postsByTopic("  ").getOrThrow().size)
-        assertEquals(1, repo.postsByTopic("健身打卡").getOrThrow().size)
+        assertEquals(1, repo.postsByTopic("效率").getOrThrow().size)
         assertTrue(repo.postsByTopic("好物推荐").getOrThrow().isEmpty())
-        assertTrue(repo.postsByTopic("健身打卡").getOrThrow().all { it.topicName == "健身打卡" })
+        assertTrue(repo.postsByTopic("效率").getOrThrow().all { it.topicName == "效率" })
     }
 
     @Test
@@ -86,8 +86,8 @@ class CommunityRepositoryTest {
     fun `composite search returns three sections`() {
         MockBackend.scenario = MockScenario.Success
         val repo = CommunityRepository()
-        val r = repo.search("健身").getOrThrow()
-        assertEquals("健身", r.query)
+        val r = repo.search("效率").getOrThrow()
+        assertEquals("效率", r.query)
         assertTrue(r.posts.isNotEmpty())
         assertTrue(r.topics.isNotEmpty())
         assertTrue(r.users.isEmpty())

@@ -34,7 +34,10 @@ class KuiklyRenderActivity : AppCompatActivity(), KuiklyRenderViewBaseDelegatorD
     private val pageName: String
         get() {
             val pn = intent.getStringExtra(KEY_PAGE_NAME) ?: ""
-            return if (pn.isNotEmpty()) pn else "HelloWorld"
+            // Launched from the home-screen launcher there is no pageName extra,
+            // so fall back to the real registered home page instead of the
+            // unregistered "HelloWorld" (which would render an error view).
+            return if (pn.isNotEmpty()) pn else "Main"
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {

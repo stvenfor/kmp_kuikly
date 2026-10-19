@@ -19,6 +19,7 @@ import com.example.kuikly.data.pay.PayOrder
 import com.example.kuikly.data.pay.PayQuote
 import com.example.kuikly.data.pay.PayTier
 import com.tencent.kuikly.compose.foundation.background
+import com.tencent.kuikly.compose.ui.graphics.Brush
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
@@ -102,14 +103,29 @@ internal class PayVipPage : BaseComposePager() {
             val channels = PayChannels.available()
             val showAgreement = tier == PayTier.AiSvip || channel.requiresAgreement
 
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(PayPalette.pageBackground),
             ) {
+                // 参考图顶部 0~15% 金色渐变（状态栏+导航+会员身份区）
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(172.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFFFEC967), Color(0xFFFED387), PayPalette.pageBackground),
+                            ),
+                        ),
+                )
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
                 AppNavBarBar(
-                    title = "会员开通",
+                    title = "",
                     topInset = top,
+                    background = Color.Transparent,
                     onBack = { Utils.currentBridgeModule().closePage() },
                     actions = {
                         Text(
@@ -185,19 +201,7 @@ internal class PayVipPage : BaseComposePager() {
                         PayFeatureSection(tier = tier)
                     }
                     item {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "[CYCLE MOCK] ${MockBackend.scenario}",
-                            fontSize = 12.sp,
-                            color = PayPalette.textGray,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .clickable {
-                                    MockBackend.cycle()
-                                    reload()
-                                },
-                        )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(24.dp))
                     }
                 }
 
@@ -228,6 +232,7 @@ internal class PayVipPage : BaseComposePager() {
                         }
                     },
                 )
+            }
             }
         }
     }
@@ -287,12 +292,8 @@ private fun PayProfileHeader(
                 }
             }
             Spacer(Modifier.height(2.dp))
-            val status = if (entitlement.active) {
-                "会员有效期至 ${entitlement.expiresAt}（${entitlement.sourceChannel}）"
-            } else {
-                profile.statusText
-            }
-            Text(status, fontSize = 13.sp, color = PayPalette.textGray, maxLines = 1)
+            // 参考图为未登录/过期态：直接显示 profile.statusText（对齐 Flutter mock）
+            Text(profile.statusText, fontSize = 13.sp, color = PayPalette.textGray, maxLines = 1)
         }
     }
 }

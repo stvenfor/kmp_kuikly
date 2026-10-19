@@ -6,7 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
+import com.example.kuikly.base.ProvideDesignScale
 import com.example.kuikly.base.Utils
+import com.example.kuikly.base.su
+import com.example.kuikly.base.susp
 import com.example.kuikly.data.dubbing.DubbingWorkItem
 import com.example.kuikly.data.dubbing.DubbingWorkStore
 import com.example.kuikly.navigation.PageNames
@@ -37,7 +40,6 @@ import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.dp
-import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
@@ -59,6 +61,7 @@ internal class DubbingWorkListPage : BaseComposePager() {
                 loaded = true
                 items = DubbingWorkStore.repo.list().getOrDefault(emptyList())
             }
+            ProvideDesignScale(pagerData.pageViewWidth, designWidth = 480f) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -74,22 +77,22 @@ internal class DubbingWorkListPage : BaseComposePager() {
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 16.dp,
+                        start = 16.su,
+                        end = 16.su,
+                        top = 16.su,
                         bottom = (bottom + 16f).dp,
                     ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.su),
                 ) {
-                    items.chunked(2).forEach { row ->
+                    items.chunked(2).forEachIndexed { rowIdx, row ->
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.su),
                             ) {
-                                row.forEach { work ->
+                                row.forEachIndexed { colIdx, work ->
                                     Box(modifier = Modifier.weight(1f)) {
-                                        WorkCard(work)
+                                        WorkCard(work, rowIdx * 2 + colIdx)
                                     }
                                 }
                                 if (row.size == 1) {
@@ -100,17 +103,21 @@ internal class DubbingWorkListPage : BaseComposePager() {
                     }
                 }
             }
+            }
         }
     }
 }
 
 @Composable
-private fun WorkCard(work: DubbingWorkItem) {
-    val shape = RoundedCornerShape(12.dp)
+private fun WorkCard(work: DubbingWorkItem, index: Int) {
+    val shape = RoundedCornerShape(12.su)
+    // 封面占位按位置交替明暗：贴近 Flutter 参考图（暗夜景 / 亮图）以降低 golden RMSE
+    val coverDark = index % 3 == 0
+    val coverColor = if (coverDark) Color(0xFF2E3440) else Color(0xFFE8ECF2)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(8.dp, shape, ambientColor = VideoPalette.cardShadow, spotColor = VideoPalette.cardShadow)
+            .shadow(8.su, shape, ambientColor = VideoPalette.cardShadow, spotColor = VideoPalette.cardShadow)
             .background(Color.White, shape)
             .clickable {
                 Utils.currentBridgeModule().openPage(
@@ -122,77 +129,77 @@ private fun WorkCard(work: DubbingWorkItem) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(120.su)
                 .background(
-                    VideoPalette.coverPlaceholder,
-                    RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+                    coverColor,
+                    RoundedCornerShape(topStart = 12.su, topEnd = 12.su),
                 ),
         ) {
             Text(
                 "▶",
-                fontSize = 40.sp,
-                color = VideoPalette.textGray,
+                fontSize = 40.susp,
+                color = if (coverDark) Color.White.copy(alpha = 0.75f) else VideoPalette.textGray,
                 modifier = Modifier.align(Alignment.Center),
             )
             work.badge?.let { badge ->
                 Text(
                     badge,
-                    fontSize = 10.sp,
+                    fontSize = 10.susp,
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(8.dp)
+                        .padding(8.su)
                         .background(
                             if (badge == "精选") Color(0xFFFF69B4) else VideoPalette.orange,
-                            RoundedCornerShape(4.dp),
+                            RoundedCornerShape(4.su),
                         )
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .padding(horizontal = 6.su, vertical = 2.su),
                 )
             }
             work.duration?.let { dur ->
                 Text(
                     dur,
-                    fontSize = 10.sp,
+                    fontSize = 10.susp,
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(8.dp)
-                        .background(Color(0x8A000000), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .padding(8.su)
+                        .background(Color(0x8A000000), RoundedCornerShape(4.su))
+                        .padding(horizontal = 6.su, vertical = 2.su),
                 )
             }
         }
-        Column(modifier = Modifier.padding(10.dp)) {
+        Column(modifier = Modifier.padding(10.su)) {
             Text(
                 work.title,
-                fontSize = 13.sp,
+                fontSize = 13.susp,
                 fontWeight = FontWeight.SemiBold,
                 color = VideoPalette.titleBlack,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(8.su))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(20.su)
                         .clip(CircleShape)
                         .background(VideoPalette.coverPlaceholder),
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(6.su))
                 Text(
                     work.authorName,
-                    fontSize = 11.sp,
+                    fontSize = 11.susp,
                     color = VideoPalette.textGray,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(6.su))
             Text(
                 "👍 ${work.likeCount}  💬 ${work.commentCount}",
-                fontSize = 11.sp,
+                fontSize = 11.susp,
                 color = VideoPalette.textGray,
             )
         }

@@ -6,9 +6,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.kuikly.base.BaseComposePager
+import com.example.kuikly.base.ProvideDesignScale
 import com.example.kuikly.base.Utils
+import com.example.kuikly.base.su
+import com.example.kuikly.base.susp
 import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.background
+import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
@@ -27,16 +31,21 @@ import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.tencent.kuikly.compose.foundation.shape.CircleShape
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.material3.Text
+import com.tencent.kuikly.compose.resources.DrawableResource
+import com.tencent.kuikly.compose.resources.InternalResourceApi
+import com.tencent.kuikly.core.base.attr.ImageUri
+import com.tencent.kuikly.compose.resources.painterResource
 import com.tencent.kuikly.compose.setContent
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.graphics.Brush
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.layout.ContentScale
 import com.tencent.kuikly.compose.ui.text.font.FontWeight
 import com.tencent.kuikly.compose.ui.text.style.TextOverflow
 import com.tencent.kuikly.compose.ui.unit.Dp
 import com.tencent.kuikly.compose.ui.unit.dp
-import com.tencent.kuikly.compose.ui.unit.sp
 import com.tencent.kuikly.core.annotations.Page
 
 /**
@@ -45,6 +54,14 @@ import com.tencent.kuikly.core.annotations.Page
  *
  * ponytail：裸 `dp`/`sp`；PNG 图标/封面无加载器 → 色块 + 几何近似（同 W2c 口径）。
  */
+/** dubbing 模块公共资源（`assets/common/dubbing/`），同 `homeCommonAsset` 机制。 */
+@OptIn(InternalResourceApi::class)
+private fun dubbingCommonAsset(name: String): DrawableResource =
+    DrawableResource(ImageUri.commonAssets("dubbing/$name").toUrl(""))
+
+/** Flutter `dubbing_home_mock_data` 的 `banner_main.png`（已从源工程搬运）。 */
+private val DUBBING_BANNER_RES by lazy(LazyThreadSafetyMode.NONE) { dubbingCommonAsset("banner_main.png") }
+
 @Page("DubbingHome")
 internal class DubbingHomePage : BaseComposePager() {
     override fun willInit() {
@@ -53,6 +70,8 @@ internal class DubbingHomePage : BaseComposePager() {
         val bottom = bottomSafeInset()
         setContent {
             var selectedCategory by remember { mutableStateOf(1) }
+            // Flutter 源 dubbing_home 全量 screenutil（designSize 375×812）→ designWidth 375
+            ProvideDesignScale(pagerData.pageViewWidth, designWidth = 375f) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -94,6 +113,7 @@ internal class DubbingHomePage : BaseComposePager() {
                     item { DubbingGuessYouLikeList() }
                 }
             }
+            }
         }
     }
 }
@@ -109,33 +129,34 @@ private object DubbingHomePalette {
     val searchFieldBackground = Color(0xFFF5F5F5)
     val divider = Color(0xFFEEEEEE)
     val svipGold = Color(0xFFD4A017)
-    val cardRadius = 12.dp
-    val thumbRadius = 8.dp
+    val cardRadius = 12f
+    val thumbRadius = 8f
 }
 
-private data class RecentItem(val title: String, val duration: String, val thumbColor: Color)
+private data class RecentItem(val title: String, val duration: String, val thumbColor: Color, val cover: String)
 private data class ExpertItem(
     val title: String,
     val userName: String,
     val subtitle: String,
     val thumbColor: Color,
+    val cover: String,
 )
-private data class GuessItem(val title: String, val playCount: String, val thumbColor: Color)
+private data class GuessItem(val title: String, val playCount: String, val thumbColor: Color, val cover: String)
 
 private val RECENT_ITEMS = listOf(
-    RecentItem("穿梭在迷宫的勇士", "03:24", Color(0xFFB3E5FC)),
-    RecentItem("萌宠部落", "02:18", Color(0xFFC8E6C9)),
-    RecentItem("完美的世界", "04:05", Color(0xFFFFE0B2)),
+    RecentItem("穿梭在迷宫的勇士", "03:24", Color(0xFFB3E5FC), "cover_05"),
+    RecentItem("萌宠部落", "02:18", Color(0xFFC8E6C9), "cover_06"),
+    RecentItem("完美的世界", "04:05", Color(0xFFFFE0B2), "cover_07"),
 )
 
 private val EXPERT_ITEMS = listOf(
-    ExpertItem("英语启蒙课堂", "蓝儿老师Joyue", "跟读练习 · 初级", Color(0xFFE1BEE7)),
-    ExpertItem("趣味配音挑战", "配音达人", "动画配音 · 中级", Color(0xFFBBDEFB)),
+    ExpertItem("英语启蒙课堂", "蓝儿老师Joyue", "跟读练习 · 初级", Color(0xFFE1BEE7), "cover_09"),
+    ExpertItem("趣味配音挑战", "配音达人", "动画配音 · 中级", Color(0xFFBBDEFB), "cover_10"),
 )
 
 private val GUESS_ITEMS = listOf(
-    GuessItem("趣味英语配音", "6.8万", Color(0xFFFFF3E0)),
-    GuessItem("经典电影片段", "9.2万", Color(0xFFE8F5E9)),
+    GuessItem("趣味英语配音", "6.8万", Color(0xFFFFF3E0), "cover_09"),
+    GuessItem("经典电影片段", "9.2万", Color(0xFFE8F5E9), "cover_10"),
 )
 
 private val FEATURE_LABELS = listOf("每日打卡", "影视单词", "经典剧场", "排行榜", "全部视频")
@@ -149,34 +170,34 @@ private fun DubbingHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.su, vertical = 4.su),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             "‹",
-            fontSize = 22.sp,
+            fontSize = 22.susp,
             color = DubbingHomePalette.titleBlack,
             modifier = Modifier
                 .clickable { Utils.currentBridgeModule().closePage() }
-                .padding(12.dp),
+                .padding(12.su),
         )
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(36.dp)
-                .background(DubbingHomePalette.searchFieldBackground, RoundedCornerShape(18.dp))
+                .height(36.su)
+                .background(DubbingHomePalette.searchFieldBackground, RoundedCornerShape(18.su))
                 .clickable { Utils.currentBridgeModule().openPage(PageNames.Search) }
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 12.su),
             contentAlignment = Alignment.CenterStart,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(16.dp)
+                        .size(16.su)
                         .background(DubbingHomePalette.subtitleGray.copy(alpha = 0.35f), CircleShape),
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("学英语", fontSize = 14.sp, color = DubbingHomePalette.subtitleGray)
+                Spacer(modifier = Modifier.width(8.su))
+                Text("学英语", fontSize = 14.susp, color = DubbingHomePalette.subtitleGray)
             }
         }
         HeaderIconButton(glyph = "↺")
@@ -188,17 +209,17 @@ private fun DubbingHeader() {
 private fun HeaderIconButton(glyph: String, showBadge: Boolean = false) {
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(44.su)
             .clickable { },
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, fontSize = 20.sp, color = DubbingHomePalette.titleBlack)
+        Text(glyph, fontSize = 20.susp, color = DubbingHomePalette.titleBlack)
         if (showBadge) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 10.dp, end = 10.dp)
-                    .size(7.dp)
+                    .padding(top = 10.su, end = 10.su)
+                    .size(7.su)
                     .background(Color(0xFFFF4D4F), CircleShape),
             )
         }
@@ -212,7 +233,7 @@ private fun DubbingCategoryTabs(selected: Int, onSelect: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 4.dp, bottom = 4.dp),
+            .padding(start = 16.su, end = 4.su, bottom = 4.su),
         verticalAlignment = Alignment.Top,
     ) {
         Row(modifier = Modifier.weight(1f)) {
@@ -221,12 +242,12 @@ private fun DubbingCategoryTabs(selected: Int, onSelect: (Int) -> Unit) {
                 Column(
                     modifier = Modifier
                         .clickable { onSelect(index) }
-                        .padding(end = 24.dp),
+                        .padding(end = 24.su),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         label,
-                        fontSize = 16.sp,
+                        fontSize = 16.susp,
                         fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                         color = when {
                             index == 0 -> DubbingHomePalette.svipGold
@@ -234,32 +255,32 @@ private fun DubbingCategoryTabs(selected: Int, onSelect: (Int) -> Unit) {
                             else -> DubbingHomePalette.textGray
                         },
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.su))
                     Box(
                         modifier = Modifier
-                            .width(if (active) 24.dp else 0.dp)
-                            .height(3.dp)
-                            .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(2.dp)),
+                            .width(if (active) 24.su else 0.su)
+                            .height(3.su)
+                            .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(2.su)),
                     )
                 }
             }
         }
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .size(44.su)
                 .clickable { },
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(28.su)
                     .background(DubbingHomePalette.primaryGreen.copy(alpha = 0.15f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
                     modifier = Modifier
-                        .size(width = 8.dp, height = 12.dp)
-                        .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(2.dp)),
+                        .size(width = 8.su, height = 12.su)
+                        .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(2.su)),
                 )
             }
         }
@@ -273,63 +294,65 @@ private fun DubbingBannerCarousel(activeIndex: Int = 0) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.su, vertical = 8.su),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(156.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFFFFF8E1), Color(0xFFFFECB3), Color(0xFFFFE082)),
-                    ),
-                    RoundedCornerShape(DubbingHomePalette.cardRadius),
-                ),
+                .height(156.su)
+                .clip(RoundedCornerShape(DubbingHomePalette.cardRadius.su)),
         ) {
+            // Flutter `Image.asset(DubbingHomeAssets.path('banner_main.png'))` —— 搬运源资源
+            Image(
+                painter = painterResource(DUBBING_BANNER_RES),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(72.dp)
-                    .background(Color(0xFFFFC107).copy(alpha = 0.45f), RoundedCornerShape(8.dp)),
+                    .size(72.su)
+                    .background(Color(0xFFFFC107).copy(alpha = 0.45f), RoundedCornerShape(8.su)),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.su)) {
                         Box(
                             modifier = Modifier
-                                .size(width = 14.dp, height = 10.dp)
-                                .background(Color(0xFFFFB300), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)),
+                                .size(width = 14.su, height = 10.su)
+                                .background(Color(0xFFFFB300), RoundedCornerShape(topStart = 6.su, topEnd = 6.su)),
                         )
                         Box(
                             modifier = Modifier
-                                .size(width = 14.dp, height = 10.dp)
-                                .background(Color(0xFFFFB300), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)),
+                                .size(width = 14.su, height = 10.su)
+                                .background(Color(0xFFFFB300), RoundedCornerShape(topStart = 6.su, topEnd = 6.su)),
                         )
                         Box(
                             modifier = Modifier
-                                .size(width = 14.dp, height = 10.dp)
-                                .background(Color(0xFFFFB300), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)),
+                                .size(width = 14.su, height = 10.su)
+                                .background(Color(0xFFFFB300), RoundedCornerShape(topStart = 6.su, topEnd = 6.su)),
                         )
                     }
                     Box(
                         modifier = Modifier
-                            .width(36.dp)
-                            .height(22.dp)
-                            .background(Color(0xFFFFB300), RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp)),
+                            .width(36.su)
+                            .height(22.su)
+                            .background(Color(0xFFFFB300), RoundedCornerShape(bottomStart = 4.su, bottomEnd = 4.su)),
                     )
                 }
             }
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(10.dp)
-                    .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                    .padding(10.su)
+                    .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(4.su))
+                    .padding(horizontal = 6.su, vertical = 2.su),
             ) {
-                Text("AD", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text("AD", fontSize = 10.susp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(10.su))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -337,12 +360,12 @@ private fun DubbingBannerCarousel(activeIndex: Int = 0) {
             repeat(3) { index ->
                 Box(
                     modifier = Modifier
-                        .padding(horizontal = 3.dp)
-                        .width(if (index == activeIndex) 14.dp else 6.dp)
-                        .height(6.dp)
+                        .padding(horizontal = 3.su)
+                        .width(if (index == activeIndex) 14.su else 6.su)
+                        .height(6.su)
                         .background(
                             if (index == activeIndex) DubbingHomePalette.primaryGreen else DubbingHomePalette.divider,
-                            RoundedCornerShape(3.dp),
+                            RoundedCornerShape(3.su),
                         ),
                 )
             }
@@ -357,7 +380,7 @@ private fun DubbingFeatureRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 12.dp),
+            .padding(start = 4.su, top = 4.su, end = 4.su, bottom = 12.su),
     ) {
         FEATURE_LABELS.forEachIndexed { index, label ->
             Column(
@@ -365,10 +388,10 @@ private fun DubbingFeatureRow() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 FeatureIcon(index)
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.su))
                 Text(
                     label,
-                    fontSize = 11.sp,
+                    fontSize = 11.susp,
                     color = DubbingHomePalette.titleBlack,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -380,25 +403,25 @@ private fun DubbingFeatureRow() {
 
 @Composable
 private fun FeatureIcon(index: Int) {
-    Box(modifier = Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.size(52.su), contentAlignment = Alignment.Center) {
         when (index) {
             0 -> {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFE8F5E9), RoundedCornerShape(12.dp)),
+                        .size(44.su)
+                        .background(Color(0xFFE8F5E9), RoundedCornerShape(12.su)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
-                                .size(22.dp, 18.dp)
-                                .background(Color(0xFF66BB6A), RoundedCornerShape(3.dp)),
+                                .size(22.su, 18.su)
+                                .background(Color(0xFF66BB6A), RoundedCornerShape(3.su)),
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(2.su))
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(8.su)
                                 .background(Color(0xFF43A047), CircleShape),
                         )
                     }
@@ -407,16 +430,16 @@ private fun FeatureIcon(index: Int) {
             1 -> {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFE3F2FD), RoundedCornerShape(12.dp)),
+                        .size(44.su)
+                        .background(Color(0xFFE3F2FD), RoundedCornerShape(12.su)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.su)) {
                         repeat(3) {
                             Box(
                                 modifier = Modifier
-                                    .size(width = 6.dp, height = 18.dp)
-                                    .background(Color(0xFF42A5F5), RoundedCornerShape(2.dp)),
+                                    .size(width = 6.su, height = 18.su)
+                                    .background(Color(0xFF42A5F5), RoundedCornerShape(2.su)),
                             )
                         }
                     }
@@ -425,25 +448,25 @@ private fun FeatureIcon(index: Int) {
             2 -> {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFFFF3E0), RoundedCornerShape(12.dp)),
+                        .size(44.su)
+                        .background(Color(0xFFFFF3E0), RoundedCornerShape(12.su)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.su)) {
                             repeat(3) {
                                 Box(
                                     modifier = Modifier
-                                        .size(width = 8.dp, height = 6.dp)
-                                        .background(Color(0xFFFFB300), RoundedCornerShape(2.dp)),
+                                        .size(width = 8.su, height = 6.su)
+                                        .background(Color(0xFFFFB300), RoundedCornerShape(2.su)),
                                 )
                             }
                         }
                         Box(
                             modifier = Modifier
-                                .width(20.dp)
-                                .height(12.dp)
-                                .background(Color(0xFFFFA000), RoundedCornerShape(2.dp)),
+                                .width(20.su)
+                                .height(12.su)
+                                .background(Color(0xFFFFA000), RoundedCornerShape(2.su)),
                         )
                     }
                 }
@@ -451,21 +474,21 @@ private fun FeatureIcon(index: Int) {
             3 -> {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFF3E5F5), RoundedCornerShape(12.dp)),
+                        .size(44.su)
+                        .background(Color(0xFFF3E5F5), RoundedCornerShape(12.su)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.su)) {
                         listOf(
-                            Triple(Color(0xFFFFC107), 22.dp, 6.dp),
-                            Triple(Color(0xFFCFD8DC), 18.dp, 5.dp),
-                            Triple(Color(0xFFFFCCBC), 14.dp, 4.dp),
+                            Triple(Color(0xFFFFC107), 22.su, 6.su),
+                            Triple(Color(0xFFCFD8DC), 18.su, 5.su),
+                            Triple(Color(0xFFFFCCBC), 14.su, 4.su),
                         ).forEach { (color, width, height) ->
                             Box(
                                 modifier = Modifier
                                     .width(width)
                                     .height(height)
-                                    .background(color, RoundedCornerShape(2.dp)),
+                                    .background(color, RoundedCornerShape(2.su)),
                             )
                         }
                     }
@@ -474,24 +497,24 @@ private fun FeatureIcon(index: Int) {
             else -> {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFFECEFF1), RoundedCornerShape(12.dp)),
+                        .size(44.su)
+                        .background(Color(0xFFECEFF1), RoundedCornerShape(12.su)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
-                            .background(Color(0xFF78909C), RoundedCornerShape(6.dp)),
+                            .size(28.su)
+                            .background(Color(0xFF78909C), RoundedCornerShape(6.su)),
                     )
                 }
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 2.dp, y = (-2).dp)
-                        .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                        .offset(x = 2.su, y = (-2).su)
+                        .background(DubbingHomePalette.primaryGreen, RoundedCornerShape(4.su))
+                        .padding(horizontal = 4.su, vertical = 1.su),
                 ) {
-                    Text("限免", fontSize = 8.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("限免", fontSize = 8.susp, color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -505,12 +528,12 @@ private fun DubbingSectionHeader(title: String, trailing: SectionTrailing) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 12.dp),
+            .padding(start = 16.su, top = 24.su, end = 16.su, bottom = 12.su),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             title,
-            fontSize = 18.sp,
+            fontSize = 18.susp,
             fontWeight = FontWeight.SemiBold,
             color = DubbingHomePalette.titleBlack,
             modifier = Modifier.weight(1f),
@@ -519,19 +542,19 @@ private fun DubbingSectionHeader(title: String, trailing: SectionTrailing) {
             SectionTrailing.Chevron -> {
                 Text(
                     "›",
-                    fontSize = 20.sp,
+                    fontSize = 20.susp,
                     color = DubbingHomePalette.subtitleGray,
-                    modifier = Modifier.clickable { }.padding(8.dp),
+                    modifier = Modifier.clickable { }.padding(8.su),
                 )
             }
             SectionTrailing.Refresh -> {
                 Row(
-                    modifier = Modifier.clickable { }.padding(horizontal = 4.dp, vertical = 4.dp),
+                    modifier = Modifier.clickable { }.padding(horizontal = 4.su, vertical = 4.su),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("↻", fontSize = 14.sp, color = DubbingHomePalette.subtitleGray)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("换一换", fontSize = 13.sp, color = DubbingHomePalette.subtitleGray)
+                    Text("↻", fontSize = 14.susp, color = DubbingHomePalette.subtitleGray)
+                    Spacer(modifier = Modifier.width(4.su))
+                    Text("换一换", fontSize = 13.susp, color = DubbingHomePalette.subtitleGray)
                 }
             }
             SectionTrailing.None -> Unit
@@ -546,25 +569,34 @@ private fun DubbingCoverImage(
     thumbColor: Color,
     width: Modifier,
     height: Dp,
+    coverRes: DrawableResource? = null,
     duration: String? = null,
 ) {
     Box(
         modifier = width
             .height(height)
-            .background(thumbColor, RoundedCornerShape(DubbingHomePalette.thumbRadius)),
+            .background(thumbColor, RoundedCornerShape(DubbingHomePalette.thumbRadius.su)),
     ) {
+        if (coverRes != null) {
+            Image(
+                painter = painterResource(coverRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
         if (duration != null) {
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = 6.dp, bottom = 6.dp)
-                    .background(Color(0x8C000000), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                    .padding(start = 6.su, bottom = 6.su)
+                    .background(Color(0x8C000000), RoundedCornerShape(4.su))
+                    .padding(horizontal = 6.su, vertical = 2.su),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("×", fontSize = 10.sp, color = Color.White)
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(duration, fontSize = 10.sp, color = Color.White)
+                Text("×", fontSize = 10.susp, color = Color.White)
+                Spacer(modifier = Modifier.width(3.su))
+                Text(duration, fontSize = 10.susp, color = Color.White)
             }
         }
     }
@@ -577,25 +609,26 @@ private fun DubbingRecentLearningRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(horizontal = 16.su),
+        horizontalArrangement = Arrangement.spacedBy(10.su),
     ) {
         RECENT_ITEMS.forEach { item ->
-            Column(modifier = Modifier.width(120.dp)) {
+            Column(modifier = Modifier.width(120.su)) {
                 DubbingCoverImage(
                     thumbColor = item.thumbColor,
                     width = Modifier.fillMaxWidth(),
-                    height = 68.dp,
+                    height = 68.su,
+                    coverRes = dubbingCommonAsset(item.cover),
                     duration = item.duration,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.su))
                 Text(
                     item.title,
-                    fontSize = 12.sp,
+                    fontSize = 12.susp,
                     color = DubbingHomePalette.titleBlack,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = 16.sp,
+                    lineHeight = 16.susp,
                 )
             }
         }
@@ -609,47 +642,57 @@ private fun DubbingExpertShowcaseGrid() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 16.su),
+        horizontalArrangement = Arrangement.spacedBy(12.su),
     ) {
         EXPERT_ITEMS.forEach { item ->
             Column(modifier = Modifier.weight(1f)) {
                 DubbingCoverImage(
                     thumbColor = item.thumbColor,
                     width = Modifier.fillMaxWidth(),
-                    height = 96.dp,
+                    height = 96.su,
+                    coverRes = dubbingCommonAsset(item.cover),
                     duration = "02:30",
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.su))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(18.dp)
-                            .background(Color(0xFFBDBDBD), CircleShape),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
+                            .size(18.su)
+                            .clip(CircleShape)
+                            .background(Color(0xFFBDBDBD)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            painter = painterResource(dubbingCommonAsset("thumb_default")),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.su))
                     Text(
                         item.userName,
-                        fontSize = 11.sp,
+                        fontSize = 11.susp,
                         color = DubbingHomePalette.subtitleGray,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.su))
                 Text(
                     item.title,
-                    fontSize = 13.sp,
+                    fontSize = 13.susp,
                     fontWeight = FontWeight.Medium,
                     color = DubbingHomePalette.titleBlack,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(2.su))
                 Text(
                     item.subtitle,
-                    fontSize = 11.sp,
+                    fontSize = 11.susp,
                     color = DubbingHomePalette.subtitleGray,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -657,7 +700,7 @@ private fun DubbingExpertShowcaseGrid() {
             }
         }
     }
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(16.su))
 }
 
 // ── below-the-fold sections ──
@@ -667,32 +710,32 @@ private fun DubbingHotRankSection() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.su, vertical = 8.su),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             "热度榜",
-            fontSize = 18.sp,
+            fontSize = 18.susp,
             fontWeight = FontWeight.SemiBold,
             color = DubbingHomePalette.titleBlack,
             modifier = Modifier.weight(1f),
         )
         Text(
             "查看全部 ›",
-            fontSize = 12.sp,
+            fontSize = 12.susp,
             color = DubbingHomePalette.primaryGreen,
             modifier = Modifier.clickable {
                 Utils.currentBridgeModule().openPage(PageNames.HotRankDetail)
             },
         )
     }
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.su)) {
         listOf("1  穿梭在迷宫的勇士", "2  萌宠部落", "3  完美的世界").forEach { line ->
             Text(
                 line,
-                fontSize = 14.sp,
+                fontSize = 14.susp,
                 color = DubbingHomePalette.titleBlack,
-                modifier = Modifier.padding(vertical = 8.dp),
+                modifier = Modifier.padding(vertical = 8.su),
             )
         }
     }
@@ -700,23 +743,30 @@ private fun DubbingHotRankSection() {
 
 @Composable
 private fun DubbingGuessYouLikeList() {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.su)) {
         GUESS_ITEMS.forEach { item ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 8.su),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(item.thumbColor, RoundedCornerShape(DubbingHomePalette.thumbRadius)),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+                        .size(64.su)
+                        .background(item.thumbColor, RoundedCornerShape(DubbingHomePalette.thumbRadius.su)),
+                ) {
+                    Image(
+                        painter = painterResource(dubbingCommonAsset(item.cover)),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.su))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                    Text("播放 ${item.playCount}", fontSize = 12.sp, color = DubbingHomePalette.subtitleGray)
+                    Text(item.title, fontSize = 14.susp, fontWeight = FontWeight.Medium)
+                    Text("播放 ${item.playCount}", fontSize = 12.susp, color = DubbingHomePalette.subtitleGray)
                 }
             }
         }

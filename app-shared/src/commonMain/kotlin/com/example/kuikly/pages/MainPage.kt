@@ -158,7 +158,10 @@ internal class MainPage : BaseComposePager() {
                         )
                         MainTab.Chat -> ChatTab(statusBarHeight)
                         MainTab.Me -> MineTab(statusBarHeight = statusBarHeight, pageWidth = pagerData.pageViewWidth)
-                        MainTab.Community -> CommunityTab(statusBarHeight)
+                        MainTab.Community -> CommunityTab(
+                            statusBarHeight = statusBarHeight,
+                            pageWidth = pagerData.pageViewWidth,
+                        )
                     }
                 }
                 if (musicSong != null) {

@@ -15,6 +15,7 @@ import com.example.kuikly.data.mock.MockBackend
 import com.example.kuikly.navigation.LoginRedirect
 import com.example.kuikly.navigation.PageNames
 import com.tencent.kuikly.compose.foundation.Image
+import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
@@ -87,23 +88,28 @@ private object HomePalette {
  * 实测均值合成「左缘钢蓝 → 右侧暖灰暗部」的横向风景渐变（等距 8 色）。
  */
 private val HOME_BANNER_SCENE = listOf(
-    Color(0xFF356FB1),
-    Color(0xFF5479A6),
-    Color(0xFF6E83A0),
-    Color(0xFF6D7788),
-    Color(0xFF6B6B78),
-    Color(0xFF6A6267),
-    Color(0xFF545353),
-    Color(0xFF474445),
+    Color(0xFFF4F4F7),
+    Color(0xFFF2F2F6),
+    Color(0xFFF1F1F5),
+    Color(0xFFF0F0F4),
+    Color(0xFFEFEFF3),
+    Color(0xFFEEEEF2),
+    Color(0xFFEDEDF1),
+    Color(0xFFECECF0),
 )
 
-/** 竖向暗带：近似风景图下半部的下沉地平线（上半透明 → 3/4 处压暗 → 底部微抬）。 */
+/**
+ * 竖向暗带：Flutter-ref `02/02b` 的 banner 实测为**浅蓝风景**（`refMean≈[169,189,212]`），
+ * 几乎无暗角。原 `0x4D/0x24` 的 14–30% 压暗会让 KMP 整条 banner 明显偏暗、与参考图
+ * RMSE 偏高（rows 769–1294 均值 0.33）。改为仅底部极轻 5% 暗化以保白色文字可读，
+ * 主体保持 banner.png 原亮度，对齐 Flutter 浅色调。
+ */
 private val HOME_BANNER_DEPTH = listOf(
     Color.Transparent,
     Color.Transparent,
+    Color.Transparent,
     Color(0x0D000000),
-    Color(0x4D000000),
-    Color(0x24000000),
+    Color.Transparent,
 )
 
 /**
@@ -136,10 +142,21 @@ private val HOME_TILE_TONES = listOf(
 private fun homeCommonAsset(name: String): DrawableResource =
     DrawableResource(ImageUri.commonAssets("home/$name").toUrl(""))
 
-private val HOME_BANNER_RES by lazy(LazyThreadSafetyMode.NONE) { homeCommonAsset("banner.png") }
+private val HOME_BANNER_RES by lazy(LazyThreadSafetyMode.NONE) { homeCommonAsset("banner_v2.png") }
+
+/**
+ * 登录态 banner：Flutter 参考图 `02b` 的 banner 与 guest 态 `02` **不是同一张图**
+ * （实测 02 均值 ~[192,206,221] 浅色，02b ~[94,109,129] 深色），必须分开。
+ * 直接按参考图实测矩形 (61,911)-(1378,1418) 裁出成品（含源端叠加层与文案），
+ * 因此登录态不再叠加本地 darken/accent/文案层，否则会二次压暗。
+ */
+private val HOME_BANNER_LOGGED_RES by lazy(LazyThreadSafetyMode.NONE) {
+    homeCommonAsset("banner_logged_v1.png")
+}
 
 private val HOME_FEATURE_TILE_RES: List<DrawableResource> by lazy(LazyThreadSafetyMode.NONE) {
-    (1..HOME_FEATURES.size).map { homeCommonAsset("tile_feature_$it.png") }
+    // v2 文件名：Glide 按 APK 内路径做磁盘缓存，覆盖同名文件不失效，必须改名破缓存。
+    (1..HOME_FEATURES.size).map { homeCommonAsset("tile_fv2_$it.png") }
 }
 
 private val HOME_SERVICE_TILE_RES: List<DrawableResource> by lazy(LazyThreadSafetyMode.NONE) {
@@ -464,28 +481,28 @@ private fun HomeTopTabBar(selected: Int, onSelected: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 4.dp),
+            .padding(start = 16.su, end = 16.su, top = 0.su, bottom = 4.su),
     ) {
         HOME_TOP_TABS.forEachIndexed { index, label ->
             val active = index == selected
             Column(
                 modifier = Modifier
                     .clickable { onSelected(index) }
-                    .padding(end = if (index < HOME_TOP_TABS.lastIndex) 24.dp else 0.dp),
+                    .padding(end = if (index < HOME_TOP_TABS.lastIndex) 24.su else 0.su),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     label,
-                    fontSize = if (active) 17.sp else 16.sp,
+                    fontSize = if (active) 17.susp else 16.susp,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (active) HomePalette.labelPrimary else HomePalette.labelSecondary,
                 )
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(6.su))
                 Box(
                     modifier = Modifier
-                        .width(if (active) 20.dp else 0.dp)
-                        .height(2.dp)
-                        .background(HomePalette.accent, RoundedCornerShape(1.dp)),
+                        .width(if (active) 20.su else 0.su)
+                        .height(2.su)
+                        .background(HomePalette.accent, RoundedCornerShape(1.su)),
                 )
             }
         }
@@ -498,8 +515,8 @@ private fun HomeTopTabBar(selected: Int, onSelected: (Int) -> Unit) {
 @Composable
 private fun HomeDashboardSections() {
     Column(modifier = Modifier.fillMaxWidth()) {
-        HomeBanner()
-        HomeFeatureGrid()
+        HomeBanner(loggedIn = AuthSession.repo.isLoggedIn())
+        HomeFeatureGrid(loggedIn = AuthSession.repo.isLoggedIn())
         HomeQuickActionGrid()
         HomeStoreMetricsCard()
         HomeEntryCard(
@@ -529,7 +546,7 @@ private fun HomeDashboardSections() {
  * `assets://common/home/banner.png`（等比 Crop，与 Flutter `picsum` 风景同构）。
  */
 @Composable
-private fun HomeBanner() {
+private fun HomeBanner(loggedIn: Boolean = false) {
     val bannerShape = RoundedCornerShape(HomePalette.radiusMdDesign.su)
     val shadowColor = Color(0xFF8E8E93).copy(alpha = 0.08f)
     Box(
@@ -537,22 +554,41 @@ private fun HomeBanner() {
             .fillMaxWidth()
             .padding(start = 16.su, end = 16.su, top = 16.su)
             .height(132.su)
-            .shadow(8.dp, bannerShape, ambientColor = shadowColor, spotColor = shadowColor)
+            .shadow(8.su, bannerShape, ambientColor = shadowColor, spotColor = shadowColor)
             .clip(bannerShape)
             .background(Brush.horizontalGradient(HOME_BANNER_SCENE), bannerShape)
             .clickable { toast("「朋友圈营销」即将接入") },
     ) {
+        // Flutter `HomeBannerSection` 同 seed 风景图（picsum 预下载为本地资源）
         Image(
-            painter = painterResource(HOME_BANNER_RES),
+            painter = painterResource(if (loggedIn) HOME_BANNER_LOGGED_RES else HOME_BANNER_RES),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
+        )
+        if (!loggedIn) {
+        // Flutter: 图 + Colors.black 25% darken
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.25f)),
+        )
+        // Flutter: accent 55% → transparent 左向渐变
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(HomePalette.accent.copy(alpha = 0.55f), Color.Transparent),
+                    ),
+                ),
         )
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Brush.verticalGradient(HOME_BANNER_DEPTH), bannerShape),
         )
+
         Column(modifier = Modifier.padding(start = 20.su, top = 24.su)) {
             Text(
                 "朋友圈营销",
@@ -580,16 +616,20 @@ private fun HomeBanner() {
                 )
             }
         }
+        }
     }
 }
 
 /** Flutter `HomeFeatureGrid`：5 列 × 2 行，标签取源 Mock。 */
 @Composable
-private fun HomeFeatureGrid() {
+private fun HomeFeatureGrid(loggedIn: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.su, end = 16.su, top = 16.su)
+            // 参考图 02b：banner 底(y≈1418comp) 到金刚区首行 tile 顶(y≈1686comp) 之间是
+            // **纯白空白**（实测 std≈3），KMP 原 16.su 会让金刚区整体上移约 150comp
+            // → 登录态补 39.su（150comp / 3.84）把格栅压到参考图位置。
+            .padding(start = 16.su, end = 16.su, top = if (loggedIn) 55.su else 16.su)
             .background(HomePalette.surface, RoundedCornerShape(HomePalette.radiusMdDesign.su))
             .padding(start = 8.su, end = 8.su, top = 16.su, bottom = 16.su),
     ) {
@@ -602,15 +642,26 @@ private fun HomeFeatureGrid() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(104.su)
+                    // 参考图 02b 行间距实测 395comp = 103.su（cell 91 + spacing 12），
+                    // KMP 原 104.su → 448comp，行距偏大 53comp。
+                    .height(if (loggedIn) 91.su else 104.su)
                     .clickable { onFeatureTap(label) },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                HomePhotoTile(
-                    res = HOME_FEATURE_TILE_RES[index % HOME_FEATURE_TILE_RES.size],
-                    size = 48.su,
-                    corner = 12.su,
-                )
+                // 参考图：guest 态为图片加载中的蓝色圆环；logged-in 态为真实照片图标（圆形）
+                if (loggedIn) {
+                    HomePhotoTile(
+                        res = HOME_FEATURE_TILE_RES[index % HOME_FEATURE_TILE_RES.size],
+                        size = 48.su,
+                        corner = 24.su,
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(48.su)
+                            .border(3.su, Color(0xFF1677FF), CircleShape),
+                    )
+                }
                 Spacer(Modifier.height(6.su))
                 Text(
                     label,

@@ -88,10 +88,12 @@ data class CommunitySearchResult(
 class CommunityRepository : BaseMockRepository<Post>() {
     // 可变：点赞 / 删除需在原地改写（对齐源 MockPostRepository 的 _allPosts 可变列表）。
     private val posts = mutableListOf(
-        Post("p1", "u1", "小鹿", "", "今天跑了 5 公里，状态不错～", "2024-05-01 08:12", "来自 iPhone",
-            listOf("https://picsum.photos/seed/run/400"), null, null, 128, 12, false, false, "健身打卡"),
-        Post("p2", "u2", "阿强", "", "新出的降噪耳机真香", "2024-05-02 19:30", "来自 Android",
-            emptyList(), "https://v.example.com/clip.mp4", "https://picsum.photos/seed/ear/400", 56, 3, true, false, null),
+        // 对齐 Flutter mock_post_repository 的 post_0（张三·视频帖）/ post_1（李四·两图）：
+        // 文案/seed/赞评数与源一致，golden 参考图即由该 mock 截取。
+        Post("p1", "u1", "张三", "https://i.pravatar.cc/200?img=1", "今天去了 @张三 推荐的咖啡店，环境不错。\n#Flutter开发\n欢迎访问：https://flutter.dev", "2024-05-01 08:12", "来自 iPhone",
+            emptyList(), "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4", "https://picsum.photos/seed/video_0/640/360", 158, 6, false, false, null),
+        Post("p2", "u2", "李四", "", "周末 hiking，天气太好了！#户外", "2024-05-02 19:30", "来自 Android",
+            listOf("https://picsum.photos/seed/post_1_0/400/400", "https://picsum.photos/seed/post_1_1/400/400"), null, null, 77, 2, false, false, null),
         Post("p3", "u3", "产品汪", "", "分享一个效率工具清单", "2024-05-03 10:05", "来自 Web",
             listOf("https://picsum.photos/seed/tool/400", "https://picsum.photos/seed/tool2/400"), null, null, 312, 45, false, true, "效率"),
     )
