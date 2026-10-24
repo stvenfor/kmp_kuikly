@@ -1,5 +1,7 @@
 package com.example.kuikly.pages
 
+import com.example.kuikly.design.KuiklySystemPalette
+
 import androidx.compose.runtime.Composable
 import com.example.kuikly.base.LocalDesignScale
 import com.example.kuikly.base.ProvideDesignScale
@@ -113,26 +115,7 @@ internal fun MineTab(statusBarHeight: Float, pageWidth: Float) {
 
 // ─────────────────────────── palette (Flutter MineTheme parity) ───────────────────────────
 
-private object MinePalette {
-    val accent = Color(0xFF007AFF)
-    val background = Color(0xFFF2F2F7)
-    val surface = Color(0xFFFFFFFF)
-    val fillSecondary = Color(0xFFE9E9EB)
-    val labelPrimary = Color(0xFF000000)
-    val labelSecondary = Color(0x993C3C43)
-    val labelTertiary = Color(0x4D3C3C43)
-    val separator = Color(0xFFC6C6C8)
-    val destructive = Color(0xFFFF3B30)
-    val badgeRed = Color(0xFFFF3B30)
-    val iconBlue = Color(0xFF007AFF)
-    val iconPurple = Color(0xFF5856D6)
-    val iconOrange = Color(0xFFFF9500)
-    val iconGreen = Color(0xFF34C759)
-    val softBlue = Color(0x14007AFF)
-    val softPurple = Color(0x145856D6)
-    val softOrange = Color(0x14FF9500)
-    val radiusMdDesign = 12
-}
+private object MinePalette : KuiklySystemPalette() {}
 
 // ─────────────────────────── static source specs ───────────────────────────
 

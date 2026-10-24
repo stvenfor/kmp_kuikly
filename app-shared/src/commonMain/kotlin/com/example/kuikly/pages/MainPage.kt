@@ -1,5 +1,7 @@
 package com.example.kuikly.pages
 
+import com.example.kuikly.design.KuiklySystemPalette
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -378,18 +380,7 @@ internal const val MUSIC_MINI_BAR_HEIGHT = 62
  * `chat_theme` 均无 `.w/.h/.sp`），不走 `flutter_screenutil`。故此处一律裸 `dp`/`sp`，
  * **不要** `.su()`——判断法与 P2-03 `TabBarTokens` KDoc 相同（若加 su 会 ×1.463 破坏 parity）。
  */
-internal object ChatPalette {
-    val accent = Color(0xFF007AFF)
-    val background = Color(0xFFF2F2F7)
-    val surface = Color(0xFFFFFFFF)
-    val fillSecondary = Color(0xFFE9E9EB)
-    val labelPrimary = Color(0xFF000000)
-    val labelSecondary = Color(0x993C3C43)
-    val labelTertiary = Color(0x4D3C3C43)
-    val separator = Color(0xFFC6C6C8)
-    val online = Color(0xFF34C759)
-    val unreadBadge = Color(0xFFFF3B30)
-
+internal object ChatPalette : KuiklySystemPalette() {
     const val RADIUS_MD = 12f
 }
 

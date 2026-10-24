@@ -1,5 +1,7 @@
 package com.example.kuikly.pages
 
+import com.example.kuikly.design.KuiklySystemPalette
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,20 +67,7 @@ import com.tencent.kuikly.core.base.attr.ImageUri
  */
 
 /** `HomeDashboardTheme` 令牌镜像。 */
-private object HomePalette {
-    val accent = Color(0xFF007AFF)
-    val background = Color(0xFFF2F2F7)
-    val surface = Color(0xFFFFFFFF)
-    val fillSecondary = Color(0xFFE9E9EB)
-    val labelPrimary = Color(0xFF000000)
-    val labelSecondary = Color(0x993C3C43)
-    val labelTertiary = Color(0x4D3C3C43)
-    val separator = Color(0xFFC6C6C8)
-    val badgeOrange = Color(0xFFFF9500)
-    val textDarkGray = Color(0xFF3C3C43)
-    val radiusMdDesign = 12
-    val radiusLgDesign = 14
-}
+private object HomePalette : KuiklySystemPalette() {}
 
 /**
  * Banner 无位图近似色阶（P2-S2f）。

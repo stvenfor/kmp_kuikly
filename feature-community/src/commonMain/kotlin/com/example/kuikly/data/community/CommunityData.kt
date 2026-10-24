@@ -85,16 +85,30 @@ data class CommunitySearchResult(
     val hitCount: Int get() = posts.size + topics.size + users.size
 }
 
+/**
+ * Flutter `MockPostRepository._nicknames` 昵称池（8 个）。
+ *
+ * 源 `_seedComments` 用 `_nicknames[(index + k) % length]` 给种子评论取名，并把第 2 条的
+ * `replyToNickname` 设为 `_nicknames[index % length]` —— 与原 `CommunityTab` 的
+ * `placeholderComments` 派生规则完全一致，故切换到真实数据后首帧像素不变。
+ */
+private val COMMUNITY_SEED_NICKNAMES =
+    listOf("张三", "李四", "王五", "赵六", "小明", "小红", "开发者", "产品经理")
+
 class CommunityRepository : BaseMockRepository<Post>() {
     // 可变：点赞 / 删除需在原地改写（对齐源 MockPostRepository 的 _allPosts 可变列表）。
+    //
+    // `publishTime` 存 **Flutter `formatPublishTime` 的相对时长写法**（`i * 17 + 7` 分钟），
+    // `source` 取 i 奇偶（源 `i.isEven ? '来自 iPhone' : '来自 Android'`），
+    // `isLiked` 取 `i % 4 == 0`（源同规则 → 首条默认已赞，与 golden 参考图一致）。
     private val posts = mutableListOf(
         // 对齐 Flutter mock_post_repository 的 post_0（张三·视频帖）/ post_1（李四·两图）：
         // 文案/seed/赞评数与源一致，golden 参考图即由该 mock 截取。
-        Post("p1", "u1", "张三", "https://i.pravatar.cc/200?img=1", "今天去了 @张三 推荐的咖啡店，环境不错。\n#Flutter开发\n欢迎访问：https://flutter.dev", "2024-05-01 08:12", "来自 iPhone",
-            emptyList(), "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4", "https://picsum.photos/seed/video_0/640/360", 158, 6, false, false, null),
-        Post("p2", "u2", "李四", "", "周末 hiking，天气太好了！#户外", "2024-05-02 19:30", "来自 Android",
+        Post("p1", "u1", "张三", "https://i.pravatar.cc/200?img=1", "今天去了 @张三 推荐的咖啡店，环境不错。\n#Flutter开发\n欢迎访问：https://flutter.dev", "7分钟前", "来自 iPhone",
+            emptyList(), "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4", "https://picsum.photos/seed/video_0/640/360", 158, 6, true, false, null),
+        Post("p2", "u2", "李四", "", "周末 hiking，天气太好了！#户外", "24分钟前", "来自 Android",
             listOf("https://picsum.photos/seed/post_1_0/400/400", "https://picsum.photos/seed/post_1_1/400/400"), null, null, 77, 2, false, false, null),
-        Post("p3", "u3", "产品汪", "", "分享一个效率工具清单", "2024-05-03 10:05", "来自 Web",
+        Post("p3", "u3", "产品汪", "", "分享一个效率工具清单", "41分钟前", "来自 iPhone",
             listOf("https://picsum.photos/seed/tool/400", "https://picsum.photos/seed/tool2/400"), null, null, 312, 45, false, true, "效率"),
     )
     private val topicList = listOf(
@@ -119,12 +133,15 @@ class CommunityRepository : BaseMockRepository<Post>() {
     // 初始为空，与源一致：需用户关注后"关注"流才有内容（演示空态）。
     private val followedUserIds = mutableSetOf<String>()
 
-    // 每条帖子种子 2 条预览评论（对齐源 _seedComments），并回填 Post.previewComments。
+    // 每条帖子种子 2 条预览评论（对齐源 `MockPostRepository._seedComments`）：
+    // 昵称按 `_nicknames[(index + k) % 8]` 轮转，第 2 条带 `replyToNickname = _nicknames[index % 8]`；
+    // createTime 取源 `now.subtract(Duration(minutes: index * 5 + k))` 的相对写法。并回填 Post.previewComments。
     init {
-        posts.forEach { p ->
+        posts.forEachIndexed { index, p ->
+            val n = COMMUNITY_SEED_NICKNAMES.size
             val cs = listOf(
-                Comment("c_${p.id}_1", p.id, "读者A", "", "说得对！", "2分钟前", null),
-                Comment("c_${p.id}_2", p.id, "读者B", "", "同感 +1", "1分钟前", p.nickname),
+                Comment("c_${p.id}_1", p.id, COMMUNITY_SEED_NICKNAMES[(index + 1) % n], "", "说得对！", "${index * 5 + 3}分钟前", null),
+                Comment("c_${p.id}_2", p.id, COMMUNITY_SEED_NICKNAMES[(index + 3) % n], "", "同感 +1", "${index * 5 + 1}分钟前", COMMUNITY_SEED_NICKNAMES[index % n]),
             )
             commentsByPost[p.id] = cs.toMutableList()
         }

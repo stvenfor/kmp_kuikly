@@ -116,4 +116,60 @@ class CommunityRepositoryTest {
         assertTrue(CommunityRepository().searchPosts("健身").isFailure)
         MockBackend.scenario = MockScenario.Success
     }
+
+    // ------------------------------------------------------------------
+    // 真实交互（替代原 CommunityTab 的 index 取模伪状态）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `feed honours tab ordering`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = CommunityRepository()
+        // latest：seed 顺序
+        val latest = repo.feed("latest", 1, 20).getOrThrow()
+        assertEquals(listOf("p1", "p2", "p3"), latest.items.map { it.id })
+        // hot：按 `likeCount * 2 + commentCount` 降序（p3=669 > p1=322 > p2=156）
+        val hot = repo.feed("hot", 1, 20).getOrThrow()
+        assertEquals(listOf("p3", "p1", "p2"), hot.items.map { it.id })
+        // following：初始未关注任何人 → 空（演示空态）
+        assertTrue(repo.feed("following", 1, 20).getOrThrow().items.isEmpty())
+    }
+
+    @Test
+    fun `toggleLike flips flag and count`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = CommunityRepository()
+        // seed 按源规则 `isLiked = i % 4 == 0` → 首条默认已赞
+        val first = repo.feed("latest", 1, 20).getOrThrow().items.first()
+        assertTrue(first.isLiked)
+        val off = repo.toggleLike(first.id, false).getOrThrow()
+        assertTrue(!off.isLiked)
+        assertEquals(first.likeCount - 1, off.likeCount)
+        val on = repo.toggleLike(first.id, true).getOrThrow()
+        assertTrue(on.isLiked)
+        assertEquals(first.likeCount, on.likeCount)
+    }
+
+    @Test
+    fun `deletePost removes post from feed`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = CommunityRepository()
+        assertTrue(repo.deletePost("p3").isSuccess)
+        assertEquals(2, repo.feed("latest", 1, 20).getOrThrow().items.size)
+        assertTrue(repo.deletePost("不存在").isFailure)
+    }
+
+    @Test
+    fun `seed comments follow flutter nickname rule`() {
+        MockBackend.scenario = MockScenario.Success
+        val repo = CommunityRepository()
+        val first = repo.feed("latest", 1, 20).getOrThrow().items.first()
+        assertEquals(2, first.previewComments.size)
+        // 源 `_seedComments`：`_nicknames[(index+1)%8]` / `[(index+3)%8]`，
+        // 第 2 条 replyToNickname = `_nicknames[index%8]`
+        assertEquals("李四", first.previewComments[0].nickname)
+        assertEquals("说得对！", first.previewComments[0].content)
+        assertEquals("赵六", first.previewComments[1].nickname)
+        assertEquals("张三", first.previewComments[1].replyToNickname)
+    }
 }
